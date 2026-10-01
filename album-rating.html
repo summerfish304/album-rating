@@ -1,0 +1,3736 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Оценка альбома</title>
+<style>
+  :root {
+    --bg-1: #0f1020;
+    --bg-2: #161a35;
+    --panel: #1a1c38;
+    --panel-2: #131530;
+    --panel-3: #242750;
+    --border: #2e3260;
+    --border-soft: #252948;
+    --text: #eef0ff;
+    --text-dim: #8b90b8;
+    --text-mid: #bfc3e0;
+    --accent: #7c6cf0;
+    --accent-2: #6a58e0;
+    --accent-3: #a99bff;
+    --accent-glow: rgba(124,108,240,.45);
+    --result-1: #2a2c54;
+    --result-2: #1f2244;
+    --danger: #ff6b8a;
+    --gold-1: #f5c451;
+    --gold-2: #e0a52c;
+    --gold-glow: rgba(245,196,81,.55);
+    --coal: #4a4a52;
+    --coal-glow: rgba(74,74,82,.4);
+    --bronze: #b87333;
+    --bronze-glow: rgba(184,115,51,.5);
+    --silver: #c0c0c8;
+    --silver-glow: rgba(192,192,200,.45);
+    --gold-lvl: #f5c451;
+    --gold-lvl-glow: rgba(245,196,81,.55);
+    --plat: #e5e4e2;
+    --plat-glow: rgba(229,228,226,.5);
+    --ruby: #9b111e;
+    --ruby-glow: rgba(155,17,30,.55);
+    --diamond: #b9f2ff;
+    --diamond-glow: rgba(185,242,255,.6);
+    --brill: #ffffff;
+    --brill-glow: rgba(255,255,255,.8);
+  }
+  body.light {
+    --bg-1: #f4f5fb;
+    --bg-2: #e7eaf6;
+    --panel: #ffffff;
+    --panel-2: #f6f7fc;
+    --panel-3: #eceef8;
+    --border: #dcdfef;
+    --border-soft: #e8eaf4;
+    --text: #17183a;
+    --text-dim: #6a6e90;
+    --text-mid: #494d72;
+    --accent: #6c5ce7;
+    --accent-2: #5a4bd1;
+    --accent-3: #8a7cf0;
+    --accent-glow: rgba(108,92,231,.25);
+    --result-1: #e6e6fa;
+    --result-2: #d8dbf5;
+    --danger: #d63369;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: radial-gradient(1200px 800px at 20% 0%, var(--bg-2), var(--bg-1));
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px 60px;
+    display: flex;
+    justify-content: center;
+    transition: background .4s ease, color .3s ease;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    background: var(--panel);
+    border-radius: 22px;
+    padding: 32px;
+    max-width: 820px;
+    width: 100%;
+    box-shadow: 0 30px 80px rgba(0,0,0,.45), 0 2px 0 rgba(255,255,255,.04) inset;
+    position: relative;
+    animation: fadeUp .55s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* TOP BAR */
+  .top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px; gap: 12px; flex-wrap: wrap;
+  }
+  .top-bar h1 {
+    font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em;
+    background: linear-gradient(135deg, var(--text), var(--accent-3));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .top-actions { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    width: 42px; height: 42px; padding: 0;
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 12px;
+    cursor: pointer; font-size: 1.15rem;
+    transition: transform .2s, background .2s, border-color .2s, box-shadow .2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { background: var(--panel-3); border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 20px var(--accent-glow); }
+
+  .user-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px 6px 6px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    font-size: .85rem; color: var(--text-mid);
+  }
+  .user-chip .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: .85rem;
+    text-transform: uppercase;
+  }
+  .user-chip .nick { font-weight: 600; color: var(--text); }
+  .user-chip .logout {
+    background: none; border: none; box-shadow: none;
+    padding: 0 0 0 4px; font-size: .75rem; color: var(--text-dim);
+    cursor: pointer; font-weight: 500;
+  }
+  .user-chip .logout:hover { color: var(--danger); transform: none; filter: none; box-shadow: none; }
+
+  .subtitle {
+    text-align: center; color: var(--text-dim); font-size: .88rem;
+    margin-bottom: 22px;
+  }
+
+  /* AUTH SCREEN */
+  .auth-screen {
+    max-width: 420px;
+    margin: 40px auto;
+    padding: 32px 28px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    text-align: center;
+    animation: fadeUp .5s ease;
+  }
+  .auth-screen h2 {
+    font-size: 1.4rem; color: var(--text); margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--text), var(--accent-3));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .auth-screen p { font-size: .85rem; color: var(--text-dim); margin-bottom: 20px; }
+  .auth-screen input {
+    width: 100%; padding: 13px 16px;
+    border-radius: 12px; border: 1.5px solid var(--border);
+    background: var(--panel); color: var(--text);
+    font-size: .95rem; outline: none;
+    margin-bottom: 10px;
+    transition: border-color .2s, box-shadow .2s;
+    font-family: inherit;
+  }
+  .auth-screen input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
+  .auth-screen button { width: 100%; margin-top: 8px; }
+  .auth-switch {
+    font-size: .82rem; color: var(--text-dim);
+    margin-top: 14px;
+  }
+  .auth-switch button {
+    background: none; border: none; box-shadow: none;
+    color: var(--accent-3); cursor: pointer;
+    padding: 0; margin: 0; width: auto;
+    font-weight: 600; font-size: .82rem;
+    text-decoration: underline;
+  }
+  .auth-switch button:hover { filter: none; color: var(--accent); transform: none; box-shadow: none; }
+  .auth-error {
+    color: var(--danger); font-size: .82rem;
+    margin-top: 12px; min-height: 18px;
+  }
+
+  /* SOURCE */
+  .source-block {
+    margin-bottom: 16px;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .source-label {
+    font-size: .78rem; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--text-dim);
+    margin-bottom: 10px; font-weight: 600;
+  }
+  .source-tabs { display: flex; gap: 10px; }
+  .source-tab {
+    flex: 1; padding: 16px 18px; border-radius: 14px;
+    background: var(--panel); color: var(--text-mid);
+    border: 1.5px solid var(--border); cursor: pointer;
+    text-align: left; box-shadow: none;
+    transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
+    display: flex; flex-direction: column; gap: 6px;
+    font-family: inherit;
+  }
+  .source-tab .headline { font-size: 1rem; font-weight: 700; color: var(--text); line-height: 1.3; }
+  .source-tab .subline { font-size: .76rem; font-weight: 500; color: var(--text-dim); line-height: 1.4; }
+  .source-tab:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 10px 24px var(--accent-glow); }
+  .source-tab.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; box-shadow: 0 10px 26px var(--accent-glow); }
+  .source-tab.active .headline, .source-tab.active .subline { color: #fff; }
+  .source-tab.active .subline { opacity: .92; }
+
+  label { display: block; font-size: .88rem; color: var(--text-mid); margin-bottom: 8px; font-weight: 500; }
+
+  input[type="text"] {
+    width: 100%; padding: 13px 16px; border-radius: 12px;
+    border: 1.5px solid var(--border); background: var(--panel-2); color: var(--text);
+    font-size: .98rem; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    font-family: inherit;
+  }
+  input[type="text"]::placeholder { color: var(--text-dim); opacity: .7; }
+  input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
+
+  button {
+    padding: 12px 16px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; font-size: .95rem; font-weight: 600;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .2s, filter .2s;
+    box-shadow: 0 6px 16px var(--accent-glow);
+    font-family: inherit;
+  }
+  button:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 10px 24px var(--accent-glow); }
+  button:active { transform: translateY(0) scale(.985); }
+  button:disabled { opacity: .5; cursor: wait; }
+  .btn-block { width: 100%; }
+  .btn-secondary {
+    background: var(--panel-3); color: var(--text); box-shadow: none;
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--panel-2); border-color: var(--accent); box-shadow: 0 6px 16px var(--accent-glow); }
+  .btn-sm { padding: 8px 14px; font-size: .82rem; }
+
+  .tabs {
+    display: flex; gap: 6px; margin-bottom: 14px;
+    background: var(--panel-2); padding: 5px; border-radius: 12px;
+    border: 1px solid var(--border-soft);
+  }
+  .tab {
+    flex: 1; padding: 10px 12px; border-radius: 9px;
+    background: transparent; color: var(--text-dim);
+    border: none; cursor: pointer; font-size: .88rem; font-weight: 600;
+    box-shadow: none; transition: background .2s, color .2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text-mid); transform: none; box-shadow: none; filter: none; background: transparent; }
+  .tab.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: 0 6px 14px var(--accent-glow); }
+
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-list {
+    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px;
+    max-height: 420px; overflow-y: auto; z-index: 50;
+    box-shadow: 0 24px 60px rgba(0,0,0,.5);
+    display: none; animation: dropIn .18s ease-out;
+  }
+  @keyframes dropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .autocomplete-list.open { display: block; }
+  .autocomplete-list .suggestion {
+    display: flex; gap: 12px; align-items: center;
+    padding: 10px 12px; cursor: pointer;
+    border-bottom: 1px solid var(--border-soft);
+    transition: background .15s;
+  }
+  .autocomplete-list .suggestion:last-child { border-bottom: none; }
+  .autocomplete-list .suggestion:hover, .autocomplete-list .suggestion.active { background: var(--panel-3); }
+  .autocomplete-list .suggestion img {
+    width: 48px; height: 48px; border-radius: 8px; object-fit: cover;
+    flex-shrink: 0; background: var(--panel-3);
+  }
+  .autocomplete-list .suggestion .text { min-width: 0; flex: 1; }
+  .autocomplete-list .suggestion .t {
+    font-weight: 600; color: var(--text); font-size: .9rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .autocomplete-list .suggestion .a {
+    font-size: .8rem; color: var(--text-dim); margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .autocomplete-list .status {
+    padding: 16px; font-size: .85rem; color: var(--text-dim);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .spinner {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid var(--accent); border-top-color: transparent;
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .album-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px; max-height: 460px; overflow-y: auto; padding: 4px;
+  }
+  .album-tile {
+    background: var(--panel-2); border: 1px solid var(--border-soft);
+    border-radius: 12px; padding: 8px; cursor: pointer;
+    transition: transform .18s, border-color .2s, box-shadow .2s;
+    animation: fadeUp .35s ease both;
+  }
+  .album-tile:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 14px 30px rgba(0,0,0,.4); }
+  .album-tile img { width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: cover; background: var(--panel-3); display: block; }
+  .album-tile .t { margin-top: 8px; font-size: .82rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .album-tile .a { font-size: .74rem; color: var(--text-dim); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .section { margin-bottom: 22px; }
+  .hidden { display: none !important; }
+  .divider { height: 1px; background: var(--border-soft); margin: 22px 0; }
+  .hint { font-size: .78rem; color: var(--text-dim); margin-top: 8px; }
+  .error { color: var(--danger); font-size: .85rem; margin-top: 10px; }
+
+  .album-card {
+    position: relative;
+    display: flex; gap: 16px; align-items: center;
+    background: linear-gradient(135deg, var(--panel-2), var(--panel-3));
+    border: 1px solid var(--border-soft);
+    border-radius: 16px; padding: 14px; margin-top: 6px;
+    animation: fadeUp .4s ease;
+    box-shadow: 0 10px 25px rgba(0,0,0,.25);
+    overflow: hidden; min-height: 108px;
+  }
+  .album-card .bg-blur {
+    position: absolute; inset: -20px;
+    background-size: cover; background-position: center;
+    filter: blur(30px) saturate(1.4);
+    opacity: .22; z-index: 0; pointer-events: none;
+  }
+  body.light .album-card .bg-blur { opacity: .12; }
+  .album-card img.cover {
+    width: 84px; height: 84px; border-radius: 10px; object-fit: cover;
+    background: var(--panel-3); box-shadow: 0 8px 20px rgba(0,0,0,.35);
+    flex-shrink: 0; position: relative; z-index: 1;
+  }
+  .album-card .info { flex: 1; min-width: 0; position: relative; z-index: 1; }
+  .album-card .info .title {
+    font-weight: 700; color: var(--text); margin-bottom: 4px;
+    font-size: 1.02rem; letter-spacing: -.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .album-card .info .artist {
+    font-size: .86rem; color: var(--text-dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .album-actions {
+    display: flex; gap: 10px; margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .album-actions button { flex: 1; min-width: 180px; }
+
+  /* TRACKS */
+  .tracks-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 10px 12px;
+    max-height: 440px;
+    overflow-y: auto;
+  }
+  .tracks-card .tracks-list { display: flex; flex-direction: column; gap: 8px; }
+  .track-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    transition: border-color .2s, background .2s, transform .15s;
+    animation: fadeUp .3s ease both;
+    min-height: 44px;
+  }
+  .track-row:hover { border-color: var(--accent); background: var(--panel-3); transform: translateX(2px); }
+  .track-row .track-name {
+    flex: 1 1 45%; min-width: 0;
+    font-size: .88rem; color: var(--text-mid);
+    background: transparent; border: none; padding: 0;
+    text-align: left; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: color .15s;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: none; font-weight: 500; font-family: inherit;
+  }
+  .track-row .track-name .track-num {
+    color: var(--text-dim); font-variant-numeric: tabular-nums;
+    font-size: .8rem; flex-shrink: 0; min-width: 18px;
+  }
+  .track-row .track-name:hover { color: var(--accent-3); transform: none; box-shadow: none; }
+  .track-row .track-name .detail-badge {
+    font-size: .65rem; padding: 2px 6px; border-radius: 10px;
+    background: var(--accent-glow); color: var(--accent-3);
+    font-weight: 700; flex-shrink: 0; margin-left: 4px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .track-row .control { flex: 1 1 40%; min-width: 100px; display: flex; align-items: center; }
+  .track-row .range-val {
+    flex: 0 0 36px; text-align: right; font-weight: 700;
+    color: var(--accent-3); font-size: .95rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px;
+    background: var(--border); border-radius: 3px; outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-radius: 50%; cursor: pointer; border: 2px solid #fff;
+    transition: box-shadow .2s, transform .15s;
+  }
+  input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
+  input[type="range"]:active::-webkit-slider-thumb { box-shadow: 0 0 0 8px var(--accent-glow); }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-radius: 50%; cursor: pointer; border: 2px solid #fff;
+  }
+
+  .stars { display: flex; gap: 2px; user-select: none; align-items: center; }
+  .star {
+    background: none; border: none; padding: 0;
+    font-size: 1rem; line-height: 1;
+    color: var(--border);
+    cursor: pointer;
+    box-shadow: none;
+    transition: transform .12s, color .15s;
+    min-width: 0;
+  }
+  .star:hover { transform: scale(1.2); background: none; filter: none; }
+  .star.on { color: var(--gold-1); text-shadow: 0 0 8px var(--gold-glow); }
+
+  .rating-mode {
+    display: flex; gap: 6px; margin-bottom: 12px;
+    justify-content: space-between; align-items: center;
+  }
+  .rating-mode .label { font-size: .8rem; color: var(--text-dim); }
+  .rating-mode .modes { display: flex; gap: 6px; }
+  .mode-btn {
+    padding: 6px 12px; border-radius: 9px; font-size: .8rem;
+    background: var(--panel-2); color: var(--text-dim);
+    border: 1px solid var(--border); box-shadow: none;
+    font-weight: 600;
+  }
+  .mode-btn:hover { transform: none; filter: none; background: var(--panel-3); color: var(--text); box-shadow: none; }
+  .mode-btn.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border-color: transparent; }
+
+  /* OVERALL */
+  .overall-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 22px;
+  }
+  .overall-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .overall-head .lbl {
+    font-size: .88rem; font-weight: 600; color: var(--text-mid);
+  }
+  .overall-head .badge {
+    font-size: .85rem; font-weight: 700;
+    color: var(--accent-3);
+    font-variant-numeric: tabular-nums;
+    background: var(--panel);
+    padding: 4px 12px; border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+  .overall-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .overall-body .control { flex: 1 1 200px; min-width: 0; display: flex; align-items: center; }
+  .overall-body input[type="range"] { flex: 1; }
+  .overall-body .stars { flex: 1; }
+  .overall-body .auto-btn { padding: 8px 14px; font-size: .82rem; white-space: nowrap; }
+
+  /* RESULT */
+  .result {
+    background: linear-gradient(135deg, var(--result-1), var(--result-2));
+    border-radius: 18px; padding: 24px 26px 22px; text-align: center;
+    margin-top: 10px; border: 1.5px solid var(--border-soft);
+    position: relative; overflow: hidden;
+    transition: background .8s ease, border-color .8s, box-shadow .8s;
+  }
+  .result.tier-coal   { background: linear-gradient(135deg, #2a2a30, #1c1c22); border-color: var(--coal); box-shadow: 0 0 18px var(--coal-glow); }
+  .result.tier-bronze { background: linear-gradient(135deg, #3b2a18, #2e2013); border-color: var(--bronze); box-shadow: 0 0 20px var(--bronze-glow); }
+  .result.tier-silver { background: linear-gradient(135deg, #363840, #26282f); border-color: var(--silver); box-shadow: 0 0 22px var(--silver-glow); }
+  .result.tier-gold   { background: linear-gradient(135deg, #3a2f0f, #4a3a15); border-color: var(--gold-lvl); box-shadow: 0 0 24px var(--gold-lvl-glow); }
+  .result.tier-plat   { background: linear-gradient(135deg, #2f3a44, #232b33); border-color: var(--plat); box-shadow: 0 0 24px var(--plat-glow); }
+  .result.tier-ruby   { background: linear-gradient(135deg, #3a1018, #260a10); border-color: var(--ruby); box-shadow: 0 0 28px var(--ruby-glow); }
+  .result.tier-diamond{ background: linear-gradient(135deg, #16323d, #0f242c); border-color: var(--diamond); box-shadow: 0 0 30px var(--diamond-glow); }
+  .result.tier-brill  { background: linear-gradient(135deg, #2a2a44, #1a1a30); border-color: var(--brill); box-shadow: 0 0 40px var(--brill-glow), 0 0 80px rgba(255,255,255,.3); }
+  body.light .result.tier-coal   { background: linear-gradient(135deg, #eaeaea, #dcdcdc); }
+  body.light .result.tier-bronze { background: linear-gradient(135deg, #f7e5d4, #eccfb8); }
+  body.light .result.tier-silver { background: linear-gradient(135deg, #f0f0f4, #e0e0e8); }
+  body.light .result.tier-gold   { background: linear-gradient(135deg, #fff5d6, #ffe9a8); }
+  body.light .result.tier-plat   { background: linear-gradient(135deg, #eef7f8, #d8ebee); }
+  body.light .result.tier-ruby   { background: linear-gradient(135deg, #fbe2e7, #f5c4cc); }
+  body.light .result.tier-diamond{ background: linear-gradient(135deg, #e2f3fb, #c8e8f5); }
+  body.light .result.tier-brill  { background: linear-gradient(135deg, #ffffff, #eef0ff); }
+
+  .result .tier-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin-bottom: 8px;
+    font-size: 1rem; font-weight: 700;
+    letter-spacing: .02em; text-transform: uppercase;
+  }
+  .result .tier-emoji { font-size: 1.4rem; filter: drop-shadow(0 0 10px currentColor); }
+  .result .score-block {
+    display: flex; align-items: center; justify-content: center;
+    gap: 22px; margin-top: 4px;
+  }
+  .result .ring-wrap {
+    width: 130px; height: 130px;
+    position: relative; flex-shrink: 0;
+  }
+  .result .ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring-wrap.spin .ring { animation: ringSpin .9s cubic-bezier(.4,.1,.3,1); }
+  @keyframes ringSpin { 0% { transform: rotate(-90deg); } 100% { transform: rotate(630deg); } }
+  .result .ring .bg { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 10; }
+  body.light .result .ring .bg { stroke: rgba(0,0,0,.06); }
+  .result .ring .fg {
+    fill: none; stroke-width: 10; stroke-linecap: round;
+    transition: stroke-dashoffset .6s cubic-bezier(.2,.8,.2,1), stroke .8s;
+  }
+  .result.tier-coal    .ring .fg { stroke: var(--coal); }
+  .result.tier-bronze  .ring .fg { stroke: var(--bronze); }
+  .result.tier-silver  .ring .fg { stroke: var(--silver); }
+  .result.tier-gold    .ring .fg { stroke: var(--gold-lvl); }
+  .result.tier-plat    .ring .fg { stroke: var(--plat); }
+  .result.tier-ruby    .ring .fg { stroke: var(--ruby); }
+  .result.tier-diamond .ring .fg { stroke: var(--diamond); }
+  .result.tier-brill   .ring .fg { stroke: var(--brill); }
+
+  .result .ring-text {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .result .ring-text .num {
+    font-size: 2.4rem; font-weight: 800; line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    letter-spacing: -.03em;
+    transition: color .5s, text-shadow .5s, transform .3s;
+  }
+  .result .ring-text .of { font-size: .8rem; color: var(--text-dim); margin-top: 4px; }
+  .result .side { text-align: left; flex: 1; min-width: 0; }
+  .result .verdict {
+    font-size: 1.05rem; font-weight: 600;
+    color: var(--text); opacity: .95; line-height: 1.35;
+  }
+
+  .details {
+    margin-top: 16px; font-size: .84rem; color: var(--text-mid); line-height: 1.7;
+    text-align: left; background: rgba(0,0,0,.18);
+    padding: 14px 18px; border-radius: 12px;
+    border: 1px solid var(--border-soft);
+  }
+  body.light .details { background: rgba(0,0,0,.04); }
+
+  .histogram {
+    margin-top: 16px; padding: 14px 16px 10px;
+    background: rgba(0,0,0,.18); border-radius: 12px;
+    border: 1px solid var(--border-soft); text-align: left;
+  }
+  body.light .histogram { background: rgba(0,0,0,.04); }
+  .histogram-title {
+    font-size: .74rem; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--text-dim);
+    margin-bottom: 12px; font-weight: 600;
+  }
+  .hist-bars {
+    display: grid; grid-template-columns: repeat(10, 1fr);
+    gap: 6px; align-items: end; height: 60px;
+  }
+  .hist-col {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; height: 100%; justify-content: flex-end;
+  }
+  .hist-bar-wrap {
+    width: 100%; height: 100%;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .hist-bar {
+    width: 100%; max-width: 24px;
+    background: linear-gradient(180deg, var(--accent-3), var(--accent));
+    border-radius: 4px 4px 2px 2px; min-height: 3px;
+    transition: height .4s cubic-bezier(.2,.8,.2,1), background .3s;
+  }
+  .hist-bar.empty { background: var(--border); opacity: .35; }
+  .hist-label {
+    font-size: .7rem; color: var(--text-dim);
+    font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .hist-summary {
+    margin-top: 12px; font-size: .78rem;
+    color: var(--text-dim); line-height: 1.5;
+  }
+  .hist-summary b { color: var(--text-mid); }
+
+  .result-actions { display: flex; gap: 10px; margin-top: 14px; }
+  .result-actions button { flex: 1; }
+
+  /* SKELETON */
+  .skeleton {
+    background: linear-gradient(90deg,
+      var(--panel-3) 0%, var(--panel-2) 50%, var(--panel-3) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: 8px;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .skeleton-tile { aspect-ratio: 1; border-radius: 12px; }
+
+  /* HISTORY */
+  .history-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; gap: 10px; flex-wrap: wrap;
+  }
+  .history-header h2 {
+    font-size: 1.15rem; color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .history-list {
+    display: flex; flex-direction: column; gap: 10px;
+    max-height: 520px; overflow-y: auto; padding: 4px;
+  }
+  .history-item {
+    display: flex; gap: 12px; align-items: center;
+    background: var(--panel-2); border: 1px solid var(--border-soft);
+    border-radius: 14px; padding: 10px 12px; cursor: pointer;
+    transition: transform .18s, border-color .2s, background .2s, box-shadow .25s;
+    animation: fadeUp .3s ease both;
+    position: relative;
+  }
+  .history-item:hover {
+    background: var(--panel-3); border-color: var(--accent);
+    transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,.35);
+  }
+  .history-item img {
+    width: 52px; height: 52px; border-radius: 9px; object-fit: cover;
+    flex-shrink: 0; background: var(--panel-3);
+  }
+  .history-item .info { flex: 1; min-width: 0; }
+  .history-item .title {
+    font-weight: 600; color: var(--text); font-size: .92rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .history-item .artist {
+    font-size: .8rem; color: var(--text-dim); margin-top: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .history-item .tier-tag {
+    font-size: .7rem; padding: 3px 8px; border-radius: 20px;
+    background: var(--panel-3); color: var(--text-mid);
+    font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; white-space: nowrap; flex-shrink: 0;
+  }
+  .history-item .score {
+    font-weight: 800; font-size: 1.15rem;
+    padding: 0 6px; font-variant-numeric: tabular-nums; flex-shrink: 0;
+  }
+  /* Цвета оценки по тиру */
+  .history-item.tier-coal   .score { color: var(--coal); }
+  .history-item.tier-bronze .score { color: var(--bronze); }
+  .history-item.tier-silver .score { color: var(--silver); }
+  .history-item.tier-gold   .score { color: var(--gold-lvl); }
+  .history-item.tier-plat   .score { color: var(--plat); }
+  .history-item.tier-ruby   .score { color: var(--ruby); }
+  .history-item.tier-diamond .score { color: var(--diamond); }
+  .history-item.tier-brill  .score {
+    color: #fff;
+    text-shadow: 0 0 10px var(--brill-glow), 0 0 22px var(--brill-glow);
+    animation: brillShine 2.4s ease-in-out infinite;
+  }
+  @keyframes brillShine {
+    0%, 100% { filter: brightness(1); }
+    50%      { filter: brightness(1.4); }
+  }
+  .history-item.tier-brill {
+    border-color: rgba(255,255,255,.4);
+    box-shadow: 0 0 20px rgba(255,255,255,.15);
+  }
+  .history-item .del {
+    width: 32px; height: 32px; padding: 0;
+    background: transparent; color: var(--text-dim);
+    border: 1px solid transparent; border-radius: 9px;
+    font-size: 1.05rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: none; flex-shrink: 0;
+  }
+  .history-item .del:hover {
+    color: var(--danger); border-color: var(--danger);
+    background: rgba(255,107,138,.1);
+    transform: none; filter: none; box-shadow: none;
+  }
+
+  /* SORT BAR */
+  .sort-bar {
+    display: flex; gap: 10px; align-items: center;
+    margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .sort-bar label { margin: 0; font-size: .82rem; }
+  .sort-bar select {
+    padding: 8px 12px; border-radius: 10px;
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); cursor: pointer;
+    font-size: .85rem; font-family: inherit;
+    outline: none; transition: border-color .2s;
+  }
+  .sort-bar select:focus { border-color: var(--accent); }
+
+  .artist-stats {
+    background: linear-gradient(135deg, var(--panel-2), var(--panel-3));
+    border: 1px solid var(--border-soft);
+    border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;
+    font-size: .88rem; color: var(--text-mid); line-height: 1.7;
+  }
+  .artist-stats b { color: var(--accent-3); }
+
+  .empty-msg {
+    text-align: center; color: var(--text-dim);
+    padding: 40px 20px; font-size: .9rem; line-height: 1.7;
+  }
+
+  /* BOARD */
+  .board-list {
+    display: flex; flex-direction: column; gap: 12px;
+    max-height: 600px; overflow-y: auto; padding: 4px;
+  }
+  .board-item {
+    display: flex; gap: 14px; align-items: center;
+    background: var(--panel-2); border: 1px solid var(--border-soft);
+    border-radius: 14px; padding: 12px;
+    cursor: pointer;
+    transition: transform .18s, border-color .2s, background .2s, box-shadow .25s;
+    animation: fadeUp .3s ease both;
+    position: relative;
+  }
+  .board-item:hover {
+    background: var(--panel-3); border-color: var(--accent);
+    transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,.35);
+  }
+  .board-item img {
+    width: 64px; height: 64px; border-radius: 10px; object-fit: cover;
+    flex-shrink: 0; background: var(--panel-3);
+    box-shadow: 0 6px 16px rgba(0,0,0,.3);
+  }
+  .board-item .info { flex: 1; min-width: 0; }
+  .board-item .title {
+    font-weight: 700; color: var(--text); font-size: .95rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .board-item .artist {
+    font-size: .82rem; color: var(--text-dim); margin-top: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .board-item .numbers {
+    display: flex; gap: 14px; flex-shrink: 0;
+    align-items: center;
+  }
+  .num-block {
+    text-align: center;
+    min-width: 52px;
+  }
+  .num-block .num-label {
+    font-size: .68rem; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: .04em;
+    margin-bottom: 3px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .num-block .num-value {
+    font-size: 1.25rem; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    transition: color .3s;
+  }
+  .num-block.avg .num-value { color: var(--accent-3); }
+  .num-block.admin .num-value { color: var(--gold-lvl); }
+  .num-block.none .num-value { color: var(--text-dim); font-weight: 500; font-size: 1.05rem; }
+
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s;
+  }
+  .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+  .modal {
+    background: var(--panel);
+    border-radius: 20px;
+    padding: 26px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 40px 100px rgba(0,0,0,.6);
+    border: 1px solid var(--border);
+    transform: scale(.94) translateY(10px);
+    transition: transform .3s cubic-bezier(.2,.8,.2,1);
+    position: relative;
+  }
+  .modal-backdrop.open .modal { transform: scale(1) translateY(0); }
+  .modal .close-btn {
+    position: absolute; top: 14px; right: 14px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--panel-2); color: var(--text-dim);
+    border: 1px solid var(--border); font-size: 1.1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    padding: 0; box-shadow: none; z-index: 2;
+  }
+  .modal .close-btn:hover { color: var(--danger); border-color: var(--danger); transform: none; box-shadow: none; filter: none; }
+  .modal .track-header {
+    display: flex; gap: 14px; align-items: center;
+    margin-bottom: 20px; padding-right: 44px;
+  }
+  .modal .track-header img {
+    width: 64px; height: 64px; border-radius: 10px; object-fit: cover;
+    background: var(--panel-3); flex-shrink: 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,.3);
+  }
+  .modal .track-header .info { flex: 1; min-width: 0; }
+  .modal .track-header .track-title {
+    font-size: 1.05rem; font-weight: 700; color: var(--text);
+    margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .modal .track-header .track-artist {
+    font-size: .84rem; color: var(--text-dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .help-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--panel-2); color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 5px 12px; font-size: .78rem; font-weight: 600;
+    cursor: pointer; box-shadow: none; margin-bottom: 12px;
+    transition: border-color .15s, color .15s;
+  }
+  .help-toggle:hover { color: var(--accent-3); border-color: var(--accent); transform: none; filter: none; box-shadow: none; }
+  .criteria-help {
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    font-size: .84rem;
+    line-height: 1.65;
+    color: var(--text-mid);
+    animation: fadeUp .25s ease;
+  }
+  .criteria-help .row { margin-bottom: 10px; padding-left: 4px; }
+  .criteria-help .row:last-child { margin-bottom: 0; }
+  .criteria-help b { color: var(--text); font-weight: 700; }
+  .criteria-help .ex { color: var(--text-dim); font-style: italic; font-size: .8rem; display: block; margin-top: 2px; }
+
+  .criterion {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .criterion:last-of-type { border-bottom: none; }
+  .criterion-head {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; margin-bottom: 8px;
+  }
+  .criterion-name {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .9rem; font-weight: 600; color: var(--text);
+  }
+  .criterion-emoji { font-size: 1.05rem; }
+  .criterion-val {
+    font-size: .95rem; font-weight: 700;
+    color: var(--accent-3);
+    font-variant-numeric: tabular-nums;
+    min-width: 32px; text-align: right;
+  }
+  .criterion-controls { display: flex; align-items: center; gap: 10px; }
+  .criterion-controls .stars { flex: 0 0 auto; }
+  .criterion-controls input[type="range"] { flex: 1; }
+
+  .modal-total {
+    margin-top: 18px; padding: 16px;
+    background: linear-gradient(135deg, var(--panel-2), var(--panel-3));
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+  }
+  .modal-total .label { font-size: .82rem; color: var(--text-dim); margin-bottom: 4px; }
+  .modal-total .value {
+    font-size: 2rem; font-weight: 800;
+    color: var(--accent-3);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -.02em;
+    transition: color .3s;
+  }
+  .modal-total .value.max { color: var(--gold-1); text-shadow: 0 0 14px var(--gold-glow); }
+  .modal-total .hint { font-size: .72rem; color: var(--text-dim); margin-top: 6px; }
+  .modal-total button { flex-shrink: 0; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; padding: 13px 22px; border-radius: 12px;
+    font-size: .9rem; font-weight: 600;
+    box-shadow: 0 14px 40px var(--accent-glow);
+    z-index: 1000; opacity: 0; pointer-events: none;
+    transition: opacity .3s, transform .3s;
+    max-width: 90vw; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* MOBILE */
+  @media (max-width: 700px) {
+    body { padding: 12px 8px 40px; }
+    .container { padding: 18px 14px; border-radius: 18px; }
+    .top-bar h1 { font-size: 1.2rem; }
+    .icon-btn { width: 40px; height: 40px; font-size: 1.05rem; }
+    .subtitle { font-size: .8rem; margin-bottom: 16px; }
+    .source-tabs { flex-direction: column; gap: 8px; }
+    .source-tab { padding: 14px 14px; }
+    .source-tab .headline { font-size: .95rem; }
+    .source-tab .subline { font-size: .72rem; }
+    .tabs { padding: 4px; }
+    .tab { font-size: .82rem; padding: 10px 8px; }
+    input[type="text"] { font-size: 1rem; padding: 14px 16px; }
+    .album-card { padding: 12px; gap: 12px; min-height: 90px; }
+    .album-card img.cover { width: 68px; height: 68px; }
+    .album-card .info .title { font-size: .95rem; }
+    .album-card .info .artist { font-size: .8rem; }
+    .tracks-card { padding: 8px; max-height: 500px; }
+    .track-row {
+      flex-direction: column; align-items: stretch; gap: 8px; padding: 12px;
+      position: relative;
+    }
+    .track-row .track-name { flex: 1 1 auto; font-size: .92rem; padding: 4px 0; }
+    .track-row .control { flex: 1 1 auto; min-width: 0; }
+    .track-row .range-val {
+      flex: 0 0 auto; font-size: 1rem; min-width: 32px;
+      text-align: right; position: absolute; right: 12px; top: 14px;
+    }
+    input[type="range"] { height: 8px; }
+    input[type="range"]::-webkit-slider-thumb { width: 26px; height: 26px; }
+    input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; }
+    .stars { gap: 6px; }
+    .star { font-size: 1.4rem; }
+    .overall-card { padding: 12px; }
+    .overall-body { flex-direction: column; align-items: stretch; gap: 10px; }
+    .overall-body .control { flex: 1 1 auto; }
+    .overall-body .auto-btn { width: 100%; }
+    .result { padding: 18px 16px; }
+    .result .score-block { flex-direction: column; gap: 12px; }
+    .result .side { text-align: center; }
+    .result .ring-wrap { width: 110px; height: 110px; }
+    .result .ring-text .num { font-size: 2rem; }
+    .details { padding: 12px 14px; font-size: .8rem; }
+    .hist-bars { height: 50px; gap: 4px; }
+    .hist-label { font-size: .65rem; }
+    .result-actions { flex-direction: column; }
+    .modal-backdrop { padding: 0; align-items: flex-end; }
+    .modal { border-radius: 22px 22px 0 0; padding: 22px 18px; max-height: 92vh; transform: translateY(100%); }
+    .modal-backdrop.open .modal { transform: translateY(0); }
+    .modal .track-header .track-title { font-size: .98rem; }
+    .criterion-name { font-size: .86rem; }
+    .criterion-controls { gap: 8px; }
+    .criterion-controls .stars .star { font-size: 1.15rem; }
+    .modal-total { flex-direction: column; align-items: stretch; gap: 12px; text-align: center; }
+    .modal-total .value { font-size: 2.4rem; }
+    .modal-total button { width: 100%; padding: 14px; font-size: 1rem; }
+    .history-item { padding: 10px; gap: 10px; }
+    .history-item img { width: 44px; height: 44px; }
+    .history-item .tier-tag { display: none; }
+    .history-item .score { font-size: 1rem; }
+    .toast { bottom: 16px; font-size: .85rem; padding: 12px 18px; }
+    .board-item { flex-wrap: wrap; gap: 10px; padding: 10px; }
+    .board-item img { width: 52px; height: 52px; }
+    .board-item .numbers { width: 100%; justify-content: space-around; gap: 8px; margin-top: 4px; }
+    .num-block { min-width: 0; flex: 1; }
+  }
+  @media (max-width: 420px) {
+    .tab { font-size: .74rem; padding: 9px 6px; gap: 4px; }
+    .track-row .track-name { font-size: .86rem; }
+    .star { font-size: 1.25rem; }
+  }
+  @media (hover: none) {
+    .track-row:hover { transform: none; }
+    .album-tile:hover { transform: none; }
+    .history-item:hover { transform: none; }
+    .board-item:hover { transform: none; }
+  }
+
+  /* NAV BUTTONS */
+  .nav-btn {
+    padding: 8px 14px; border-radius: 10px; font-size: .85rem;
+    background: var(--panel-2); color: var(--text-dim);
+    border: 1px solid var(--border); cursor: pointer;
+    font-weight: 600; white-space: nowrap;
+    transition: background .2s, color .2s, border-color .2s;
+    box-shadow: none;
+  }
+  .nav-btn:hover { background: var(--panel-3); color: var(--text); transform: none; box-shadow: none; filter: none; border-color: var(--accent); }
+  .nav-btn.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border-color: transparent; box-shadow: 0 4px 12px var(--accent-glow); }
+
+  /* TOPS SECTION */
+  .tops-tabs { display: flex; gap: 6px; margin-bottom: 14px; background: var(--panel-2); padding: 5px; border-radius: 12px; border: 1px solid var(--border-soft); }
+  .tops-tab { flex: 1; padding: 10px 12px; border-radius: 9px; background: transparent; color: var(--text-dim); border: none; cursor: pointer; font-size: .85rem; font-weight: 600; box-shadow: none; transition: background .2s, color .2s; }
+  .tops-tab:hover { color: var(--text-mid); transform: none; box-shadow: none; filter: none; background: transparent; }
+  .tops-tab.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: 0 6px 14px var(--accent-glow); }
+  .tops-list { display: flex; flex-direction: column; gap: 10px; }
+  .top-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--panel-2); border: 1px solid var(--border-soft); border-radius: 12px; cursor: pointer; transition: transform .15s, border-color .2s; }
+  .top-item:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .top-item .rank { font-size: 1.3rem; font-weight: 800; color: var(--text-dim); min-width: 32px; text-align: center; }
+  .top-item img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+  .top-item .info { flex: 1; min-width: 0; }
+  .top-item .info .title { font-weight: 700; color: var(--text); font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top-item .info .artist { font-size: .8rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top-item .score-badge { font-weight: 800; font-size: 1.1rem; color: var(--accent-3); font-variant-numeric: tabular-nums; }
+  .top-item .count-badge { font-size: .72rem; color: var(--text-dim); text-align: right; }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); }
+  .empty-state h3 { font-size: 1.1rem; color: var(--text-mid); margin-bottom: 8px; }
+  .empty-state p { font-size: .88rem; margin-bottom: 16px; }
+  .empty-state button { max-width: 240px; margin: 0 auto; }
+
+  /* COMMENTS */
+  .comments-section { margin-top: 18px; }
+  .comments-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .comments-header .lbl { font-size: .9rem; font-weight: 600; color: var(--text-mid); }
+  .comment-input-wrap { display: flex; gap: 8px; margin-bottom: 14px; }
+  .comment-input-wrap textarea { flex: 1; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--panel-2); color: var(--text); font-size: .88rem; resize: none; height: 60px; outline: none; transition: border-color .2s; font-family: inherit; }
+  .comment-input-wrap textarea:focus { border-color: var(--accent); }
+  .comment-input-wrap button { padding: 0 18px; white-space: nowrap; }
+  .comment-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+  .comment-item { display: flex; gap: 10px; padding: 10px 12px; background: var(--panel-2); border: 1px solid var(--border-soft); border-radius: 10px; }
+  .comment-item .avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: .75rem; flex-shrink: 0; text-transform: uppercase; }
+  .comment-item .body { flex: 1; min-width: 0; }
+  .comment-item .body .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .comment-item .body .nick { font-weight: 700; font-size: .82rem; color: var(--text); }
+  .comment-item .body .time { font-size: .72rem; color: var(--text-dim); flex-shrink: 0; }
+  .comment-item .body .text { font-size: .85rem; color: var(--text-mid); margin-top: 4px; word-wrap: break-word; }
+  .comment-item .del-btn { background: none; border: none; box-shadow: none; padding: 0; color: var(--text-dim); cursor: pointer; font-size: .72rem; opacity: .6; }
+  .comment-item .del-btn:hover { color: var(--danger); opacity: 1; transform: none; box-shadow: none; filter: none; }
+  .comment-emoji { font-size: 1.4rem; }
+
+  /* PROFILE MODAL */
+  .profile-field { margin-bottom: 16px; }
+  .profile-field label { display: block; font-size: .82rem; color: var(--text-dim); margin-bottom: 6px; }
+  .profile-field input { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--panel); color: var(--text); font-size: .92rem; outline: none; font-family: inherit; }
+  .profile-field input:focus { border-color: var(--accent); }
+  .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 8px; }
+  .emoji-option { padding: 8px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--panel); cursor: pointer; font-size: 1.4rem; text-align: center; transition: border-color .2s, background .2s; }
+  .emoji-option:hover { border-color: var(--accent); background: var(--panel-3); }
+  .emoji-option.selected { border-color: var(--accent); background: var(--accent-glow); }
+
+  /* HELP MODAL */
+  .help-modal-body { max-width: 560px; }
+  .help-modal-body h3 { font-size: 1rem; color: var(--text); margin: 16px 0 8px; }
+  .help-modal-body p { font-size: .86rem; color: var(--text-mid); line-height: 1.5; margin-bottom: 8px; }
+  .help-modal-body ol { padding-left: 20px; margin-bottom: 12px; }
+  .help-modal-body ol li { font-size: .86rem; color: var(--text-mid); margin-bottom: 6px; }
+
+  /* TIER COLORS on board/tops items */
+  .board-item, .top-item { border-left: 3px solid var(--border); }
+  .board-item.tier-coal, .top-item.tier-coal { border-left-color: var(--coal); }
+  .board-item.tier-bronze, .top-item.tier-bronze { border-left-color: var(--bronze); }
+  .board-item.tier-silver, .top-item.tier-silver { border-left-color: var(--silver); }
+  .board-item.tier-gold, .top-item.tier-gold { border-left-color: var(--gold-lvl); }
+  .board-item.tier-plat, .top-item.tier-plat { border-left-color: var(--plat); }
+  .board-item.tier-ruby, .top-item.tier-ruby { border-left-color: var(--ruby); }
+  .board-item.tier-diamond, .top-item.tier-diamond { border-left-color: var(--diamond); }
+  .board-item.tier-brill, .top-item.tier-brill { border-left-color: var(--brill); }
+
+  /* COUNT BADGE on board */
+  .count-pill { display: inline-block; padding: 2px 8px; border-radius: 12px; background: var(--panel-3); color: var(--text-dim); font-size: .7rem; font-weight: 600; }
+
+  /* ONBOARDING TOUR */
+  .tour-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; display: none; }
+  .tour-overlay.show { display: block; }
+  .tour-popover { position: fixed; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 340px; z-index: 201; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .tour-popover h3 { font-size: 1.1rem; margin-bottom: 10px; color: var(--text); }
+  .tour-popover p { font-size: .88rem; color: var(--text-mid); margin-bottom: 16px; line-height: 1.5; }
+  .tour-popover .tour-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .tour-popover .tour-dots { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .tour-dot.active { background: var(--accent); }
+
+</style>
+</head>
+<body>
+
+<!-- ЭКРАН АВТОРИЗАЦИИ -->
+<div class="container hidden" id="authContainer">
+  <div class="auth-screen">
+    <h2 id="authTitle">Вход</h2>
+    <p id="authSubtitle">Войдите, чтобы сохранять оценки и видеть доску</p>
+
+    <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
+    <input type="password" id="authPassword" placeholder="Пароль" autocomplete="current-password">
+    <input type="text" id="authNick" placeholder="Никнейм (только при регистрации)" class="hidden" maxlength="20" autocomplete="nickname">
+
+    <button onclick="handleAuthSubmit()" id="authSubmitBtn">Войти</button>
+    <div class="auth-error" id="authError"></div>
+
+    <div class="auth-switch">
+      <span id="authSwitchText">Нет аккаунта?</span>
+      <button onclick="toggleAuthMode()" id="authSwitchBtn">Зарегистрироваться</button>
+    </div>
+  </div>
+</div>
+
+<!-- ОСНОВНОЙ ЭКРАН -->
+<div class="container hidden" id="mainContainer">
+
+  <!-- Шапка -->
+  <div class="top-bar">
+    <h1>🎵 Оценка альбома</h1>
+    <div class="top-actions">
+      <button class="nav-btn active" data-nav="evaluate" onclick="navTo('evaluate')">🎵 Оценивать</button>
+      <button class="nav-btn" data-nav="board" onclick="navTo('board')">📊 Доска</button>
+      <button class="nav-btn" data-nav="tops" onclick="navTo('tops')">🏆 Топы</button>
+      <button class="nav-btn" data-nav="myratings" onclick="navTo('myratings')">💿 Мои оценки</button>
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Сменить тему">🌙</button>
+      <button class="icon-btn" onclick="openHelp()" title="Помощь">?</button>
+      <div class="user-chip" id="userChip" onclick="openProfileModal()" style="cursor:pointer">
+        <div class="avatar" id="userAvatar">?</div>
+        <span class="nick" id="userNick">—</span>
+        <button class="logout" onclick="event.stopPropagation(); handleLogout()" title="Выйти">Выйти</button>
+      </div>
+    </div>
+  </div>
+  <p class="subtitle">Оценивайте треки, ставьте общее впечатление — итог считается сам</p>
+
+  <!-- ШАГ 1: поиск -->
+  <div class="section" id="step1">
+
+    <div class="source-block">
+      <div class="source-label">Что ищем?</div>
+      <div class="source-tabs">
+        <button class="source-tab" data-src="deezer" onclick="setSource('deezer')">
+          <span class="headline">🎧 Русская и популярная музыка</span>
+          <span class="subline">Ищет русскоязычные, современные и мейнстримные альбомы</span>
+        </button>
+        <button class="source-tab" data-src="discogs" onclick="setSource('discogs')">
+          <span class="headline">💽 Западные и редкие издания</span>
+          <span class="subline">Глубокий каталог западных релизов, старых и нишевых записей</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="search" onclick="switchTab('search')">🔍 Поиск</button>
+      <button class="tab" data-tab="new" onclick="switchTab('new')">🆕 Свежие</button>
+      <button class="tab" data-tab="top" onclick="switchTab('top')">🔥 Топ</button>
+    </div>
+
+    <div id="tab-search">
+      <div class="autocomplete-wrap">
+        <input type="text" id="searchInput" autocomplete="off" spellcheck="false"
+               placeholder="Например: Radiohead In Rainbows"
+               oninput="onSearchInput()"
+               onkeydown="onSearchKeydown(event)"
+               onfocus="if (lastSuggestions.length) showSuggestions()">
+        <div class="autocomplete-list" id="suggestionList"></div>
+      </div>
+      <p class="hint">↑/↓ — навигация, Enter — выбрать, Esc — закрыть</p>
+    </div>
+
+    <div id="tab-new" class="hidden">
+      <div class="album-grid" id="newGrid"></div>
+    </div>
+
+    <div id="tab-top" class="hidden">
+      <div class="album-grid" id="topGrid"></div>
+    </div>
+
+    <div id="errorBox" class="error"></div>
+  </div>
+
+  <!-- ШАГ 2: оценка альбома -->
+  <div class="section hidden" id="step2">
+
+    <!-- Карточка альбома -->
+    <div class="album-card" id="albumCard"></div>
+
+    <!-- Кнопки под альбомом -->
+    <div class="album-actions">
+      <button class="btn-secondary" onclick="reset()">↺ Выбрать другой альбом</button>
+      <button class="btn-secondary" onclick="navTo('board')">📊 На доску</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Треки -->
+    <div class="rating-mode">
+      <div class="label">Оценки треков (1–10) · клик по названию — подробная оценка</div>
+      <div class="modes">
+        <button class="mode-btn" data-mode="slider" onclick="setRatingMode('slider')">Ползунки</button>
+        <button class="mode-btn" data-mode="stars" onclick="setRatingMode('stars')">Звёзды</button>
+      </div>
+    </div>
+    <div class="tracks-card" id="tracksCard">
+      <div class="tracks-list" id="tracksList"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Общее впечатление -->
+    <div class="overall-card">
+      <div class="overall-head">
+        <div class="lbl">Общее впечатление от альбома</div>
+        <div class="badge" id="overallBadge">7 / 10</div>
+      </div>
+      <div class="overall-body" id="overallRow"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Результат -->
+    <div class="result" id="resultBox">
+      <div class="tier-row" id="tierRow">
+        <span class="tier-emoji" id="tierEmoji">🥉</span>
+        <span id="tierName">Бронза</span>
+      </div>
+      <div class="score-block">
+        <div class="ring-wrap" id="ringWrap">
+          <svg class="ring" viewBox="0 0 120 120">
+            <circle class="bg" cx="60" cy="60" r="50"/>
+            <circle class="fg" id="ringFg" cx="60" cy="60" r="50"
+                    stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+          </svg>
+          <div class="ring-text">
+            <div class="num" id="finalScore">—</div>
+            <div class="of">из 360</div>
+          </div>
+        </div>
+        <div class="side">
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </div>
+      <div class="details" id="details"></div>
+      <div class="histogram" id="histogramBox">
+        <div class="histogram-title">Распределение оценок</div>
+        <div class="hist-bars" id="histBars"></div>
+        <div class="hist-summary" id="histSummary"></div>
+      </div>
+    </div>
+
+    <!-- Кнопка "Поставить оценку" -->
+    <div class="result-actions">
+      <button id="rateBtn" onclick="submitRatingSmart()">⭐ Поставить оценку</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ДОСКИ ОЦЕНОК -->
+  <div class="section hidden" id="boardSection">
+    <div class="history-header">
+      <h2>📊 Доска оценок</h2>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-secondary btn-sm" onclick="refreshBoard()">↻ Обновить</button>
+        <button class="btn-secondary btn-sm" onclick="closeBoard()">← Назад</button>
+      </div>
+    </div>
+
+    <div class="sort-bar">
+      <label for="boardSort">Сортировка:</label>
+      <select id="boardSort" onchange="renderBoard()">
+        <option value="date_desc">По дате (новые)</option>
+        <option value="date_asc">По дате (старые)</option>
+        <option value="score_desc">По средней оценке ↓</option>
+        <option value="score_asc">По средней оценке ↑</option>
+        <option value="admin_desc">По оценке админа ↓</option>
+        <option value="admin_asc">По оценке админа ↑</option>
+        <option value="title_asc">По названию (А–Я)</option>
+        <option value="artist_asc">По артисту (А–Я)</option>
+      </select>
+      <span class="hint" id="boardStats" style="margin:0;"></span>
+    </div>
+
+    <div class="board-list" id="boardList"></div>
+  </div>
+
+  <!-- ЭКРАН МОИХ ОЦЕНОК -->
+  <div class="section hidden" id="historySection">
+    <div class="history-header">
+      <h2>💿 Мои оценки</h2>
+      <button class="btn-secondary btn-sm" onclick="closeHistory()">← Назад</button>
+    </div>
+
+    <div class="sort-bar">
+      <label for="historySort">Сортировка:</label>
+      <select id="historySort" onchange="renderHistory()">
+        <option value="date_desc">По дате (новые)</option>
+        <option value="date_asc">По дате (старые)</option>
+        <option value="score_desc">По оценке ↓</option>
+        <option value="score_asc">По оценке ↑</option>
+        <option value="title_asc">По названию (А–Я)</option>
+        <option value="artist_asc">По артисту (А–Я)</option>
+      </select>
+    </div>
+
+    <div id="artistStats"></div>
+    <div id="historyList" class="history-list"></div>
+  </div>
+
+  <!-- ЭКРАН ТОПОВ -->
+  <div class="section hidden" id="topsSection">
+    <div class="history-header">
+      <h2>🏆 Топы</h2>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-secondary btn-sm" onclick="refreshTops()">↻ Обновить</button>
+        <button class="btn-secondary btn-sm" onclick="closeTops()">← Назад</button>
+      </div>
+    </div>
+    <div class="tops-tabs">
+      <button class="tops-tab active" data-period="all" onclick="switchTopsPeriod('all')">За всё время</button>
+      <button class="tops-tab" data-period="month" onclick="switchTopsPeriod('month')">За месяц</button>
+      <button class="tops-tab" data-period="week" onclick="switchTopsPeriod('week')">За неделю</button>
+    </div>
+    <div class="tops-list" id="topsList"></div>
+  </div>
+
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ПРОФИЛЯ -->
+<div class="modal-backdrop" id="profileModalBackdrop" onclick="if(event.target===this) closeProfileModal()">
+  <div class="modal" style="max-width:420px;">
+    <button class="close-btn" onclick="closeProfileModal()" title="Закрыть">✕</button>
+    <div class="track-header" style="margin-bottom:20px;">
+      <div class="avatar" id="profileAvatarPreview" style="width:56px; height:56px; font-size:1.6rem; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700;">?</div>
+      <div class="info">
+        <div class="track-title" style="font-size:1.1rem;">Профиль</div>
+        <div class="track-artist" id="profileEmail">—</div>
+      </div>
+    </div>
+    <div class="profile-field">
+      <label for="profileNick">Никнейм</label>
+      <input type="text" id="profileNick" maxlength="20" placeholder="Ваш никнейм">
+      <div class="hint" id="profileNickHint" style="color:var(--text-dim);"></div>
+    </div>
+    <div class="profile-field">
+      <label>Аватарка (эмодзи)</label>
+      <div class="emoji-grid" id="emojiGrid"></div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:20px;">
+      <button onclick="saveProfile()" style="flex:1;">💾 Сохранить</button>
+      <button class="btn-secondary" onclick="closeProfileModal()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ПОМОЩИ -->
+<div class="modal-backdrop" id="helpModalBackdrop" onclick="if(event.target===this) closeHelpModal()">
+  <div class="modal help-modal-body">
+    <button class="close-btn" onclick="closeHelpModal()" title="Закрыть">✕</button>
+    <h2 style="font-size:1.2rem; margin-bottom:16px;">📖 Как пользоваться</h2>
+    <h3>1. Найдите альбом</h3>
+    <p>Выберите источник (русская/популярная или западные/редкие), затем воспользуйтесь поиском, разделом «Свежие» или «Топ».</p>
+    <h3>2. Оцените треки</h3>
+    <p>Каждый трек получает оценку 1–10. Клик по названию трека открывает детальную оценку по 5 критериям.</p>
+    <h3>3. Поставьте общее впечатление</h3>
+    <p>Это множитель для всего альбома. Итог считается автоматически и нормализуется к 360.</p>
+    <h3>4. Синглы</h3>
+    <p>Если релиз — сингл (1 трек), оценка выставляется сразу по 5 критериям в шкале 360.</p>
+    <h3>5. Доска и Топы</h3>
+    <p>Все оценки пользователей собираются на доске. Топы показывают лучшие релизы за неделю, месяц и за всё время.</p>
+    <h3>6. Комментарии</h3>
+    <p>Под любым релизом на доске можно оставить комментарий. Автор может удалить свой.</p>
+    <h3>Критерии</h3>
+    <ol>
+      <li><b>Рифмы / образы</b> — качество текста и метафор</li>
+      <li><b>Структура / ритмика</b> — композиция и динамика</li>
+      <li><b>Реализация стиля</b> — воплощение жанра</li>
+      <li><b>Индивидуальность / харизма</b> — уникальность и подача</li>
+      <li><b>Атмосфера / вайб</b> — настроение и погружение (множитель)</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ONBOARDING TOUR -->
+<div class="tour-overlay" id="tourOverlay">
+  <div class="tour-popover" id="tourPopover">
+    <div class="tour-dots" id="tourDots"></div>
+    <h3 id="tourTitle"></h3>
+    <p id="tourText"></p>
+    <div class="tour-actions">
+      <button class="btn-secondary btn-sm" id="tourSkip" onclick="skipTour()">Пропустить</button>
+      <button class="btn-sm" id="tourNext" onclick="nextTourStep()">Далее</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ОЦЕНКИ ТРЕКА -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this) closeModal()">
+  <div class="modal" id="modal">
+    <button class="close-btn" onclick="closeModal()" title="Закрыть">✕</button>
+    <div class="track-header">
+      <img id="modalCover" alt="">
+      <div class="info">
+        <div class="track-title" id="modalTitle">—</div>
+        <div class="track-artist" id="modalArtist">—</div>
+      </div>
+    </div>
+
+    <button class="help-toggle" onclick="toggleHelp()">
+      <span>ℹ️</span><span>Что означают критерии?</span>
+    </button>
+
+    <div class="criteria-help hidden" id="helpBox">
+      <div class="row">
+        <b>🖋 Рифмы / образы</b> — качество текста: метафоры, сравнения, игра слов. Насколько оригинальны образы, точны ли рифмы, есть ли глубина или это набор банальных строк.
+        <span class="ex">Пример: 3 — приитивные рифмы «любовь-кровь», 7 — свежие образы и неожиданные ходы, 10 — каждый listened — откровение.</span>
+      </div>
+      <div class="row">
+        <b>🎼 Структура / ритмика</b> — композиция трека: куплет-припев, переходы, динамика. Насколько логично развивается песня, есть ли напряжение и расслабление, не ли затянут ли трек.
+        <span class="ex">Пример: 3 — монотонная структура без развития, 7 — выверенные переходы и динамика, 10 — идеальная архитектура, каждая секунда на месте.</span>
+      </div>
+      <div class="row">
+        <b>🎭 Реализация стиля</b> — насколько хорошо трек воплощает свой жанр. Если это хип-хоп — качающий бит, если рок — мощный грув, если электроника — продуманная фактура. Не копия ли это чужого звучания или свежая интерпретация.
+        <span class="ex">Пример: 3 — стиль не вытянут, звучит как пародия, 7 — уверенная работа в жанре, 10 — эталон этого стиля, другие будут равняться.</span>
+      </div>
+      <div class="row">
+        <b>⚡ Индивидуальность / харизма</b> — уникальность и подача. Узнаёшь ли исполнителя с первых секунд, есть ли у трека своё лицо, или это безликий продукт. Харизма голоса, манеры, энергии.
+        <span class="ex">Пример: 3 — звучит как десятки других, 7 — есть узнаваемые черты и характер, 10 — невозможно спутать ни с кем.</span>
+      </div>
+      <div class="row">
+        <b>🌌 Атмосфера / вайб</b> — настроение и погружение. Создаёт ли трек особое пространство, хочется ли в него возвращаться, есть ли «вайб». Работает как множитель: даже при средних критериях высокая атмосфера поднимает оценку.
+        <span class="ex">Пример: 3 — забывается сразу, 7 — приятное настроение и погружение, 10 — целый мир в одной песне, хочется проживать снова.</span>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <b>🔥 Общее впечатление (альбом)</b> — как лично тебе зашёл весь альбом, вне критериев треков. Работает как множитель для итоговой оценки альбома.
+      </div>
+      <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
+        <b>Формула для трека в альбоме:</b> среднее по 5 критериям × (атмосфера / вайб ÷ 10) → итог 1–10. Треки суммируются, умножаются на общее впечатление от альбома и нормализуются к 360.
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <b>Формула для сингла:</b> те же 5 критериев × множитель, но результат сразу по шкале 360 (× 3.6). Общая оценка релиза = оценка единственного трека.
+      </div>
+    </div>
+
+    <div id="criteriaList"></div>
+
+    <div class="modal-total">
+      <div>
+        <div class="label">Итоговая оценка трека</div>
+        <div class="value" id="modalTotal">—</div>
+        <div class="hint" id="modalHint">из 10</div>
+      </div>
+      <button onclick="applyModalRating()">✓ Применить</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ РЕЛИЗА НА ДОСКЕ -->
+<div class="modal-backdrop" id="boardModalBackdrop" onclick="if(event.target===this) closeBoardModal()">
+  <div class="modal" id="boardModal">
+    <button class="close-btn" onclick="closeBoardModal()" title="Закрыть">✕</button>
+    <div class="track-header">
+      <img id="boardModalCover" alt="">
+      <div class="info">
+        <div class="track-title" id="boardModalTitle">—</div>
+        <div class="track-artist" id="boardModalArtist">—</div>
+      </div>
+    </div>
+
+    <div class="modal-total" style="margin-top:0">
+      <div>
+        <div class="label">Средняя оценка всех</div>
+        <div class="value" id="boardModalAvg">—</div>
+        <div class="hint" id="boardModalAvgHint">из 360</div>
+      </div>
+      <div style="text-align:right">
+        <div class="label">Оценка админа</div>
+        <div class="value" id="boardModalAdmin" style="color:var(--gold-lvl)">—</div>
+        <div class="hint" id="boardModalAdminHint">из 360</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="overall-head" style="margin-bottom:10px">
+        <div class="lbl">Все оценки этого релиза</div>
+      </div>
+      <div id="boardModalUsers" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto;"></div>
+    </div>
+
+    <!-- КОММЕНТАРИИ -->
+    <div class="comments-section">
+      <div class="comments-header">
+        <div class="lbl">💬 Комментарии</div>
+      </div>
+      <div class="comment-input-wrap">
+        <textarea id="commentInput" placeholder="Напишите комментарий..." onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); submitComment(); }"></textarea>
+        <button class="btn-secondary btn-sm" onclick="submitComment()">Отправить</button>
+      </div>
+      <div class="comment-list" id="commentList"></div>
+    </div>
+
+    <div style="margin-top:18px; display:flex; gap:10px;">
+      <button onclick="openCalculatorFromBoard()" style="flex:1;">⭐ Поставить свою оценку</button>
+      <button class="btn-secondary" onclick="closeBoardModal()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script type="module">
+// ============================================================
+//  FIREBASE + FIRESTORE
+// ============================================================
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged, updateProfile
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  getFirestore, collection, doc, setDoc, getDoc, getDocs,
+  query, where, orderBy, deleteDoc, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDfDJaUGKPEh8udbup0g66uIWaz6uPbvRQ",
+  authDomain: "album-rating-9efaa.firebaseapp.com",
+  projectId: "album-rating-9efaa",
+  storageBucket: "album-rating-9efaa.firebasestorage.app",
+  messagingSenderId: "1051785148040",
+  appId: "1:1051785148040:web:40caab005218009126513d"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ============================================================
+//  КОНСТАНТЫ
+// ============================================================
+const ADMIN_UID = 'raYJInjPDLOvflxoaVvoKrbBsUc2';
+const DISCOGS_TOKEN = 'zpepVCgybqgOwbIRcJCzTjDCRkoxbbyCTSVNlxiV';
+const DISCOGS_BASE = 'https://api.discogs.com';
+
+const FINAL_MAX = 360;
+const MAX_TRACKS = 30;
+const DEBOUNCE_MS = 400;
+const LS_THEME  = 'albumRating_theme_v8';
+const LS_MODE   = 'albumRating_mode_v8';
+const LS_SOURCE = 'albumRating_source_v8';
+
+const TIERS = [
+  { min: 0.00, max: 0.15, emoji: '⚫', name: 'Уголь',      cssClass: 'tier-coal',    color: 'var(--coal)' },
+  { min: 0.15, max: 0.30, emoji: '🥉', name: 'Бронза',     cssClass: 'tier-bronze',  color: 'var(--bronze)' },
+  { min: 0.30, max: 0.45, emoji: '⚪', name: 'Серебро',    cssClass: 'tier-silver',  color: 'var(--silver)' },
+  { min: 0.45, max: 0.60, emoji: '🏅', name: 'Золото',     cssClass: 'tier-gold',    color: 'var(--gold-lvl)' },
+  { min: 0.60, max: 0.75, emoji: '💠', name: 'Платина',    cssClass: 'tier-plat',    color: 'var(--plat)' },
+  { min: 0.75, max: 0.90, emoji: '🔴', name: 'Рубин',      cssClass: 'tier-ruby',    color: 'var(--ruby)' },
+  { min: 0.90, max: 0.999,name: 'Алмаз',      emoji: '💎', cssClass: 'tier-diamond', color: 'var(--diamond)' },
+  { min: 0.999,max: 2.00, name: 'Бриллиант',  emoji: '👑', cssClass: 'tier-brill',   color: 'var(--brill)' }
+];
+
+const VERDICTS = {
+  'Уголь':     'Забудь и не вспоминай',
+  'Бронза':    'Есть моменты, но в целом мимо',
+  'Серебро':   'Середнячок с проблесками',
+  'Золото':    'Хороший альбом, к нему вернёшься',
+  'Платина':   'Отличный, много сильных треков',
+  'Рубин':     'Почти шедевр, редкие слабинки',
+  'Алмаз':     'Крепкий шедевр, слушать и слушать',
+  'Бриллиант': 'Идеальный альбом. Без единой слабины.'
+};
+
+const TRACK_CRITERIA = [
+  { key: 'rhymes',    emoji: '🖋', name: 'Рифмы / образы' },
+  { key: 'structure', emoji: '🎼', name: 'Структура / ритмика' },
+  { key: 'style',     emoji: '🎭', name: 'Реализация стиля' },
+  { key: 'charisma',  emoji: '⚡', name: 'Индивидуальность / харизма' },
+  { key: 'vibe',      emoji: '🌌', name: 'Атмосфера / вайб' }
+];
+
+function getTier(finalScore) {
+  const pct = finalScore / FINAL_MAX;
+  for (const t of TIERS) if (pct >= t.min && pct < t.max) return t;
+  return TIERS[TIERS.length - 1];
+}
+
+// ============================================================
+//  СОСТОЯНИЕ
+// ============================================================
+let currentUser = null;    // Firebase User
+let userProfile = null;    // { nickname, uid }
+let currentAlbum = null;
+let currentTracks = [];
+let ratingMode = 'slider';
+let overallValue = 7;
+let currentSource = 'deezer';
+let lastFinalScore = null;
+
+let trackDetails = {};     // trackIndex -> { music, lyrics, vocals, rhythm, vibe, overall }
+let lastSuggestions = [];
+let activeIndex = -1;
+let debounceTimer = null;
+
+let modalTrackIndex = -1;
+let modalValues = {};
+
+let boardData = [];        // массив релизов на доске
+let boardModalRelease = null;
+let isSingleRelease = false;  // сингл (1 трек) — оценка по 5 критериям в шкале 360
+
+// ============================================================
+//  АВТОРИЗАЦИЯ
+// ============================================================
+let authMode = 'login';    // 'login' | 'register'
+
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  const isReg = authMode === 'register';
+  document.getElementById('authTitle').textContent = isReg ? 'Регистрация' : 'Вход';
+  document.getElementById('authSubtitle').textContent = isReg
+    ? 'Создайте аккаунт, чтобы сохранять оценки'
+    : 'Войдите, чтобы сохранять оценки и видеть доску';
+  document.getElementById('authSubmitBtn').textContent = isReg ? 'Зарегистрироваться' : 'Войти';
+  document.getElementById('authSwitchText').textContent = isReg ? 'Уже есть аккаунт?' : 'Нет аккаунта?';
+  document.getElementById('authSwitchBtn').textContent = isReg ? 'Войти' : 'Зарегистрироваться';
+  document.getElementById('authNick').classList.toggle('hidden', !isReg);
+  document.getElementById('authError').textContent = '';
+}
+
+async function handleAuthSubmit() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const nick = document.getElementById('authNick').value.trim();
+  const errEl = document.getElementById('authError');
+  const btn = document.getElementById('authSubmitBtn');
+  errEl.textContent = '';
+
+  if (!email || !password) { errEl.textContent = 'Заполните email и пароль'; return; }
+  if (authMode === 'register' && !nick) { errEl.textContent = 'Введите никнейм'; return; }
+  if (password.length < 6) { errEl.textContent = 'Пароль минимум 6 символов'; return; }
+
+  btn.disabled = true;
+  try {
+    if (authMode === 'register') {
+      // Проверяем уникальность никнейма
+      const allUsersSnap = await getDocs(collection(db, 'users'));
+      const nickTaken = allUsersSnap.docs.some(d => {
+        const data = d.data();
+        return data.nickname && data.nickname.toLowerCase() === nick.toLowerCase();
+      });
+      if (nickTaken) {
+        errEl.textContent = 'Этот никнейм уже занят';
+        return;
+      }
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        nickname: nick,
+        email: email,
+        avatarEmoji: '',
+        createdAt: serverTimestamp()
+      });
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+  } catch (e) {
+    errEl.textContent = translateAuthError(e.code) || e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function translateAuthError(code) {
+  const map = {
+    'auth/email-already-in-use': 'Этот email уже зарегистрирован',
+    'auth/invalid-email': 'Неверный формат email',
+    'auth/weak-password': 'Слишком простой пароль',
+    'auth/user-not-found': 'Пользователь не найден',
+    'auth/wrong-password': 'Неверный пароль',
+    'auth/invalid-credential': 'Неверный email или пароль',
+    'auth/too-many-requests': 'Слишком много попыток, попробуйте позже'
+  };
+  return map[code];
+}
+
+async function handleLogout() {
+  await signOut(auth);
+}
+
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (user) {
+    // Подгружаем профиль
+    const userRef = doc(db, 'users', user.uid);
+    const snap = await getDoc(userRef);
+    if (snap.exists()) {
+      userProfile = snap.data();
+      // Проверяем онбординг
+      if (!localStorage.getItem('albumRating_tour_done')) {
+        setTimeout(() => startTour(), 500);
+      }
+    } else {
+      // Пользователь создан вне нашего приложения — создаём профиль
+      const nick = user.email.split('@')[0];
+      await setDoc(userRef, { nickname: nick, email: user.email, avatarEmoji: '', createdAt: serverTimestamp() });
+      userProfile = { nickname: nick, email: user.email, avatarEmoji: '' };
+    }
+    // Обновляем UI
+    document.getElementById('authContainer').classList.add('hidden');
+    document.getElementById('mainContainer').classList.remove('hidden');
+    updateUserChip();
+    await loadMyRatings();
+  } else {
+    userProfile = null;
+    document.getElementById('mainContainer').classList.add('hidden');
+    document.getElementById('authContainer').classList.remove('hidden');
+  }
+});
+
+function updateUserChip() {
+  const nick = userProfile ? userProfile.nickname : '?';
+  document.getElementById('userNick').textContent = nick;
+  const avatar = document.getElementById('userAvatar');
+  if (userProfile && userProfile.avatarEmoji) {
+    avatar.textContent = userProfile.avatarEmoji;
+    avatar.style.background = 'transparent';
+    avatar.style.fontSize = '1.2rem';
+  } else {
+    avatar.textContent = nick.charAt(0).toUpperCase();
+    avatar.style.background = colorFromString(nick);
+    avatar.style.fontSize = '.85rem';
+  }
+}
+
+function colorFromString(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 65%, 55%)`;
+}
+
+// ============================================================
+//  ТЕМА / РЕЖИМ / ИСТОЧНИК
+// ============================================================
+function initTheme() { applyTheme(localStorage.getItem(LS_THEME) || 'dark'); }
+function applyTheme(theme) {
+  document.body.classList.toggle('light', theme === 'light');
+  document.getElementById('themeBtn').textContent = theme === 'light' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const next = document.body.classList.contains('light') ? 'dark' : 'light';
+  applyTheme(next);
+  localStorage.setItem(LS_THEME, next);
+}
+window.toggleTheme = toggleTheme;
+
+function initRatingMode() { setRatingMode(localStorage.getItem(LS_MODE) || 'slider', false); }
+function setRatingMode(mode, rebuild = true) {
+  ratingMode = mode;
+  localStorage.setItem(LS_MODE, mode);
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  if (rebuild) {
+    const scores = [];
+    document.querySelectorAll('#tracksList .track-row').forEach(r => scores.push(getRowValue(r)));
+    renderTracks(scores);
+    renderOverall(overallValue);
+  }
+  updateScore();
+}
+window.setRatingMode = setRatingMode;
+
+function initSource() {
+  currentSource = localStorage.getItem(LS_SOURCE) || 'deezer';
+  applySourceUI();
+}
+function setSource(src) {
+  currentSource = src;
+  localStorage.setItem(LS_SOURCE, src);
+  applySourceUI();
+  document.getElementById('newGrid').dataset.loaded = '';
+  document.getElementById('topGrid').dataset.loaded = '';
+  document.getElementById('newGrid').innerHTML = '';
+  document.getElementById('topGrid').innerHTML = '';
+  lastSuggestions = []; closeSuggestions();
+  // Автоперезагрузка активной вкладки при смене источника
+  const activeTab = document.querySelector('.tab.active');
+  if (activeTab) {
+    const tabName = activeTab.dataset.tab;
+    if (tabName === 'new') loadNew();
+    else if (tabName === 'top') loadTop();
+  }
+  // Очищаем поле поиска
+  document.getElementById('searchInput').value = '';
+}
+window.setSource = setSource;
+
+function applySourceUI() {
+  document.querySelectorAll('.source-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.src === currentSource)
+  );
+}
+
+// ============================================================
+//  JSONP для Deezer
+// ============================================================
+let jsonpCounter = 0;
+function jsonp(url, timeoutMs = 12000) {
+  return new Promise((resolve, reject) => {
+    const cb = '__deezer_jsonp_' + (++jsonpCounter) + '_' + Date.now();
+    const script = document.createElement('script');
+    const cleanup = () => {
+      delete window[cb];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      clearTimeout(timer);
+    };
+    window[cb] = (data) => { cleanup(); resolve(data); };
+    const timer = setTimeout(() => { cleanup(); reject(new Error('Таймаут')); }, timeoutMs);
+    script.onerror = () => { cleanup(); reject(new Error('Ошибка загрузки')); };
+    script.src = url + (url.includes('?') ? '&' : '?') + 'output=jsonp&callback=' + cb;
+    document.head.appendChild(script);
+  });
+}
+
+// ============================================================
+//  Discogs
+// ============================================================
+async function discogsFetch(path, params = {}) {
+  const url = new URL(DISCOGS_BASE + path);
+  Object.entries(params).forEach(([k, v]) => {
+    if (Array.isArray(v)) v.forEach(x => url.searchParams.append(k, x));
+    else url.searchParams.set(k, v);
+  });
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': 'Discogs token=' + DISCOGS_TOKEN,
+      'User-Agent': 'AlbumRatingCalculator/1.0'
+    }
+  });
+  if (res.status === 401) throw new Error('неверный токен Discogs');
+  if (res.status === 429) throw new Error('слишком много запросов, подождите');
+  if (!res.ok) throw new Error('Discogs HTTP ' + res.status);
+  return res.json();
+}
+
+// ============================================================
+//  ВКЛАДКИ
+// ============================================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('tab-search').classList.toggle('hidden', tab !== 'search');
+  document.getElementById('tab-new').classList.toggle('hidden', tab !== 'new');
+  document.getElementById('tab-top').classList.toggle('hidden', tab !== 'top');
+  if (tab === 'new' && !document.getElementById('newGrid').dataset.loaded) loadNew();
+  if (tab === 'top' && !document.getElementById('topGrid').dataset.loaded) loadTop();
+}
+window.switchTab = switchTab;
+
+function renderSkeletons(grid, count = 12) {
+  grid.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const tile = document.createElement('div');
+    tile.className = 'album-tile';
+    tile.innerHTML = `<div class="skeleton skeleton-tile"></div>
+      <div class="skeleton" style="height:12px; margin-top:8px; width:80%;"></div>
+      <div class="skeleton" style="height:10px; margin-top:6px; width:50%;"></div>`;
+    grid.appendChild(tile);
+  }
+}
+
+async function loadNew() {
+  const grid = document.getElementById('newGrid');
+  renderSkeletons(grid);
+  try {
+    let items = [];
+    if (currentSource === 'deezer') {
+      const year = new Date().getFullYear();
+      const q1 = await jsonp(`https://api.deezer.com/search/album?q=${year}&limit=25`);
+      const q2 = await jsonp(`https://api.deezer.com/search/album?q=${year-1}&limit=25`);
+      const seen = new Set();
+      items = [...(q1.data || []), ...(q2.data || [])]
+        .filter(a => !seen.has(a.id) && seen.add(a.id))
+        .slice(0, 24);
+    } else {
+      const year = new Date().getFullYear();
+      const r = await discogsFetch('/database/search', {
+        type: 'release', format: 'album', year: year, per_page: 50, sort: 'have', sort_order: 'desc'
+      });
+      items = dedupeDiscogs(r.results || []).slice(0, 24);
+    }
+    renderAlbumGrid(grid, items, currentSource);
+  } catch (e) {
+    grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--danger);">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadTop() {
+  const grid = document.getElementById('topGrid');
+  renderSkeletons(grid);
+  try {
+    let items = [];
+    if (currentSource === 'deezer') {
+      const r = await jsonp('https://api.deezer.com/search/album?q=top%20hits&limit=24');
+      items = r.data || [];
+    } else {
+      const g1 = await discogsFetch('/database/search', {
+        type: 'release', format: 'album', genre: 'Rock',
+        sort: 'have', sort_order: 'desc', per_page: 40
+      });
+      const g2 = await discogsFetch('/database/search', {
+        type: 'release', format: 'album', genre: 'Pop',
+        sort: 'have', sort_order: 'desc', per_page: 40
+      });
+      items = dedupeDiscogs([...(g1.results || []), ...(g2.results || [])]).slice(0, 24);
+    }
+    renderAlbumGrid(grid, items, currentSource);
+  } catch (e) {
+    grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--danger);">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function dedupeDiscogs(items) {
+  const map = new Map();
+  for (const it of items) {
+    const artist = extractArtist(it.title || '') || (it.artist || '');
+    const title = stripDiscogsTitle(it.title || '');
+    const key = (artist + '|' + title).toLowerCase();
+    const have = (it.community && it.community.have) || 0;
+    const prev = map.get(key);
+    if (!prev || have > prev._have) map.set(key, { ...it, _have: have });
+  }
+  return Array.from(map.values()).sort((a, b) => (b._have || 0) - (a._have || 0));
+}
+
+function renderAlbumGrid(grid, items, source) {
+  if (!items || items.length === 0) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><h3>Ничего не найдено</h3><p>Попробуйте другой запрос или источник.</p></div>';
+    return;
+  }
+  grid.innerHTML = '';
+  items.forEach(a => {
+    const tile = document.createElement('div');
+    tile.className = 'album-tile';
+    let title, sub, cover, id;
+    if (source === 'deezer') {
+      title = a.title; sub = a.artist ? a.artist.name : '';
+      cover = a.cover_medium || a.cover || ''; id = a.id;
+    } else {
+      title = stripDiscogsTitle(a.title || ''); sub = a.year || '';
+      cover = a.cover_image || a.thumb || ''; id = a.id;
+    }
+    tile.innerHTML = `
+      <img src="${escapeHtml(cover)}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="t">${escapeHtml(title)}</div>
+      <div class="a">${escapeHtml(sub)}</div>
+    `;
+    tile.onclick = () => loadAlbum({ id, title, cover, source });
+    grid.appendChild(tile);
+  });
+  grid.dataset.loaded = '1';
+}
+
+// ============================================================
+//  ПОИСК
+// ============================================================
+function onSearchInput() {
+  const q = document.getElementById('searchInput').value.trim();
+  clearTimeout(debounceTimer);
+  if (q.length < 2) { lastSuggestions = []; activeIndex = -1; closeSuggestions(); return; }
+  renderStatus('Введите ещё…', true);
+  debounceTimer = setTimeout(() => fetchSuggestions(q), DEBOUNCE_MS);
+}
+window.onSearchInput = onSearchInput;
+
+async function fetchSuggestions(q) {
+  renderStatus('Поиск…', true);
+  try {
+    let items = [];
+    if (currentSource === 'deezer') {
+      const data = await jsonp('https://api.deezer.com/search/album?q=' + encodeURIComponent(q) + '&limit=8');
+      items = (data.data || []).map(a => ({
+        id: a.id, title: a.title,
+        artist: a.artist ? a.artist.name : 'Unknown',
+        cover: a.cover_medium || a.cover || '', source: 'deezer'
+      }));
+    } else {
+      const data = await discogsFetch('/database/search', {
+        q: q, type: 'release', format: 'album', per_page: 25
+      });
+      items = dedupeDiscogs(data.results || []).slice(0, 8).map(r => ({
+        id: r.id, title: stripDiscogsTitle(r.title || ''),
+        artist: extractArtist(r.title || '') || 'Unknown',
+        year: r.year || '', cover: r.cover_image || r.thumb || '', source: 'discogs'
+      }));
+    }
+    if (items.length === 0) { lastSuggestions = []; renderStatus('Ничего не найдено'); return; }
+    lastSuggestions = items;
+    activeIndex = -1;
+    renderSuggestions();
+  } catch (e) {
+    lastSuggestions = [];
+    renderStatus('Ошибка: ' + e.message);
+  }
+}
+
+function renderSuggestions() {
+  const list = document.getElementById('suggestionList');
+  list.innerHTML = '';
+  lastSuggestions.forEach((album, i) => {
+    const el = document.createElement('div');
+    el.className = 'suggestion' + (i === activeIndex ? ' active' : '');
+    el.dataset.index = i;
+    const sub = album.source === 'discogs'
+      ? `${album.artist}${album.year ? ' · ' + album.year : ''}`
+      : album.artist;
+    el.innerHTML = `
+      <img src="${escapeHtml(album.cover)}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="text">
+        <div class="t">${escapeHtml(album.title)}</div>
+        <div class="a">${escapeHtml(sub)}</div>
+      </div>
+    `;
+    el.onmousedown = (e) => { e.preventDefault(); chooseSuggestion(i); };
+    el.onmouseenter = () => { activeIndex = i; updateActiveHighlight(); };
+    list.appendChild(el);
+  });
+  list.classList.add('open');
+}
+
+function renderStatus(text, withSpinner) {
+  const list = document.getElementById('suggestionList');
+  list.innerHTML = `<div class="status">${withSpinner ? '<span class="spinner"></span>' : ''}${escapeHtml(text)}</div>`;
+  list.classList.add('open');
+}
+function showSuggestions() { if (lastSuggestions.length) document.getElementById('suggestionList').classList.add('open'); }
+function closeSuggestions() { document.getElementById('suggestionList').classList.remove('open'); }
+window.showSuggestions = showSuggestions;
+
+function updateActiveHighlight() {
+  document.querySelectorAll('#suggestionList .suggestion').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.index) === activeIndex);
+  });
+  const active = document.querySelector('#suggestionList .suggestion.active');
+  if (active) active.scrollIntoView({ block: 'nearest' });
+}
+
+function onSearchKeydown(e) {
+  const isOpen = document.getElementById('suggestionList').classList.contains('open');
+  if (e.key === 'ArrowDown') {
+    if (!lastSuggestions.length) return;
+    e.preventDefault();
+    if (!isOpen) { showSuggestions(); return; }
+    activeIndex = (activeIndex + 1) % lastSuggestions.length;
+    updateActiveHighlight();
+  } else if (e.key === 'ArrowUp') {
+    if (!lastSuggestions.length || !isOpen) return;
+    e.preventDefault();
+    activeIndex = (activeIndex - 1 + lastSuggestions.length) % lastSuggestions.length;
+    updateActiveHighlight();
+  } else if (e.key === 'Enter') {
+    if (isOpen && activeIndex >= 0 && lastSuggestions[activeIndex]) { e.preventDefault(); chooseSuggestion(activeIndex); }
+    else if (lastSuggestions.length > 0) { e.preventDefault(); chooseSuggestion(0); }
+  } else if (e.key === 'Escape') {
+    closeSuggestions();
+  }
+}
+window.onSearchKeydown = onSearchKeydown;
+
+function chooseSuggestion(i) {
+  const album = lastSuggestions[i];
+  if (!album) return;
+  closeSuggestions();
+  document.getElementById('searchInput').value = `${album.title} — ${album.artist}`;
+  lastSuggestions = []; activeIndex = -1;
+  loadAlbum({ id: album.id, title: album.title, cover: album.cover, source: album.source });
+}
+
+// ============================================================
+//  ЗАГРУЗКА АЛЬБОМА
+// ============================================================
+async function loadAlbum(album) {
+  const errorBox = document.getElementById('errorBox');
+  errorBox.textContent = 'Загрузка треков…';
+
+  try {
+    let title, artist, artwork, songs;
+
+    if (album.source === 'deezer') {
+      const data = await jsonp('https://api.deezer.com/album/' + album.id);
+      if (data.error) throw new Error(data.error.message || 'ошибка Deezer');
+      if (!data.tracks || !data.tracks.data) throw new Error('нет трек-листа');
+      title = data.title || album.title;
+      artist = (data.artist && data.artist.name) || '';
+      artwork = data.cover_big || data.cover_medium || data.cover || album.cover;
+      songs = data.tracks.data
+        .map(t => ({ name: t.title, artist: (t.artist && t.artist.name) || artist }))
+        .filter(t => t.name);
+    } else {
+      const data = await discogsFetch('/releases/' + album.id);
+      title = data.title || album.title;
+      const artists = (data.artists || []).map(a => a.name).filter(Boolean);
+      artist = artists.length ? artists.join(', ') : (extractArtist(data.title || '') || '');
+      artwork = (data.images && data.images[0] && (data.images[0].uri || data.images[0].resource_url))
+        || album.cover || '';
+      songs = (data.tracklist || [])
+        .filter(t => t.type_ === 'track' && t.title)
+        .map(t => ({ name: cleanTrackTitle(t.title), artist }));
+    }
+
+    if (songs.length === 0) throw new Error('трек-лист пуст');
+    if (songs.length > MAX_TRACKS) {
+      errorBox.textContent = `В альбоме ${songs.length} треков, взяты первые ${MAX_TRACKS}.`;
+      songs.length = MAX_TRACKS;
+    } else {
+      errorBox.textContent = '';
+    }
+
+    currentAlbum = { id: album.id, title, artist, artwork, source: album.source };
+    currentTracks = songs.map(s => ({ name: s.name, artist: s.artist }));
+    trackDetails = {};
+    overallValue = 7;
+    isSingleRelease = currentTracks.length === 1;
+
+    // Если у пользователя уже есть оценка этого релиза — подгружаем её
+    await prefillUserRatingIfExists(album.source, album.id);
+
+    renderAlbum();
+  } catch (e) {
+    errorBox.textContent = 'Не удалось загрузить: ' + e.message;
+  }
+}
+
+async function prefillUserRatingIfExists(source, releaseId) {
+  if (!currentUser) return;
+  try {
+    const docId = `${source}_${releaseId}_${currentUser.uid}`;
+    const snap = await getDoc(doc(db, 'ratings', docId));
+    if (snap.exists()) {
+      const data = snap.data();
+      currentAlbum.title = data.album.title || currentAlbum.title;
+      currentAlbum.artist = data.album.artist || currentAlbum.artist;
+      currentAlbum.artwork = data.album.artwork || currentAlbum.artwork;
+      overallValue = data.overall || 7;
+      trackDetails = data.details || {};
+      // scores подгрузим в renderAlbum через currentAlbum._prefillScores
+      currentAlbum._prefillScores = data.scores || null;
+      // Для сингла — подгружаем детальные оценки
+      if (data.isSingle && data.details && data.details[0]) {
+        currentAlbum._prefillDetails = data.details[0];
+      }
+      showToast('Загружена ваша предыдущая оценка');
+    }
+  } catch (e) { /* ignore */ }
+}
+
+// ============================================================
+//  ОТРИСОВКА АЛЬБОМА
+// ============================================================
+function renderAlbum() {
+  document.getElementById('albumCard').innerHTML = `
+    <div class="bg-blur" style="background-image:url('${escapeHtml(currentAlbum.artwork)}')"></div>
+    <img class="cover" src="${escapeHtml(currentAlbum.artwork)}" alt=""
+         onerror="this.style.visibility='hidden'">
+    <div class="info">
+      <div class="title">${escapeHtml(currentAlbum.title)}</div>
+      <div class="artist">${escapeHtml(currentAlbum.artist)}</div>
+    </div>
+  `;
+
+  // Для сингла — открываем сразу детальную оценку (5 критериев по 360)
+  if (isSingleRelease) {
+    // Скрываем обычные треки и общее впечатление
+    document.getElementById('tracksCard').classList.add('hidden');
+    document.querySelector('.rating-mode').classList.add('hidden');
+    document.querySelector('.overall-card').classList.add('hidden');
+    
+    // Открываем модалку с детальной оценкой
+    const prefill = currentAlbum._prefillDetails;
+    modalValues = {};
+    TRACK_CRITERIA.forEach(c => { modalValues[c.key] = prefill && prefill[c.key] ? prefill[c.key] : 7; });
+    modalValues.overall = prefill && prefill.overall ? prefill.overall : 7;
+    
+    // Устанавливаем заголовок модалки
+    document.getElementById('modalCover').src = currentAlbum.artwork || '';
+    document.getElementById('modalCover').onerror = function() { this.style.visibility = 'hidden'; };
+    document.getElementById('modalTitle').textContent = currentTracks[0].name || currentAlbum.title;
+    document.getElementById('modalArtist').textContent = currentTracks[0].artist || currentAlbum.artist;
+    
+    renderCriteria();
+    document.getElementById('modalBackdrop').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    
+    document.getElementById('step1').classList.add('hidden');
+    document.getElementById('historySection').classList.add('hidden');
+    document.getElementById('boardSection').classList.add('hidden');
+    document.getElementById('topsSection').classList.add('hidden');
+    document.getElementById('step2').classList.remove('hidden');
+    
+    // Показываем результат 360
+    updateSingleScore();
+    return;
+  }
+
+  // Обычный альбом
+  document.getElementById('tracksCard').classList.remove('hidden');
+  document.querySelector('.rating-mode').classList.remove('hidden');
+  document.querySelector('.overall-card').classList.remove('hidden');
+
+  const prefill = currentAlbum._prefillScores;
+  const initialScores = prefill && prefill.length === currentTracks.length
+    ? prefill
+    : currentTracks.map(() => 7);
+
+  renderTracks(initialScores);
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('historySection').classList.add('hidden');
+  document.getElementById('boardSection').classList.add('hidden');
+  document.getElementById('topsSection').classList.add('hidden');
+  document.getElementById('step2').classList.remove('hidden');
+  renderOverall(overallValue);
+  updateScore();
+}
+
+function renderTracks(values) {
+  const list = document.getElementById('tracksList');
+  list.innerHTML = '';
+  currentTracks.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'track-row';
+    row.dataset.index = i;
+    row.dataset.value = values[i] != null ? values[i] : 7;
+
+    const nameBtn = document.createElement('button');
+    nameBtn.type = 'button';
+    nameBtn.className = 'track-name';
+    nameBtn.title = 'Открыть подробную оценку';
+    const detailBadge = trackDetails[i] ? '<span class="detail-badge">детально</span>' : '';
+    nameBtn.innerHTML = `<span class="track-num">${i + 1}.</span><span>${escapeHtml(t.name)}</span>${detailBadge}`;
+    nameBtn.onclick = () => openModal(i);
+    row.appendChild(nameBtn);
+
+    const control = document.createElement('div');
+    control.className = 'control';
+    row.appendChild(control);
+
+    const val = document.createElement('div');
+    val.className = 'range-val';
+    row.appendChild(val);
+
+    if (ratingMode === 'stars') control.appendChild(buildStars(row, parseInt(row.dataset.value)));
+    else control.appendChild(buildSlider(row, parseInt(row.dataset.value)));
+    val.textContent = row.dataset.value;
+
+    list.appendChild(row);
+  });
+}
+
+function buildSlider(row, value) {
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = 1; slider.max = 10; slider.value = value; slider.step = 1;
+  updateSliderFill(slider);
+  slider.oninput = () => {
+    row.dataset.value = slider.value;
+    row.querySelector('.range-val').textContent = slider.value;
+    updateSliderFill(slider);
+    updateScore();
+  };
+  return slider;
+}
+
+function buildStars(row, value) {
+  const wrap = document.createElement('div');
+  wrap.className = 'stars';
+  for (let s = 1; s <= 10; s++) {
+    const star = document.createElement('button');
+    star.type = 'button';
+    star.className = 'star' + (s <= value ? ' on' : '');
+    star.textContent = '★';
+    star.dataset.value = s;
+    star.onmouseenter = () => previewStars(wrap, s);
+    star.onmouseleave = () => previewStars(wrap, parseInt(row.dataset.value));
+    star.onclick = () => {
+      row.dataset.value = s;
+      row.querySelector('.range-val').textContent = s;
+      previewStars(wrap, s);
+      updateScore();
+    };
+    wrap.appendChild(star);
+  }
+  return wrap;
+}
+
+function previewStars(wrap, upto) {
+  wrap.querySelectorAll('.star').forEach(s => {
+    s.classList.toggle('on', parseInt(s.dataset.value) <= upto);
+  });
+}
+
+function updateSliderFill(slider) {
+  const min = +slider.min, max = +slider.max, val = +slider.value;
+  const pct = ((val - min) / (max - min)) * 100;
+  slider.style.background = `linear-gradient(90deg, var(--accent) 0%, var(--accent-3) ${pct}%, var(--border) ${pct}%, var(--border) 100%)`;
+}
+
+function getRowValue(row) { return parseInt(row.dataset.value) || 7; }
+
+// ============================================================
+//  ОБЩЕЕ ВПЕЧАТЛЕНИЕ
+// ============================================================
+function renderOverall(value) {
+  overallValue = value;
+  const wrap = document.getElementById('overallRow');
+  wrap.innerHTML = '';
+
+  const control = document.createElement('div');
+  control.className = 'control';
+  wrap.appendChild(control);
+
+  if (ratingMode === 'stars') {
+    const stars = document.createElement('div');
+    stars.className = 'stars';
+    for (let s = 1; s <= 10; s++) {
+      const star = document.createElement('button');
+      star.type = 'button';
+      star.className = 'star' + (s <= value ? ' on' : '');
+      star.textContent = '★';
+      star.dataset.value = s;
+      star.onmouseenter = () => previewStars(stars, s);
+      star.onmouseleave = () => previewStars(stars, overallValue);
+      star.onclick = () => {
+        overallValue = s;
+        previewStars(stars, s);
+        document.getElementById('overallBadge').textContent = s + ' / 10';
+        updateScore();
+      };
+      stars.appendChild(star);
+    }
+    control.appendChild(stars);
+  } else {
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = 1; slider.max = 10; slider.value = value; slider.step = 1;
+    updateSliderFill(slider);
+    slider.oninput = () => {
+      overallValue = parseInt(slider.value);
+      document.getElementById('overallBadge').textContent = overallValue + ' / 10';
+      updateSliderFill(slider);
+      updateScore();
+    };
+    control.appendChild(slider);
+  }
+
+  document.getElementById('overallBadge').textContent = value + ' / 10';
+
+  const autoBtn = document.createElement('button');
+  autoBtn.className = 'btn-secondary auto-btn';
+  autoBtn.textContent = '= средняя';
+  autoBtn.onclick = setOverallToAvg;
+  wrap.appendChild(autoBtn);
+}
+
+function setOverallToAvg() {
+  const rows = document.querySelectorAll('#tracksList .track-row');
+  if (!rows.length) return;
+  let sum = 0;
+  rows.forEach(r => { sum += getRowValue(r); });
+  const avg = Math.round(sum / rows.length);
+  renderOverall(avg);
+  updateScore();
+  showToast('Впечатление = ' + avg);
+}
+
+// ============================================================
+//  РАСЧЁТ
+// ============================================================
+function updateScore() {
+  const rows = document.querySelectorAll('#tracksList .track-row');
+  if (rows.length === 0) return;
+  const scores = [];
+  rows.forEach(r => scores.push(getRowValue(r)));
+  const sum = scores.reduce((a, b) => a + b, 0);
+  const n = scores.length;
+  const avg = sum / n;
+  const overall = overallValue;
+
+  let final = Math.round(sum * overall * FINAL_MAX / (n * 100));
+  final = Math.max(1, Math.min(FINAL_MAX, final));
+  const tier = getTier(final);
+
+  const resultBox = document.getElementById('resultBox');
+  TIERS.forEach(t => resultBox.classList.remove(t.cssClass));
+  resultBox.classList.add(tier.cssClass);
+
+  document.getElementById('tierEmoji').textContent = tier.emoji;
+  document.getElementById('tierName').textContent = tier.name;
+  document.getElementById('tierRow').style.color = tier.color;
+  document.getElementById('finalScore').textContent = final;
+  document.getElementById('verdict').textContent = VERDICTS[tier.name] || '';
+
+  document.getElementById('details').innerHTML =
+    `Средняя оценка треков: <b>${avg.toFixed(2)}</b> / 10<br>` +
+    `Общее впечатление: <b>${overall}</b> / 10`;
+
+  const ring = document.getElementById('ringFg');
+  const C = 2 * Math.PI * 50;
+  const pct = Math.max(0, Math.min(1, final / FINAL_MAX));
+  ring.setAttribute('stroke-dashoffset', C * (1 - pct));
+  lastFinalScore = final;
+
+  renderHistogram(scores);
+}
+
+// ============================================================
+//  ГИСТОГРАММА
+// ============================================================
+function renderHistogram(scores) {
+  const barsEl = document.getElementById('histBars');
+  const summaryEl = document.getElementById('histSummary');
+  const counts = Array(11).fill(0);
+  scores.forEach(v => { if (v >= 1 && v <= 10) counts[v]++; });
+  const maxCount = Math.max(...counts.slice(1), 1);
+
+  barsEl.innerHTML = '';
+  for (let i = 1; i <= 10; i++) {
+    const c = counts[i];
+    const col = document.createElement('div');
+    col.className = 'hist-col';
+    const wrap = document.createElement('div');
+    wrap.className = 'hist-bar-wrap';
+    const bar = document.createElement('div');
+    bar.className = 'hist-bar' + (c === 0 ? ' empty' : '') + (i === 10 && c > 0 ? ' gold' : '');
+    const h = c === 0 ? 3 : Math.max(6, (c / maxCount) * 48);
+    bar.style.height = h + 'px';
+    bar.title = c > 0 ? `${c} трек(ов) на ${i}` : `нет треков на ${i}`;
+    wrap.appendChild(bar);
+    col.appendChild(wrap);
+    const lbl = document.createElement('div');
+    lbl.className = 'hist-label';
+    lbl.textContent = i;
+    col.appendChild(lbl);
+    barsEl.appendChild(col);
+  }
+
+  const n = scores.length;
+  const min = Math.min(...scores);
+  const max = Math.max(...scores);
+  const tens = counts[10];
+  const low = counts[1] + counts[2] + counts[3];
+  const range = max - min;
+  let balance;
+  if (range <= 2) balance = 'ровный по силе';
+  else if (range >= 5) balance = 'контрастный';
+  else balance = 'умеренно ровный';
+
+  summaryEl.innerHTML =
+    `Треков: <b>${n}</b> · разброс: <b>${min}–${max}</b> (${balance})` +
+    (tens > 0 ? ` · на 10: <b>${tens}</b>` : '') +
+    (low > 0 ? ` · слабых (1–3): <b>${low}</b>` : '');
+}
+
+// ============================================================
+//  МОДАЛЬНОЕ ОКНО ОЦЕНКИ ТРЕКА
+// ============================================================
+function openModal(index) {
+  const track = currentTracks[index];
+  if (!track) return;
+  modalTrackIndex = index;
+
+  document.getElementById('modalCover').src = currentAlbum.artwork || '';
+  document.getElementById('modalCover').onerror = function() { this.style.visibility = 'hidden'; };
+  document.getElementById('modalTitle').textContent = `${index + 1}. ${track.name}`;
+  document.getElementById('modalArtist').textContent = track.artist || '';
+
+  const stored = trackDetails[index];
+  modalValues = {};
+  TRACK_CRITERIA.forEach(c => { modalValues[c.key] = stored ? stored[c.key] : 7; });
+  modalValues.overall = stored ? stored.overall : 7;
+
+  renderCriteria();
+  document.getElementById('modalBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  modalTrackIndex = -1;
+}
+window.closeModal = closeModal;
+
+function toggleHelp() {
+  document.getElementById('helpBox').classList.toggle('hidden');
+}
+window.toggleHelp = toggleHelp;
+
+function renderCriteria() {
+  const wrap = document.getElementById('criteriaList');
+  wrap.innerHTML = '';
+
+  TRACK_CRITERIA.forEach(c => {
+    const block = document.createElement('div');
+    block.className = 'criterion';
+
+    const head = document.createElement('div');
+    head.className = 'criterion-head';
+    head.innerHTML = `
+      <div class="criterion-name"><span class="criterion-emoji">${c.emoji}</span><span>${c.name}</span></div>
+      <div class="criterion-val" data-key="${c.key}">${modalValues[c.key]}</div>
+    `;
+    block.appendChild(head);
+
+    const controls = document.createElement('div');
+    controls.className = 'criterion-controls';
+
+    // Режим тот же, что и на главной: если stars — звёзды, если slider — ползунок
+    if (ratingMode === 'stars') {
+      const stars = document.createElement('div');
+      stars.className = 'stars';
+      for (let s = 1; s <= 10; s++) {
+        const star = document.createElement('button');
+        star.type = 'button';
+        star.className = 'star' + (s <= modalValues[c.key] ? ' on' : '');
+        star.textContent = '★';
+        star.dataset.value = s;
+        star.onmouseenter = () => previewStars(stars, s);
+        star.onmouseleave = () => previewStars(stars, modalValues[c.key]);
+        star.onclick = () => {
+          modalValues[c.key] = s;
+          previewStars(stars, s);
+          updateCriterionVal(c.key, s);
+          updateModalTotal();
+        };
+        stars.appendChild(star);
+      }
+      controls.appendChild(stars);
+    } else {
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.min = 1; slider.max = 10; slider.step = 1;
+      slider.value = modalValues[c.key];
+      updateSliderFill(slider);
+      slider.oninput = () => {
+        modalValues[c.key] = parseInt(slider.value);
+        updateSliderFill(slider);
+        updateCriterionVal(c.key, slider.value);
+        updateModalTotal();
+      };
+      controls.appendChild(slider);
+    }
+
+    block.appendChild(controls);
+    wrap.appendChild(block);
+  });
+
+  // Общее впечатление
+  const overallBlock = document.createElement('div');
+  overallBlock.className = 'criterion';
+  overallBlock.style.borderTop = '2px solid var(--border)';
+  overallBlock.style.marginTop = '8px';
+  overallBlock.style.paddingTop = '14px';
+  overallBlock.innerHTML = `
+    <div class="criterion-head">
+      <div class="criterion-name"><span class="criterion-emoji">🔥</span><span>Общее впечатление <span style="font-size:.72rem;color:var(--text-dim);font-weight:500">(множитель)</span></span></div>
+      <div class="criterion-val" data-key="overall">${modalValues.overall}</div>
+    </div>
+  `;
+  const ovControls = document.createElement('div');
+  ovControls.className = 'criterion-controls';
+  if (ratingMode === 'stars') {
+    const ovStars = document.createElement('div');
+    ovStars.className = 'stars';
+    for (let s = 1; s <= 10; s++) {
+      const star = document.createElement('button');
+      star.type = 'button';
+      star.className = 'star' + (s <= modalValues.overall ? ' on' : '');
+      star.textContent = '★';
+      star.dataset.value = s;
+      star.onmouseenter = () => previewStars(ovStars, s);
+      star.onmouseleave = () => previewStars(ovStars, modalValues.overall);
+      star.onclick = () => {
+        modalValues.overall = s;
+        previewStars(ovStars, s);
+        updateCriterionVal('overall', s);
+        updateModalTotal();
+      };
+      ovStars.appendChild(star);
+    }
+    ovControls.appendChild(ovStars);
+  } else {
+    const ovSlider = document.createElement('input');
+    ovSlider.type = 'range';
+    ovSlider.min = 1; ovSlider.max = 10; ovSlider.step = 1;
+    ovSlider.value = modalValues.overall;
+    updateSliderFill(ovSlider);
+    ovSlider.oninput = () => {
+      modalValues.overall = parseInt(ovSlider.value);
+      updateSliderFill(ovSlider);
+      updateCriterionVal('overall', ovSlider.value);
+      updateModalTotal();
+    };
+    ovControls.appendChild(ovSlider);
+  }
+  overallBlock.appendChild(ovControls);
+  wrap.appendChild(overallBlock);
+
+  updateModalTotal();
+}
+
+function updateCriterionVal(key, value) {
+  const el = document.querySelector(`.criterion-val[data-key="${key}"]`);
+  if (el) el.textContent = value;
+}
+
+function calcTrackRating() {
+  let sum = 0;
+  TRACK_CRITERIA.forEach(c => { sum += modalValues[c.key]; });
+  const avg = sum / TRACK_CRITERIA.length;
+  const raw = avg * modalValues.overall / 10;
+  const rounded = Math.max(1, Math.min(10, Math.round(raw)));
+  return { avg, raw, rounded };
+}
+
+function calcSingleScore() {
+  // Для сингла: 5 критериев × множитель, шкала 360
+  let sum = 0;
+  TRACK_CRITERIA.forEach(c => { sum += modalValues[c.key]; });
+  const avg = sum / TRACK_CRITERIA.length;
+  // raw = avg × overall, нормализуем к 360
+  const raw360 = avg * modalValues.overall * 3.6;
+  const final360 = Math.max(1, Math.min(FINAL_MAX, Math.round(raw360)));
+  return { avg, raw360, final360 };
+}
+
+function updateSingleScore() {
+  const { avg, raw360, final360 } = calcSingleScore();
+  const tier = getTier(final360);
+  
+  const resultBox = document.getElementById('resultBox');
+  TIERS.forEach(t => resultBox.classList.remove(t.cssClass));
+  resultBox.classList.add(tier.cssClass);
+  
+  document.getElementById('tierEmoji').textContent = tier.emoji;
+  document.getElementById('tierName').textContent = tier.name;
+  document.getElementById('tierRow').style.color = tier.color;
+  document.getElementById('finalScore').textContent = final360;
+  document.getElementById('verdict').textContent = VERDICTS[tier.name] || '';
+  
+  document.getElementById('details').innerHTML =
+    `Средняя по критериям: <b>${avg.toFixed(2)}</b> / 10<br>` +
+    `Впечатление: <b>${modalValues.overall}</b> / 10<br>` +
+    `<b>Сингл</b> — оценка по шкале 360`;
+  
+  const ring = document.getElementById('ringFg');
+  const C = 2 * Math.PI * 50;
+  const pct = Math.max(0, Math.min(1, final360 / FINAL_MAX));
+  ring.setAttribute('stroke-dashoffset', C * (1 - pct));
+  lastFinalScore = final360;
+}
+
+function updateModalTotal() {
+  if (isSingleRelease) {
+    const { avg, final360 } = calcSingleScore();
+    const totalEl = document.getElementById('modalTotal');
+    const hintEl = document.getElementById('modalHint');
+    totalEl.textContent = final360;
+    totalEl.classList.toggle('max', final360 >= FINAL_MAX);
+    hintEl.innerHTML = `из 360<br><span style="opacity:.7">(средняя ${avg.toFixed(2)} × ${modalValues.overall}/10 × 3.6)</span>`;
+    updateSingleScore();
+  } else {
+    const { avg, raw, rounded } = calcTrackRating();
+    const totalEl = document.getElementById('modalTotal');
+    const hintEl = document.getElementById('modalHint');
+    totalEl.textContent = rounded;
+    totalEl.classList.toggle('max', rounded >= 10);
+    hintEl.innerHTML = `из 10<br><span style="opacity:.7">(средняя ${avg.toFixed(2)} × ${modalValues.overall}/10)</span>`;
+  }
+}
+
+function applyModalRating() {
+  if (isSingleRelease) {
+    // Для сингла — сохраняем детальную оценку как оценку релиза
+    const { final360 } = calcSingleScore();
+    trackDetails[0] = { ...modalValues };
+    lastFinalScore = final360;
+    closeModal();
+    updateSingleScore();
+    showToast('Оценка сингла: ' + final360 + ' / 360');
+    return;
+  }
+  
+  const idx = modalTrackIndex;
+  if (idx < 0) return;
+  const { rounded } = calcTrackRating();
+  trackDetails[idx] = { ...modalValues };
+
+  const row = document.querySelector(`#tracksList .track-row[data-index="${idx}"]`);
+  if (row) {
+    row.dataset.value = rounded;
+    row.querySelector('.range-val').textContent = rounded;
+    const control = row.querySelector('.control');
+    control.innerHTML = '';
+    if (ratingMode === 'stars') control.appendChild(buildStars(row, rounded));
+    else control.appendChild(buildSlider(row, rounded));
+    const nameBtn = row.querySelector('.track-name');
+    if (nameBtn && !nameBtn.querySelector('.detail-badge')) {
+      const badge = document.createElement('span');
+      badge.className = 'detail-badge';
+      badge.textContent = 'детально';
+      nameBtn.appendChild(badge);
+    }
+  }
+  updateScore();
+  closeModal();
+  showToast('Оценка трека: ' + rounded);
+}
+window.applyModalRating = applyModalRating;
+
+// ============================================================
+//  СОХРАНЕНИЕ ОЦЕНКИ В FIRESTORE
+// ============================================================
+async function submitRating() {
+  if (!currentUser) { showToast('Нужно войти'); return; }
+  if (!currentAlbum) return;
+
+  const btn = document.getElementById('rateBtn');
+  btn.disabled = true;
+
+  try {
+    const docId = `${currentAlbum.source}_${currentAlbum.id}_${currentUser.uid}`;
+    
+    if (isSingleRelease) {
+      // Сингл: оценка по 5 критериям, шкала 360
+      const { final360 } = calcSingleScore();
+      const scores = [Math.round(final360 / 36)]; // нормализованный 1-10 для совместимости
+      await setDoc(doc(db, 'ratings', docId), {
+        uid: currentUser.uid,
+        nickname: userProfile.nickname,
+        avatarEmoji: userProfile.avatarEmoji || '',
+        releaseId: String(currentAlbum.id),
+        source: currentAlbum.source,
+        album: {
+          id: currentAlbum.id,
+          title: currentAlbum.title,
+          artist: currentAlbum.artist,
+          artwork: currentAlbum.artwork,
+          source: currentAlbum.source
+        },
+        scores: scores,
+        overall: modalValues.overall || 7,
+        details: trackDetails,
+        avg: +(final360 / 36).toFixed(2),
+        final: final360,
+        isSingle: true,
+        ts: serverTimestamp()
+      });
+      
+      // Анимация кольца
+      const wrap = document.getElementById('ringWrap');
+      wrap.classList.remove('spin');
+      void wrap.offsetWidth;
+      wrap.classList.add('spin');
+      setTimeout(() => wrap.classList.remove('spin'), 950);
+      
+      showToast('Оценка сохранена: ' + final360 + ' / 360');
+    } else {
+      // Альбом: обычная логика
+      const rows = document.querySelectorAll('#tracksList .track-row');
+      if (!rows.length) return;
+      const scores = [];
+      rows.forEach(r => scores.push(getRowValue(r)));
+      const sum = scores.reduce((a, b) => a + b, 0);
+      const n = scores.length;
+      const avg = sum / n;
+      const overall = overallValue;
+      let final = Math.round(sum * overall * FINAL_MAX / (n * 100));
+      final = Math.max(1, Math.min(FINAL_MAX, final));
+      
+      await setDoc(doc(db, 'ratings', docId), {
+        uid: currentUser.uid,
+        nickname: userProfile.nickname,
+        avatarEmoji: userProfile.avatarEmoji || '',
+        releaseId: String(currentAlbum.id),
+        source: currentAlbum.source,
+        album: {
+          id: currentAlbum.id,
+          title: currentAlbum.title,
+          artist: currentAlbum.artist,
+          artwork: currentAlbum.artwork,
+          source: currentAlbum.source
+        },
+        scores: scores,
+        overall: overall,
+        details: trackDetails,
+        avg: +avg.toFixed(2),
+        final: final,
+        isSingle: false,
+        ts: serverTimestamp()
+      });
+      
+      // Анимация кольца
+      const wrap = document.getElementById('ringWrap');
+      wrap.classList.remove('spin');
+      void wrap.offsetWidth;
+      wrap.classList.add('spin');
+      setTimeout(() => wrap.classList.remove('spin'), 950);
+      
+      showToast('Оценка сохранена: ' + final);
+    }
+  } catch (e) {
+    showToast('Ошибка сохранения: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+function submitRatingSmart() {
+  // Для сингла — сначала применяем модалку, потом сохраняем
+  if (isSingleRelease) {
+    applyModalRating();
+    setTimeout(() => submitRating(), 100);
+  } else {
+    submitRating();
+  }
+}
+window.submitRatingSmart = submitRatingSmart;
+window.submitRating = submitRating;
+
+// ============================================================
+//  МОИ ОЦЕНКИ (из Firestore)
+// ============================================================
+let myRatings = [];
+
+async function loadMyRatings() {
+  if (!currentUser) return;
+  try {
+    const q = query(collection(db, 'ratings'), where('uid', '==', currentUser.uid));
+    const snap = await getDocs(q);
+    myRatings = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    myRatings.sort((a, b) => (b.ts?.seconds || 0) - (a.ts?.seconds || 0));
+  } catch (e) {
+    myRatings = [];
+  }
+}
+
+function openHistory() { navTo('myratings'); }
+window.openHistory = openHistory;
+
+function closeHistory() { navTo('evaluate'); }
+window.closeHistory = closeHistory;
+
+function renderHistory() {
+  const list = [...myRatings];
+  const sort = document.getElementById('historySort').value;
+  const listEl = document.getElementById('historyList');
+  const statsEl = document.getElementById('artistStats');
+
+  // Сортировка
+  list.sort((a, b) => {
+    switch (sort) {
+      case 'date_desc': return (b.ts?.seconds || 0) - (a.ts?.seconds || 0);
+      case 'date_asc':  return (a.ts?.seconds || 0) - (b.ts?.seconds || 0);
+      case 'score_desc':return b.final - a.final;
+      case 'score_asc': return a.final - b.final;
+      case 'title_asc': return (a.album.title || '').localeCompare(b.album.title || '');
+      case 'artist_asc':return (a.album.artist || '').localeCompare(b.album.artist || '');
+      default: return 0;
+    }
+  });
+
+  // Статистика по артистам
+  const byArtist = {};
+  list.forEach(x => {
+    const a = x.album.artist || 'Unknown';
+    if (!byArtist[a]) byArtist[a] = [];
+    byArtist[a].push(x.final);
+  });
+  const multiple = Object.entries(byArtist)
+    .filter(([, arr]) => arr.length >= 2)
+    .map(([artist, arr]) => {
+      const avg = Math.round(arr.reduce((x, y) => x + y, 0) / arr.length);
+      return { artist, avg, count: arr.length, tier: getTier(avg) };
+    })
+    .sort((a, b) => b.avg - a.avg);
+
+  statsEl.innerHTML = multiple.length
+    ? multiple.slice(0, 3).map(s =>
+        `${s.tier.emoji} <b>${escapeHtml(s.artist)}</b> — средняя ${s.avg} (${s.count} альбомов)`
+      ).join('<br>')
+    : '';
+
+  if (list.length === 0) {
+    listEl.innerHTML = '<div class="empty-msg">Здесь пока пусто.<br>Оцените альбом и нажмите «Поставить оценку».</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  list.forEach((item) => {
+    const tier = getTier(item.final);
+    const el = document.createElement('div');
+    el.className = 'history-item ' + tier.cssClass;
+    const singleBadge = item.isSingle ? ' <span style="font-size:.65rem; padding:2px 6px; border-radius:8px; background:var(--accent-glow); color:var(--accent-3);">СИНГЛ</span>' : '';
+    el.innerHTML = `
+      <img src="${escapeHtml(item.album.artwork || '')}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="info">
+        <div class="title">${escapeHtml(item.album.title)}${singleBadge}</div>
+        <div class="artist">${escapeHtml(item.album.artist)}</div>
+      </div>
+      <span class="tier-tag">${tier.emoji} ${tier.name}</span>
+      <div class="score">${item.final}</div>
+      <button class="del-btn" onclick="event.stopPropagation(); deleteMyRating('${item._id}')" title="Удалить оценку">✕</button>
+    `;
+    el.onclick = () => restoreFromMyRatings(item);
+    listEl.appendChild(el);
+  });
+}
+window.renderHistory = renderHistory;
+
+async function restoreFromMyRatings(item) {
+  currentAlbum = {
+    id: item.album.id,
+    title: item.album.title,
+    artist: item.album.artist,
+    artwork: item.album.artwork,
+    source: item.album.source || item.source
+  };
+  currentTracks = (item.scores || []).map((v, i) => ({
+    name: `Трек ${i + 1}`,
+    artist: currentAlbum.artist
+  }));
+  // Нужно подгрузить настоящий список треков — дергаем API
+  try {
+    if (currentAlbum.source === 'deezer') {
+      const data = await jsonp('https://api.deezer.com/album/' + currentAlbum.id);
+      if (data.tracks && data.tracks.data) {
+        currentTracks = data.tracks.data.map(t => ({
+          name: t.title,
+          artist: (t.artist && t.artist.name) || currentAlbum.artist
+        }));
+      }
+    } else {
+      const data = await discogsFetch('/releases/' + currentAlbum.id);
+      const songs = (data.tracklist || [])
+        .filter(t => t.type_ === 'track' && t.title)
+        .map(t => ({ name: cleanTrackTitle(t.title), artist: currentAlbum.artist }));
+      if (songs.length) currentTracks = songs;
+    }
+  } catch (e) { /* fallback */ }
+
+  overallValue = item.overall || 7;
+  trackDetails = item.details || {};
+  currentAlbum._prefillScores = item.scores || null;
+  isSingleRelease = currentTracks.length === 1;
+  if (item.isSingle && item.details && item.details[0]) {
+    currentAlbum._prefillDetails = item.details[0];
+  }
+
+  document.getElementById('historySection').classList.add('hidden');
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('step2').classList.remove('hidden');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === 'evaluate'));
+  renderAlbum();
+  showToast('Загружено из ваших оценок');
+}
+
+// ============================================================
+//  ДОСКА ОЦЕНОК
+// ============================================================
+function openBoard() { navTo('board'); }
+window.openBoard = openBoard;
+
+function closeBoard() { navTo('evaluate'); }
+window.closeBoard = closeBoard;
+
+async function refreshBoard() {
+  const listEl = document.getElementById('boardList');
+  listEl.innerHTML = '<div class="empty-msg"><span class="spinner"></span> Загрузка…</div>';
+
+  try {
+    // Загружаем ВСЕ оценки (для простоты — до 500)
+    const snap = await getDocs(collection(db, 'ratings'));
+    const all = snap.docs.map(d => d.data());
+
+    // Группируем по releaseId (source_id)
+    const groups = {};
+    all.forEach(r => {
+      const key = `${r.source}_${r.releaseId}`;
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          album: r.album,
+          source: r.source,
+          releaseId: r.releaseId,
+          ratings: [],
+          adminRating: null,
+          authorRating: null,
+          authorTs: Infinity,
+          lastTs: 0
+        };
+      }
+      const g = groups[key];
+      g.ratings.push({ uid: r.uid, nickname: r.nickname, final: r.final, ts: r.ts?.seconds || 0, avatarEmoji: r.avatarEmoji || '' });
+      if (r.uid === ADMIN_UID) g.adminRating = r.final;
+      if ((r.ts?.seconds || 0) < g.authorTs) {
+        g.authorTs = r.ts?.seconds || 0;
+        g.authorRating = r.final;
+      }
+      if ((r.ts?.seconds || 0) > g.lastTs) g.lastTs = r.ts?.seconds || 0;
+    });
+
+    // Вычисляем среднюю
+    boardData = Object.values(groups).map(g => {
+      const sum = g.ratings.reduce((a, r) => a + r.final, 0);
+      g.avgFinal = Math.round(sum / g.ratings.length);
+      g.userCount = g.ratings.length;
+      return g;
+    });
+
+    renderBoard();
+    document.getElementById('boardStats').textContent =
+      `${boardData.length} релизов · ${all.length} оценок`;
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty-msg" style="color:var(--danger)">Ошибка: ${escapeHtml(e.message)}</div>`;
+  }
+}
+window.refreshBoard = refreshBoard;
+
+function renderBoard() {
+  const listEl = document.getElementById('boardList');
+  const sort = document.getElementById('boardSort').value;
+  const list = [...boardData];
+
+  list.sort((a, b) => {
+    switch (sort) {
+      case 'date_desc': return b.lastTs - a.lastTs;
+      case 'date_asc':  return a.lastTs - b.lastTs;
+      case 'score_desc':return b.avgFinal - a.avgFinal;
+      case 'score_asc': return a.avgFinal - b.avgFinal;
+      case 'admin_desc':return (b.adminRating || -1) - (a.adminRating || -1);
+      case 'admin_asc': return (a.adminRating || 999) - (b.adminRating || 999);
+      case 'title_asc': return (a.album.title || '').localeCompare(b.album.title || '');
+      case 'artist_asc':return (a.album.artist || '').localeCompare(b.album.artist || '');
+      default: return 0;
+    }
+  });
+
+  if (list.length === 0) {
+    listEl.innerHTML = '<div class="empty-msg">Пока никто не оценил ни одного альбома.<br>Будьте первым!</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  list.forEach(g => {
+    const el = document.createElement('div');
+    const tier = getTier(g.avgFinal);
+    el.className = 'board-item ' + tier.cssClass;
+    const hasAdmin = g.adminRating != null;
+    el.innerHTML = `
+      <img src="${escapeHtml(g.album.artwork || '')}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="info">
+        <div class="title">${escapeHtml(g.album.title)}</div>
+        <div class="artist">${escapeHtml(g.album.artist)}</div>
+        <span class="count-pill">${g.userCount} ${plural(g.userCount, 'оценка', 'оценки', 'оценок')}</span>
+      </div>
+      <div class="numbers">
+        <div class="num-block avg">
+          <div class="num-label">${tier.emoji} Средняя (${g.userCount})</div>
+          <div class="num-value">${g.avgFinal}</div>
+        </div>
+        <div class="num-block admin ${hasAdmin ? '' : 'none'}">
+          <div class="num-label">👑 Админ</div>
+          <div class="num-value">${hasAdmin ? g.adminRating : '—'}</div>
+        </div>
+      </div>
+    `;
+    el.onclick = () => openBoardModal(g);
+    listEl.appendChild(el);
+  });
+}
+window.renderBoard = renderBoard;
+
+// ============================================================
+//  МОДАЛКА РЕЛИЗА НА ДОСКЕ
+// ============================================================
+function openBoardModal(group) {
+  boardModalRelease = group;
+  document.getElementById('boardModalCover').src = group.album.artwork || '';
+  document.getElementById('boardModalCover').onerror = function() { this.style.visibility = 'hidden'; };
+  document.getElementById('boardModalTitle').textContent = group.album.title;
+  document.getElementById('boardModalArtist').textContent = group.album.artist;
+  document.getElementById('boardModalAvg').textContent = group.avgFinal;
+  document.getElementById('boardModalAvgHint').textContent = `из ${FINAL_MAX} · ${group.userCount} ${plural(group.userCount, 'оценка', 'оценки', 'оценок')}`;
+  const hasAdmin = group.adminRating != null;
+  document.getElementById('boardModalAdmin').textContent = hasAdmin ? group.adminRating : '—';
+  document.getElementById('boardModalAdminHint').textContent = hasAdmin ? `из ${FINAL_MAX}` : 'ещё не оценил';
+
+  // Список пользователей
+  const usersEl = document.getElementById('boardModalUsers');
+  usersEl.innerHTML = '';
+  const sorted = [...group.ratings].sort((a, b) => b.final - a.final);
+  sorted.forEach(r => {
+    const isAdmin = r.uid === ADMIN_UID;
+    const isMe = currentUser && r.uid === currentUser.uid;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px;';
+    const avatarEmoji = r.avatarEmoji || '';
+    const avatarBg = avatarEmoji ? 'transparent' : colorFromString(r.nickname || '?');
+    const avatarContent = avatarEmoji ? `<span class="comment-emoji">${escapeHtml(avatarEmoji)}</span>` : escapeHtml((r.nickname || '?').charAt(0).toUpperCase());
+    row.innerHTML = `
+      <div style="width:28px; height:28px; border-radius:50%; background:${avatarBg}; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:.8rem; flex-shrink:0;">
+        ${avatarContent}
+      </div>
+      <div style="flex:1; min-width:0; font-size:.88rem; color:var(--text-mid);">
+        ${escapeHtml(r.nickname || 'Без имени')}
+        ${isAdmin ? '<span style="color:var(--gold-lvl); margin-left:6px;">👑</span>' : ''}
+        ${isMe ? '<span style="color:var(--accent-3); margin-left:6px; font-size:.75rem;">(вы)</span>' : ''}
+      </div>
+      <div style="font-weight:800; color:var(--accent-3); font-variant-numeric:tabular-nums;">${r.final}</div>
+      ${isMe ? `<button class="del-btn" onclick="event.stopPropagation(); deleteRatingFromBoard('${r.uid}', '${group.source}', '${group.releaseId}')" title="Удалить свою оценку" style="margin-left:8px;">✕</button>` : ''}
+    `;
+    usersEl.appendChild(row);
+  });
+
+  document.getElementById('boardModalBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  
+  // Загружаем комментарии
+  loadComments(group.source, group.releaseId);
+}
+
+function closeBoardModal() {
+  document.getElementById('boardModalBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  // Очищаем комментарии
+  const commentList = document.getElementById('commentList');
+  const commentInput = document.getElementById('commentInput');
+  if (commentList) commentList.innerHTML = '';
+  if (commentInput) commentInput.value = '';
+  currentComments = [];
+}
+window.closeBoardModal = closeBoardModal;
+
+async function openCalculatorFromBoard() {
+  if (!boardModalRelease) return;
+  const g = boardModalRelease;
+  closeBoardModal();
+  await loadAlbum({
+    id: g.album.id || g.releaseId,
+    title: g.album.title,
+    cover: g.album.artwork,
+    source: g.source
+  });
+}
+window.openCalculatorFromBoard = openCalculatorFromBoard;
+
+// ============================================================
+//  УТИЛИТЫ
+// ============================================================
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function plural(n, one, few, many) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+  return many;
+}
+function showToast(text) {
+  const el = document.getElementById('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 1800);
+}
+window.showToast = showToast;
+
+document.addEventListener('mousedown', (e) => {
+  const wrap = document.querySelector('.autocomplete-wrap');
+  if (wrap && !wrap.contains(e.target)) closeSuggestions();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('modalBackdrop').classList.contains('open')) closeModal();
+    if (document.getElementById('boardModalBackdrop').classList.contains('open')) closeBoardModal();
+    if (document.getElementById('profileModalBackdrop')?.classList.contains('open')) closeProfileModal();
+    if (document.getElementById('helpModalBackdrop')?.classList.contains('open')) closeHelpModal();
+  }
+});
+
+function reset() {
+  document.getElementById('step2').classList.add('hidden');
+  document.getElementById('step1').classList.remove('hidden');
+  document.getElementById('historySection').classList.add('hidden');
+  document.getElementById('boardSection').classList.add('hidden');
+  document.getElementById('topsSection').classList.add('hidden');
+  document.getElementById('errorBox').textContent = '';
+  document.getElementById('searchInput').value = '';
+  closeSuggestions();
+  lastSuggestions = []; activeIndex = -1;
+  currentAlbum = null; currentTracks = [];
+  trackDetails = {};
+  overallValue = 7;
+  isSingleRelease = false;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === 'evaluate'));
+}
+window.reset = reset;
+
+// Discogs helpers
+function stripDiscogsTitle(t) {
+  const idx = t.indexOf(' - ');
+  if (idx > 0 && idx < 60) return t.slice(idx + 3).trim();
+  return t;
+}
+function extractArtist(t) {
+  const idx = t.indexOf(' - ');
+  if (idx > 0 && idx < 60) return t.slice(0, idx).trim();
+  return '';
+}
+function cleanTrackTitle(t) {
+  return String(t).replace(/^[A-Z]?\d+[-.]?\d*\s+/, '').trim();
+}
+
+// ============================================================
+//  НАВИГАЦИЯ
+// ============================================================
+function navTo(section) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === section));
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('step2').classList.add('hidden');
+  document.getElementById('historySection').classList.add('hidden');
+  document.getElementById('boardSection').classList.add('hidden');
+  document.getElementById('topsSection').classList.add('hidden');
+  
+  if (section === 'evaluate') {
+    if (currentAlbum) document.getElementById('step2').classList.remove('hidden');
+    else document.getElementById('step1').classList.remove('hidden');
+  } else if (section === 'board') {
+    document.getElementById('boardSection').classList.remove('hidden');
+    refreshBoard();
+  } else if (section === 'tops') {
+    document.getElementById('topsSection').classList.remove('hidden');
+    refreshTops();
+  } else if (section === 'myratings') {
+    document.getElementById('historySection').classList.remove('hidden');
+    renderHistory();
+  }
+}
+window.navTo = navTo;
+
+// ============================================================
+//  УДАЛЕНИЕ ОЦЕНОК
+// ============================================================
+async function deleteMyRating(docId) {
+  if (!confirm('Удалить эту оценку?')) return;
+  try {
+    await deleteDoc(doc(db, 'ratings', docId));
+    myRatings = myRatings.filter(r => r._id !== docId);
+    renderHistory();
+    showToast('Оценка удалена');
+  } catch (e) {
+    showToast('Ошибка: ' + e.message);
+  }
+}
+window.deleteMyRating = deleteMyRating;
+
+async function deleteRatingFromBoard(uid, source, releaseId) {
+  if (!confirm('Удалить свою оценку этого релиза?')) return;
+  const docId = `${source}_${releaseId}_${uid}`;
+  try {
+    await deleteDoc(doc(db, 'ratings', docId));
+    showToast('Оценка удалена');
+    closeBoardModal();
+    await loadMyRatings();
+    refreshBoard();
+  } catch (e) {
+    showToast('Ошибка: ' + e.message);
+  }
+}
+window.deleteRatingFromBoard = deleteRatingFromBoard;
+
+// ============================================================
+//  ТОПЫ
+// ============================================================
+let topsData = [];
+let topsPeriod = 'all';
+
+function switchTopsPeriod(period) {
+  topsPeriod = period;
+  document.querySelectorAll('.tops-tab').forEach(t => t.classList.toggle('active', t.dataset.period === period));
+  renderTops();
+}
+window.switchTopsPeriod = switchTopsPeriod;
+
+function closeTops() {
+  document.getElementById('topsSection').classList.add('hidden');
+  if (currentAlbum) document.getElementById('step2').classList.remove('hidden');
+  else document.getElementById('step1').classList.remove('hidden');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === 'evaluate'));
+}
+window.closeTops = closeTops;
+
+async function refreshTops() {
+  const listEl = document.getElementById('topsList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="empty-msg"><span class="spinner"></span> Загрузка...</div>';
+  try {
+    const snap = await getDocs(collection(db, 'ratings'));
+    const all = snap.docs.map(d => d.data());
+    const now = Math.floor(Date.now() / 1000);
+    const weekAgo = now - 7 * 86400;
+    const monthAgo = now - 30 * 86400;
+    
+    // Filter by period
+    let filtered = all;
+    if (topsPeriod === 'week') filtered = all.filter(r => (r.ts?.seconds || 0) >= weekAgo);
+    else if (topsPeriod === 'month') filtered = all.filter(r => (r.ts?.seconds || 0) >= monthAgo);
+    
+    // Group by release
+    const groups = {};
+    filtered.forEach(r => {
+      const key = `${r.source}_${r.releaseId}`;
+      if (!groups[key]) {
+        groups[key] = { key, album: r.album, source: r.source, releaseId: r.releaseId, ratings: [], adminRating: null };
+      }
+      groups[key].ratings.push({ uid: r.uid, nickname: r.nickname, final: r.final, avatarEmoji: r.avatarEmoji || '' });
+      if (r.uid === ADMIN_UID) groups[key].adminRating = r.final;
+    });
+    
+    topsData = Object.values(groups).map(g => {
+      const sum = g.ratings.reduce((a, r) => a + r.final, 0);
+      g.avgFinal = Math.round(sum / g.ratings.length);
+      g.userCount = g.ratings.length;
+      return g;
+    });
+    
+    renderTops();
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty-msg" style="color:var(--danger)">Ошибка: ${escapeHtml(e.message)}</div>`;
+  }
+}
+window.refreshTops = refreshTops;
+
+function renderTops() {
+  const listEl = document.getElementById('topsList');
+  if (!listEl) return;
+  
+  // Filter: minimum 2 ratings for month/week
+  let list = [...topsData];
+  if (topsPeriod !== 'all') {
+    list = list.filter(g => g.userCount >= 2);
+  }
+  list.sort((a, b) => b.avgFinal - a.avgFinal);
+  
+  if (list.length === 0) {
+    listEl.innerHTML = `<div class="empty-state">
+      <h3>Пока пусто</h3>
+      <p>${topsPeriod === 'all' ? 'Никто ещё не оценил ни один релиз. Будьте первым!' : 'Недостаточно оценок для топа за этот период (нужно минимум 2 оценки на релиз).'}</p>
+      <button onclick="navTo('evaluate')">🎵 Найти альбом</button>
+    </div>`;
+    return;
+  }
+  
+  listEl.innerHTML = '';
+  list.slice(0, 30).forEach((g, i) => {
+    const tier = getTier(g.avgFinal);
+    const el = document.createElement('div');
+    el.className = 'top-item ' + tier.cssClass;
+    const medal = i < 3 ? ['🥇', '🥈', '🥉'][i] : (i + 1);
+    el.innerHTML = `
+      <div class="rank">${medal}</div>
+      <img src="${escapeHtml(g.album.artwork || '')}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="info">
+        <div class="title">${escapeHtml(g.album.title)}</div>
+        <div class="artist">${escapeHtml(g.album.artist)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="score-badge">${tier.emoji} ${g.avgFinal}</div>
+        <div class="count-badge">${g.userCount} ${plural(g.userCount, 'оценка', 'оценки', 'оценок')}</div>
+      </div>
+    `;
+    el.onclick = () => openBoardModal(g);
+    listEl.appendChild(el);
+  });
+}
+window.renderTops = renderTops;
+
+// ============================================================
+//  КОММЕНТАРИИ
+// ============================================================
+let currentComments = [];
+
+async function loadComments(source, releaseId) {
+  try {
+    const q = query(
+      collection(db, 'comments'),
+      where('source', '==', source),
+      where('releaseId', '==', String(releaseId))
+    );
+    const snap = await getDocs(q);
+    currentComments = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    currentComments.sort((a, b) => (a.ts?.seconds || 0) - (b.ts?.seconds || 0));
+    renderComments();
+  } catch (e) {
+    // If index doesn't exist, try without compound query
+    try {
+      const snap = await getDocs(collection(db, 'comments'));
+      currentComments = snap.docs
+        .map(d => ({ _id: d.id, ...d.data() }))
+        .filter(c => c.source === source && c.releaseId === String(releaseId));
+      currentComments.sort((a, b) => (a.ts?.seconds || 0) - (b.ts?.seconds || 0));
+      renderComments();
+    } catch (e2) {
+      console.error('Comments load error:', e2);
+    }
+  }
+}
+
+function renderComments() {
+  const listEl = document.getElementById('commentList');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  
+  if (currentComments.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center; padding:16px; color:var(--text-dim); font-size:.85rem;">Пока нет комментариев. Будьте первым!</div>';
+    return;
+  }
+  
+  currentComments.forEach(c => {
+    const isMe = currentUser && c.uid === currentUser.uid;
+    const nick = c.nickname || 'Без имени';
+    const avatarEmoji = c.avatarEmoji || '';
+    const avatarBg = avatarEmoji ? 'transparent' : colorFromString(nick);
+    const avatarContent = avatarEmoji ? `<span class="comment-emoji">${escapeHtml(avatarEmoji)}</span>` : escapeHtml(nick.charAt(0).toUpperCase());
+    const timeStr = formatTime(c.ts?.seconds || 0);
+    
+    const el = document.createElement('div');
+    el.className = 'comment-item';
+    el.innerHTML = `
+      <div class="avatar" style="background:${avatarBg};">${avatarContent}</div>
+      <div class="body">
+        <div class="head">
+          <div>
+            <span class="nick">${escapeHtml(nick)}</span>
+            <span class="time">${timeStr}</span>
+          </div>
+          ${isMe ? `<button class="del-btn" onclick="deleteComment('${c._id}')">✕ Удалить</button>` : ''}
+        </div>
+        <div class="text">${escapeHtml(c.text)}</div>
+      </div>
+    `;
+    listEl.appendChild(el);
+  });
+}
+
+function formatTime(secs) {
+  if (!secs) return '';
+  const diff = Math.floor(Date.now() / 1000) - secs;
+  if (diff < 60) return 'только что';
+  if (diff < 3600) return Math.floor(diff / 60) + ' мин назад';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' ч назад';
+  if (diff < 604800) return Math.floor(diff / 86400) + ' дн назад';
+  const d = new Date(secs * 1000);
+  return d.toLocaleDateString('ru-RU');
+}
+
+async function submitComment() {
+  if (!currentUser) { showToast('Нужно войти'); return; }
+  if (!boardModalRelease) return;
+  const input = document.getElementById('commentInput');
+  const text = input.value.trim();
+  if (!text) return;
+  if (text.length > 500) { showToast('Слишком длинный комментарий (макс. 500)'); return; }
+  
+  try {
+    const newDoc = doc(collection(db, 'comments'));
+    await setDoc(newDoc, {
+      uid: currentUser.uid,
+      nickname: userProfile.nickname,
+      avatarEmoji: userProfile.avatarEmoji || '',
+      source: boardModalRelease.source,
+      releaseId: String(boardModalRelease.releaseId),
+      text: text,
+      ts: serverTimestamp()
+    });
+    input.value = '';
+    await loadComments(boardModalRelease.source, boardModalRelease.releaseId);
+    showToast('Комментарий добавлен');
+  } catch (e) {
+    showToast('Ошибка: ' + e.message);
+  }
+}
+window.submitComment = submitComment;
+
+async function deleteComment(commentId) {
+  if (!confirm('Удалить комментарий?')) return;
+  try {
+    await deleteDoc(doc(db, 'comments', commentId));
+    currentComments = currentComments.filter(c => c._id !== commentId);
+    renderComments();
+    showToast('Комментарий удалён');
+  } catch (e) {
+    showToast('Ошибка: ' + e.message);
+  }
+}
+window.deleteComment = deleteComment;
+
+// ============================================================
+//  ПРОФИЛЬ
+// ============================================================
+const EMOJI_CHOICES = ['🎸','🎧','🎤','🎹','🥁','🎺','🎷','🎻',
+  '🎵','🎶','🎼','🔥','⚡','💎','👑','🌟',
+  '🦊','🐱','🐶','🐼','🦁','🐺','🦉','🐸',
+  '😎','🤖','👻','💀','🤡','🎭','🌈','🌌',
+  '🍕','🍔','🍟','🌮','🍩','🍪','☕','🧋'];
+
+function openProfileModal() {
+  document.getElementById('profileNick').value = userProfile?.nickname || '';
+  document.getElementById('profileEmail').textContent = userProfile?.email || '';
+  document.getElementById('profileNickHint').textContent = '';
+  
+  // Render emoji grid
+  const grid = document.getElementById('emojiGrid');
+  grid.innerHTML = '';
+  const currentEmoji = userProfile?.avatarEmoji || '';
+  EMOJI_CHOICES.forEach(emoji => {
+    const opt = document.createElement('div');
+    opt.className = 'emoji-option' + (emoji === currentEmoji ? ' selected' : '');
+    opt.textContent = emoji;
+    opt.onclick = () => {
+      grid.querySelectorAll('.emoji-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      opt.dataset.selected = '1';
+      updateProfileAvatarPreview(emoji);
+    };
+    grid.appendChild(opt);
+  });
+  
+  updateProfileAvatarPreview(currentEmoji);
+  document.getElementById('profileModalBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+window.openProfileModal = openProfileModal;
+
+function updateProfileAvatarPreview(emoji) {
+  const preview = document.getElementById('profileAvatarPreview');
+  if (emoji) {
+    preview.textContent = emoji;
+    preview.style.background = 'transparent';
+    preview.style.fontSize = '1.6rem';
+  } else {
+    const nick = document.getElementById('profileNick').value || '?';
+    preview.textContent = nick.charAt(0).toUpperCase();
+    preview.style.background = colorFromString(nick);
+    preview.style.fontSize = '1.6rem';
+  }
+}
+
+// Update preview when nick changes
+document.getElementById('profileNick')?.addEventListener('input', () => {
+  const selected = document.querySelector('.emoji-option.selected');
+  if (!selected) updateProfileAvatarPreview('');
+});
+
+function closeProfileModal() {
+  document.getElementById('profileModalBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+window.closeProfileModal = closeProfileModal;
+
+async function saveProfile() {
+  const newNick = document.getElementById('profileNick').value.trim();
+  if (!newNick) { showToast('Введите никнейм'); return; }
+  
+  const selectedEmoji = document.querySelector('.emoji-option.selected');
+  const newEmoji = selectedEmoji ? selectedEmoji.textContent : '';
+  
+  // Check uniqueness
+  try {
+    const allUsersSnap = await getDocs(collection(db, 'users'));
+    const nickTaken = allUsersSnap.docs.some(d => {
+      const data = d.data();
+      return data.nickname && data.nickname.toLowerCase() === newNick.toLowerCase() && d.id !== currentUser.uid;
+    });
+    if (nickTaken) {
+      document.getElementById('profileNickHint').textContent = 'Этот никнейм уже занят';
+      document.getElementById('profileNickHint').style.color = 'var(--danger)';
+      return;
+    }
+    
+    await setDoc(doc(db, 'users', currentUser.uid), {
+      nickname: newNick,
+      email: userProfile.email,
+      avatarEmoji: newEmoji,
+      createdAt: userProfile.createdAt || serverTimestamp()
+    }, { merge: true });
+    
+    userProfile.nickname = newNick;
+    userProfile.avatarEmoji = newEmoji;
+    updateUserChip();
+    closeProfileModal();
+    showToast('Профиль сохранён');
+  } catch (e) {
+    showToast('Ошибка: ' + e.message);
+  }
+}
+window.saveProfile = saveProfile;
+
+// ============================================================
+//  ПОМОЩЬ
+// ============================================================
+function openHelpModal() {
+  document.getElementById('helpModalBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+window.openHelp = openHelpModal;
+
+function closeHelpModal() {
+  document.getElementById('helpModalBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+window.closeHelpModal = closeHelpModal;
+
+// ============================================================
+//  ОНБОРДИНГ ТУР
+// ============================================================
+const TOUR_STEPS = [
+  { title: 'Добро пожаловать! 🎵', text: 'Здесь вы оцениваете музыкальные альбомы и синглы. Давайте посмотрим, как это работает.' },
+  { title: 'Найдите альбом', text: 'Выберите источник поиска (русская/популярная или западные/редкие), затем введите название в поле поиска или откройте «Свежие» / «Топ».' },
+  { title: 'Оцените треки', text: 'Каждый трек получает оценку 1–10. Клик по названию открывает детальную оценку по 5 критериям: рифмы, структура, стиль, харизма и атмосфера.' },
+  { title: 'Готово!', text: 'Итог считается автоматически. Нажмите «Поставить оценку», чтобы сохранить. Результаты попадают на доску и в топы. Удачи!' }
+];
+let tourStep = 0;
+
+function startTour() {
+  tourStep = 0;
+  showTourStep();
+}
+
+function showTourStep() {
+  const overlay = document.getElementById('tourOverlay');
+  const popover = document.getElementById('tourPopover');
+  const titleEl = document.getElementById('tourTitle');
+  const textEl = document.getElementById('tourText');
+  const dotsEl = document.getElementById('tourDots');
+  const nextBtn = document.getElementById('tourNext');
+  
+  if (tourStep >= TOUR_STEPS.length) {
+    skipTour();
+    return;
+  }
+  
+  const step = TOUR_STEPS[tourStep];
+  titleEl.textContent = step.title;
+  textEl.textContent = step.text;
+  nextBtn.textContent = tourStep === TOUR_STEPS.length - 1 ? 'Начать!' : 'Далее';
+  
+  // Render dots
+  dotsEl.innerHTML = '';
+  TOUR_STEPS.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'tour-dot' + (i === tourStep ? ' active' : '');
+    dotsEl.appendChild(dot);
+  });
+  
+  overlay.classList.add('show');
+  // Position popover center
+  popover.style.left = '50%';
+  popover.style.top = '50%';
+  popover.style.transform = 'translate(-50%, -50%)';
+}
+
+function nextTourStep() {
+  tourStep++;
+  if (tourStep >= TOUR_STEPS.length) {
+    skipTour();
+  } else {
+    showTourStep();
+  }
+}
+window.nextTourStep = nextTourStep;
+
+function skipTour() {
+  document.getElementById('tourOverlay').classList.remove('show');
+  localStorage.setItem('albumRating_tour_done', '1');
+}
+window.skipTour = skipTour;
+
+// ============================================================
+//  ЭКСПОРТ ФУНКЦИЙ В WINDOW (для onclick="...")
+// ============================================================
+window.handleAuthSubmit = handleAuthSubmit;
+window.toggleAuthMode = toggleAuthMode;
+window.handleLogout = handleLogout;
+
+// ============================================================
+//  СТАРТ
+// ============================================================
+initTheme();
+initRatingMode();
+initSource();
+document.querySelectorAll('.mode-btn').forEach(b => {
+  b.classList.toggle('active', b.dataset.mode === ratingMode);
+});
+topsPeriod = 'all';
+</script>
+</body>
+</html>
