@@ -75,6 +75,7 @@
     justify-content: center;
     transition: background .4s ease, color .3s ease;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
   .container {
     background: var(--panel);
@@ -85,6 +86,7 @@
     box-shadow: 0 30px 80px rgba(0,0,0,.45), 0 2px 0 rgba(255,255,255,.04) inset;
     position: relative;
     animation: fadeUp .55s cubic-bezier(.2,.8,.2,1);
+    overflow: hidden;
   }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(14px); }
@@ -102,7 +104,7 @@
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  .top-actions { display: flex; gap: 8px; align-items: center; }
+  .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .icon-btn {
     width: 42px; height: 42px; padding: 0;
     background: var(--panel-2); color: var(--text);
@@ -110,6 +112,7 @@
     cursor: pointer; font-size: 1.15rem;
     transition: transform .2s, background .2s, border-color .2s, box-shadow .2s;
     display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
   }
   .icon-btn:hover { background: var(--panel-3); border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 20px var(--accent-glow); }
 
@@ -120,18 +123,21 @@
     border: 1px solid var(--border);
     border-radius: 24px;
     font-size: .85rem; color: var(--text-mid);
+    max-width: 100%;
   }
   .user-chip .avatar {
     width: 30px; height: 30px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-weight: 700; font-size: .85rem;
     text-transform: uppercase;
+    flex-shrink: 0;
   }
-  .user-chip .nick { font-weight: 600; color: var(--text); }
+  .user-chip .nick { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100px; }
   .user-chip .logout {
     background: none; border: none; box-shadow: none;
     padding: 0 0 0 4px; font-size: .75rem; color: var(--text-dim);
     cursor: pointer; font-weight: 500;
+    flex-shrink: 0;
   }
   .user-chip .logout:hover { color: var(--danger); transform: none; filter: none; box-shadow: none; }
 
@@ -208,6 +214,7 @@
     transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
     display: flex; flex-direction: column; gap: 6px;
     font-family: inherit;
+    min-width: 0;
   }
   .source-tab .headline { font-size: 1rem; font-weight: 700; color: var(--text); line-height: 1.3; }
   .source-tab .subline { font-size: .76rem; font-weight: 500; color: var(--text-dim); line-height: 1.4; }
@@ -260,6 +267,7 @@
     box-shadow: none; transition: background .2s, color .2s;
     display: flex; align-items: center; justify-content: center; gap: 6px;
     white-space: nowrap;
+    min-width: 0;
   }
   .tab:hover { color: var(--text-mid); transform: none; box-shadow: none; filter: none; background: transparent; }
   .tab.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: 0 6px 14px var(--accent-glow); }
@@ -367,7 +375,7 @@
   }
   .album-actions button { flex: 1; min-width: 180px; }
 
-  /* TRACKS */
+  /* TRACKS — фикс вылезания ползунков */
   .tracks-card {
     background: var(--panel-2);
     border: 1px solid var(--border-soft);
@@ -375,9 +383,10 @@
     padding: 10px 12px;
     max-height: min(440px, 45vh);
     overflow-y: auto;
+    overflow-x: hidden;
     box-sizing: border-box;
+    width: 100%;
   }
-  /* Сингл — критерии на странице */
   .single-card {
     background: var(--panel-2);
     border: 1px solid var(--border-soft);
@@ -385,6 +394,8 @@
     padding: 16px 18px;
     max-height: min(520px, 55vh);
     overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
   }
   .single-header {
     font-size: .82rem;
@@ -415,6 +426,7 @@
     font-weight: 800;
     color: var(--accent);
     line-height: 1;
+    font-variant-numeric: tabular-nums;
   }
   .single-total .label {
     font-size: .8rem;
@@ -430,7 +442,10 @@
     color: var(--gold-lvl, #ffd700);
   }
 
-  .tracks-card .tracks-list { display: flex; flex-direction: column; gap: 8px; }
+  .tracks-card .tracks-list {
+    display: flex; flex-direction: column; gap: 8px;
+    width: 100%; min-width: 0;
+  }
   .track-row {
     display: flex; align-items: center; gap: 12px;
     padding: 10px 12px; border-radius: 10px;
@@ -439,6 +454,10 @@
     transition: border-color .2s, background .2s, transform .15s;
     animation: fadeUp .3s ease both;
     min-height: 44px;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
   .track-row:hover { border-color: var(--accent); background: var(--panel-3); transform: translateX(2px); }
   .track-row .track-name {
@@ -462,7 +481,11 @@
     font-weight: 700; flex-shrink: 0; margin-left: 4px;
     text-transform: uppercase; letter-spacing: .04em;
   }
-  .track-row .control { flex: 1 1 40%; min-width: 100px; display: flex; align-items: center; }
+  .track-row .control {
+    flex: 1 1 40%;
+    min-width: 0;
+    display: flex; align-items: center;
+  }
   .track-row .range-val {
     flex: 0 0 36px; text-align: right; font-weight: 700;
     color: var(--accent-3); font-size: .95rem;
@@ -474,6 +497,8 @@
     width: 100%; height: 6px;
     background: var(--border); border-radius: 3px; outline: none;
     cursor: pointer;
+    min-width: 0;
+    max-width: 100%;
   }
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none; width: 20px; height: 20px;
@@ -489,7 +514,7 @@
     border-radius: 50%; cursor: pointer; border: 2px solid #fff;
   }
 
-  .stars { display: flex; gap: 2px; user-select: none; align-items: center; }
+  .stars { display: flex; gap: 2px; user-select: none; align-items: center; flex-wrap: nowrap; }
   .star {
     background: none; border: none; padding: 0;
     font-size: 1rem; line-height: 1;
@@ -505,6 +530,7 @@
   .rating-mode {
     display: flex; gap: 6px; margin-bottom: 12px;
     justify-content: space-between; align-items: center;
+    flex-wrap: wrap;
   }
   .rating-mode .label { font-size: .8rem; color: var(--text-dim); }
   .rating-mode .modes { display: flex; gap: 6px; }
@@ -528,6 +554,8 @@
   .overall-head {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
   }
   .overall-head .lbl {
     font-size: .88rem; font-weight: 600; color: var(--text-mid);
@@ -542,7 +570,7 @@
   }
   .overall-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .overall-body .control { flex: 1 1 200px; min-width: 0; display: flex; align-items: center; }
-  .overall-body input[type="range"] { flex: 1; }
+  .overall-body input[type="range"] { flex: 1; min-width: 0; }
   .overall-body .stars { flex: 1; }
   .overall-body .auto-btn { padding: 8px 14px; font-size: .82rem; white-space: nowrap; }
 
@@ -706,6 +734,7 @@
     transition: transform .18s, border-color .2s, background .2s, box-shadow .25s;
     animation: fadeUp .3s ease both;
     position: relative;
+    min-width: 0;
   }
   .history-item:hover {
     background: var(--panel-3); border-color: var(--accent);
@@ -734,7 +763,6 @@
     font-weight: 800; font-size: 1.15rem;
     padding: 0 6px; font-variant-numeric: tabular-nums; flex-shrink: 0;
   }
-  /* Цвета оценки по тиру */
   .history-item.tier-coal   .score { color: var(--coal); }
   .history-item.tier-bronze .score { color: var(--bronze); }
   .history-item.tier-silver .score { color: var(--silver); }
@@ -810,6 +838,7 @@
     transition: transform .18s, border-color .2s, background .2s, box-shadow .25s;
     animation: fadeUp .3s ease both;
     position: relative;
+    min-width: 0;
   }
   .board-item:hover {
     background: var(--panel-3); border-color: var(--accent);
@@ -876,6 +905,7 @@
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
+    overflow-x: hidden;
     box-shadow: 0 40px 100px rgba(0,0,0,.6);
     border: 1px solid var(--border);
     transform: scale(.94) translateY(10px);
@@ -895,6 +925,7 @@
   .modal .track-header {
     display: flex; gap: 14px; align-items: center;
     margin-bottom: 20px; padding-right: 44px;
+    min-width: 0;
   }
   .modal .track-header img {
     width: 64px; height: 64px; border-radius: 10px; object-fit: cover;
@@ -938,26 +969,30 @@
   .criterion {
     padding: 12px 0;
     border-bottom: 1px solid var(--border-soft);
+    min-width: 0;
   }
   .criterion:last-of-type { border-bottom: none; }
   .criterion-head {
     display: flex; justify-content: space-between; align-items: center;
     gap: 10px; margin-bottom: 8px;
+    min-width: 0;
   }
   .criterion-name {
     display: flex; align-items: center; gap: 8px;
     font-size: .9rem; font-weight: 600; color: var(--text);
+    min-width: 0;
   }
-  .criterion-emoji { font-size: 1.05rem; }
+  .criterion-emoji { font-size: 1.05rem; flex-shrink: 0; }
   .criterion-val {
     font-size: .95rem; font-weight: 700;
     color: var(--accent-3);
     font-variant-numeric: tabular-nums;
     min-width: 32px; text-align: right;
+    flex-shrink: 0;
   }
-  .criterion-controls { display: flex; align-items: center; gap: 10px; }
+  .criterion-controls { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .criterion-controls .stars { flex: 0 0 auto; }
-  .criterion-controls input[type="range"] { flex: 1; }
+  .criterion-controls input[type="range"] { flex: 1; min-width: 0; }
 
   .modal-total {
     margin-top: 18px; padding: 16px;
@@ -966,6 +1001,7 @@
     border-radius: 14px;
     display: flex; align-items: center; justify-content: space-between;
     gap: 16px;
+    flex-wrap: wrap;
   }
   .modal-total .label { font-size: .82rem; color: var(--text-dim); margin-bottom: 4px; }
   .modal-total .value {
@@ -990,7 +1026,7 @@
     box-shadow: 0 14px 40px var(--accent-glow);
     z-index: 1000; opacity: 0; pointer-events: none;
     transition: opacity .3s, transform .3s;
-    max-width: 90vw; text-align: center;
+    max-width: calc(100vw - 40px); text-align: center;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -1002,42 +1038,75 @@
 
   /* MOBILE */
   @media (max-width: 700px) {
-    body { padding: 12px 8px 40px; }
-    .container { padding: 18px 14px; border-radius: 18px; }
-    .top-bar h1 { font-size: 1.2rem; }
-    .icon-btn { width: 40px; height: 40px; font-size: 1.05rem; }
-    .subtitle { font-size: .8rem; margin-bottom: 16px; }
+    body { padding: 10px 6px 40px; }
+    .container { padding: 16px 12px; border-radius: 18px; }
+    .top-bar h1 { font-size: 1.15rem; }
+    .top-actions { gap: 6px; }
+    .icon-btn { width: 38px; height: 38px; font-size: 1rem; }
+    .user-chip { padding: 4px 10px 4px 4px; font-size: .8rem; }
+    .user-chip .avatar { width: 26px; height: 26px; font-size: .75rem; }
+    .user-chip .nick { max-width: 70px; font-size: .8rem; }
+    .subtitle { font-size: .78rem; margin-bottom: 14px; }
     .source-tabs { flex-direction: column; gap: 8px; }
-    .source-tab { padding: 14px 14px; }
-    .source-tab .headline { font-size: .95rem; }
-    .source-tab .subline { font-size: .72rem; }
+    .source-tab { padding: 12px 14px; }
+    .source-tab .headline { font-size: .92rem; }
+    .source-tab .subline { font-size: .7rem; }
     .tabs { padding: 4px; }
-    .tab { font-size: .82rem; padding: 10px 8px; }
-    input[type="text"] { font-size: 1rem; padding: 14px 16px; }
+    .tab { font-size: .78rem; padding: 10px 6px; }
+    input[type="text"] { font-size: 1rem; padding: 13px 14px; }
     .album-card { padding: 12px; gap: 12px; min-height: 90px; }
-    .album-card img.cover { width: 68px; height: 68px; }
-    .album-card .info .title { font-size: .95rem; }
-    .album-card .info .artist { font-size: .8rem; }
-    .tracks-card { padding: 8px; max-height: min(500px, 50vh); }
+    .album-card img.cover { width: 64px; height: 64px; }
+    .album-card .info .title { font-size: .92rem; }
+    .album-card .info .artist { font-size: .78rem; }
+    .album-actions { gap: 8px; }
+    .album-actions button { min-width: 0; flex: 1 1 calc(50% - 4px); font-size: .85rem; padding: 10px; }
+    .tracks-card { padding: 8px; max-height: min(500px, 55vh); }
+    .single-card { padding: 12px; max-height: min(520px, 60vh); }
+
+    /* Треки — вертикально, ползунок под названием */
     .track-row {
-      flex-direction: column; align-items: stretch; gap: 8px; padding: 12px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      padding: 12px;
       position: relative;
     }
-    .track-row .track-name { flex: 1 1 auto; font-size: .92rem; padding: 4px 0; }
-    .track-row .control { flex: 1 1 auto; min-width: 0; }
+    .track-row .track-name {
+      flex: 1 1 auto;
+      font-size: .92rem;
+      padding: 4px 0;
+      padding-right: 40px;
+      width: 100%;
+    }
+    .track-row .control {
+      flex: 1 1 auto;
+      min-width: 0;
+      width: 100%;
+    }
     .track-row .range-val {
-      flex: 0 0 auto; font-size: 1rem; min-width: 32px;
-      text-align: right; position: absolute; right: 12px; top: 14px;
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      flex: 0 0 auto;
+      font-size: .95rem;
+      min-width: 32px;
     }
     input[type="range"] { height: 8px; }
     input[type="range"]::-webkit-slider-thumb { width: 26px; height: 26px; }
     input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; }
-    .stars { gap: 6px; }
-    .star { font-size: 1.4rem; }
+    .stars { gap: 4px; flex-wrap: wrap; }
+    .star { font-size: 1.3rem; }
+
+    .rating-mode { gap: 8px; }
+    .rating-mode .label { font-size: .75rem; width: 100%; }
+    .rating-mode .modes { width: 100%; }
+    .mode-btn { flex: 1; font-size: .78rem; padding: 8px; }
+
     .overall-card { padding: 12px; }
     .overall-body { flex-direction: column; align-items: stretch; gap: 10px; }
     .overall-body .control { flex: 1 1 auto; }
     .overall-body .auto-btn { width: 100%; }
+
     .result { padding: 18px 16px; }
     .result .score-block { flex-direction: column; gap: 12px; }
     .result .side { text-align: center; }
@@ -1047,30 +1116,43 @@
     .hist-bars { height: 50px; gap: 4px; }
     .hist-label { font-size: .65rem; }
     .result-actions { flex-direction: column; }
+    .result-actions button { width: 100%; }
+
     .modal-backdrop { padding: 0; align-items: flex-end; }
-    .modal { border-radius: 22px 22px 0 0; padding: 22px 18px; max-height: 92vh; transform: translateY(100%); }
+    .modal {
+      border-radius: 22px 22px 0 0;
+      padding: 20px 16px;
+      max-height: 94vh;
+      transform: translateY(100%);
+    }
     .modal-backdrop.open .modal { transform: translateY(0); }
-    .modal .track-header .track-title { font-size: .98rem; }
-    .criterion-name { font-size: .86rem; }
+    .modal .track-header .track-title { font-size: .95rem; }
+    .criterion-name { font-size: .85rem; gap: 6px; }
+    .criterion-emoji { font-size: .95rem; }
     .criterion-controls { gap: 8px; }
     .criterion-controls .stars .star { font-size: 1.15rem; }
     .modal-total { flex-direction: column; align-items: stretch; gap: 12px; text-align: center; }
-    .modal-total .value { font-size: 2.4rem; }
+    .modal-total .value { font-size: 2.2rem; }
     .modal-total button { width: 100%; padding: 14px; font-size: 1rem; }
+
     .history-item { padding: 10px; gap: 10px; }
     .history-item img { width: 44px; height: 44px; }
     .history-item .tier-tag { display: none; }
     .history-item .score { font-size: 1rem; }
-    .toast { bottom: 16px; font-size: .85rem; padding: 12px 18px; }
+
     .board-item { flex-wrap: wrap; gap: 10px; padding: 10px; }
     .board-item img { width: 52px; height: 52px; }
     .board-item .numbers { width: 100%; justify-content: space-around; gap: 8px; margin-top: 4px; }
     .num-block { min-width: 0; flex: 1; }
+
+    .toast { bottom: 16px; font-size: .82rem; padding: 11px 16px; }
   }
   @media (max-width: 420px) {
-    .tab { font-size: .74rem; padding: 9px 6px; gap: 4px; }
+    .tab { font-size: .72rem; padding: 9px 4px; gap: 3px; }
     .track-row .track-name { font-size: .86rem; }
-    .star { font-size: 1.25rem; }
+    .star { font-size: 1.15rem; }
+    .user-chip .nick { max-width: 50px; }
+    .top-bar h1 { font-size: 1.05rem; }
   }
   @media (hover: none) {
     .track-row:hover { transform: none; }
@@ -1183,16 +1265,16 @@
 
     <!-- Треки (альбом — 2+ треков) -->
     <div id="tracksSection">
-    <div class="rating-mode">
-      <div class="label">Оценки треков (1–10) · клик по названию — подробная оценка</div>
-      <div class="modes">
-        <button class="mode-btn" data-mode="slider" onclick="setRatingMode('slider')">Ползунки</button>
-        <button class="mode-btn" data-mode="stars" onclick="setRatingMode('stars')">Звёзды</button>
+      <div class="rating-mode">
+        <div class="label">Оценки треков (1–10) · клик по названию — подробная оценка</div>
+        <div class="modes">
+          <button class="mode-btn" data-mode="slider" onclick="setRatingMode('slider')">Ползунки</button>
+          <button class="mode-btn" data-mode="stars" onclick="setRatingMode('stars')">Звёзды</button>
+        </div>
       </div>
-    </div>
-    <div class="tracks-card" id="tracksCard">
-      <div class="tracks-list" id="tracksList"></div>
-    </div>
+      <div class="tracks-card" id="tracksCard">
+        <div class="tracks-list" id="tracksList"></div>
+      </div>
     </div>
 
     <!-- Сингл (1 трек) — критерии прямо на странице -->
@@ -1204,7 +1286,7 @@
           <div>
             <div class="label">Итоговая оценка трека</div>
             <div class="value" id="singleTotal">—</div>
-            <div class="hint" id="singleHint">из 10</div>
+            <div class="hint" id="singleHint">из 360</div>
           </div>
         </div>
       </div>
@@ -1212,10 +1294,10 @@
 
     <div class="divider" id="overallDivider"></div>
 
-    <!-- Атмосфера / вайб (множитель) — только для альбомов -->
+    <!-- Атмосфера / вайб (множитель альбома) — только для альбомов -->
     <div class="overall-card" id="overallCard">
       <div class="overall-head">
-        <div class="lbl">🌌 Атмосфера / вайб <span style="font-size:.72rem;color:var(--text-dim);font-weight:500">(множитель)</span></div>
+        <div class="lbl">🌌 Атмосфера / вайб <span style="font-size:.72rem;color:var(--text-dim);font-weight:500">(множитель альбома)</span></div>
         <div class="badge" id="overallBadge">7 / 10</div>
       </div>
       <div class="overall-body" id="overallRow"></div>
@@ -1328,31 +1410,33 @@
     </button>
 
     <div class="criteria-help hidden" id="helpBox">
-  <div class="row">
-    <b>🖋 Рифмы / образы</b> — качество текста: метафоры, сравнения, игра слов. Насколько образы живые и точные, рифмы свежие или заезженные, есть ли слой смысла за прямым текстом.
-    <span class="ex">Пример: 3 — банальные рифмы «любовь-кровь», 7 — неожиданные образы и двойные смыслы, 10 — каждая строка — отдельное произведение.</span>
-  </div>
-  <div class="row">
-    <b>🎼 Структура / ритмика</b> — как трек выстроен: куплет-припев, смена частей, динамика развития. Держит ли ритм, есть ли напряжение и разрешение, не проваливается ли середина.
-    <span class="ex">Пример: 3 — монотонно, ничего не происходит, 7 — есть развитие и кульминация, 10 — идеальная arquitecture, каждая секунда на месте.</span>
-  </div>
-  <div class="row">
-    <b>🎭 Реализация стиля</b> — насколько трек воплощает свой жанр или идею. Если это бум-бэп — качает ли как надо, если эксперимент — удивляет ли, если лирика — трогает ли.
-    <span class="ex">Пример: 3 — стиль заявлен, но не дотянут, 7 — уверенно в жанре, 10 — эталон своего стиля, ориентир для других.</span>
-  </div>
-  <div class="row">
-    <b>⚡ Индивидуальность / харизма</b> — отличие от других, узнаваемость, личная подача. Можно ли узнать исполнителя с первых секунд, есть ли своя фишка, или это копия.
-    <span class="ex">Пример: 3 — звучит как все, 7 — есть своя изюминка, 10 — неповторимый почерк, невозможно спутать.</span>
-  </div>
-  <div class="row">
-    <b>🌌 Атмосфера / вайб <span style="font-size:.72rem;color:var(--text-dim);font-weight:500">(множитель)</span></b> — настроение и погружение. Создаёт ли трек особое пространство, хочется ли в него возвращаться, есть ли «вайб». Работает как множитель: даже при средних критериях высокий вайб сильно поднимет оценку и наоборот.
-    <span class="ex">Пример: 3 — забывается сразу, 7 — приятное настроение, 10 — целый мир в одной песне.</span>
-  </div>
-  <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
-    <b>Формула:</b> среднее по 4 критериям × (атмосфера / вайб ÷ 10). Итог округляется до целого от 1 до 10. Максимум — 10 — только если все критерии и вайб по 10.
-  </div>
-</div>
-
+      <div class="row">
+        <b>🖋 Рифмы / образы</b> — качество текста: метафоры, сравнения, игра слов. Насколько образы живые и точные, рифмы свежие или заезженные, есть ли слой смысла за прямым текстом.
+        <span class="ex">Пример: 3 — банальные рифмы «любовь-кровь», 7 — неожиданные образы и двойные смыслы, 10 — каждая строка — отдельное произведение.</span>
+      </div>
+      <div class="row">
+        <b>🎼 Структура / ритмика</b> — как трек выстроен: куплет-припев, смена частей, динамика развития. Держит ли ритм, есть ли напряжение и разрешение, не проваливается ли середина.
+        <span class="ex">Пример: 3 — монотонно, ничего не происходит, 7 — есть развитие и кульминация, 10 — идеальная архитектура, каждая секунда на месте.</span>
+      </div>
+      <div class="row">
+        <b>🎭 Реализация стиля</b> — насколько трек воплощает свой жанр или идею. Если это бум-бэп — качает ли как надо, если эксперимент — удивляет ли, если лирика — трогает ли.
+        <span class="ex">Пример: 3 — стиль заявлен, но не дотянут, 7 — уверенно в жанре, 10 — эталон своего стиля, ориентир для других.</span>
+      </div>
+      <div class="row">
+        <b>⚡ Индивидуальность / харизма</b> — отличие от других, узнаваемость, личная подача. Можно ли узнать исполнителя с первых секунд, есть ли своя фишка, или это копия.
+        <span class="ex">Пример: 3 — звучит как все, 7 — есть своя изюминка, 10 — неповторимый почерк, невозможно спутать.</span>
+      </div>
+      <div class="row">
+        <b>🌌 Атмосфера / вайб</b> — настроение и погружение. Создаёт ли трек особое пространство, хочется ли в него возвращаться. <b>Для сингла</b> работает как множитель: даже при средних критериях высокий вайб сильно поднимет оценку и наоборот. <b>Для альбома</b> — это отдельный критерий, который выставляется отдельно на странице.
+        <span class="ex">Пример: 3 — забывается сразу, 7 — приятное настроение, 10 — целый мир в одной песне.</span>
+      </div>
+      <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
+        <b>Формула для трека в альбоме:</b> среднее по 4 критериям (рифмы, структура, стиль, харизма) × (атмосфера ÷ 10). Итог 1–10.
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <b>Формула для сингла:</b> среднее по 4 критериям × (атмосфера ÷ 10) × 3.6. Итог 1–360.
+      </div>
+    </div>
 
     <div id="criteriaList"></div>
 
@@ -1399,8 +1483,8 @@
       <div id="boardModalUsers" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto;"></div>
     </div>
 
-    <div style="margin-top:18px; display:flex; gap:10px;">
-      <button onclick="openCalculatorFromBoard()" style="flex:1;">⭐ Поставить свою оценку</button>
+    <div style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button onclick="openCalculatorFromBoard()" style="flex:1; min-width:180px;">⭐ Поставить свою оценку</button>
       <button class="btn-secondary" onclick="closeBoardModal()">Закрыть</button>
     </div>
   </div>
@@ -1409,16 +1493,16 @@
 <div class="toast" id="toast"></div>
 <script type="module">
 // ============================================================
-//  FIREBASE + FIRESTORE
+//  FIREBASE
 // ============================================================
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged, updateProfile
+  signOut, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
   getFirestore, collection, doc, setDoc, getDoc, getDocs,
-  query, where, orderBy, deleteDoc, serverTimestamp
+  query, where, deleteDoc, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -1444,9 +1528,9 @@ const DISCOGS_BASE = 'https://api.discogs.com';
 const FINAL_MAX = 360;
 const MAX_TRACKS = 30;
 const DEBOUNCE_MS = 400;
-const LS_THEME  = 'albumRating_theme_v8';
-const LS_MODE   = 'albumRating_mode_v8';
-const LS_SOURCE = 'albumRating_source_v8';
+const LS_THEME  = 'albumRating_theme_v9';
+const LS_MODE   = 'albumRating_mode_v9';
+const LS_SOURCE = 'albumRating_source_v9';
 
 const TIERS = [
   { min: 0.00, max: 0.15, emoji: '⚫', name: 'Уголь',      cssClass: 'tier-coal',    color: 'var(--coal)' },
@@ -1470,6 +1554,7 @@ const VERDICTS = {
   'Бриллиант': 'Идеальный альбом. Без единой слабины.'
 };
 
+// Критерии трека (vibe — всегда последний, работает как множитель)
 const TRACK_CRITERIA = [
   { key: 'rhymes',     emoji: '🖋', name: 'Рифмы / образы' },
   { key: 'structure',  emoji: '🎼', name: 'Структура / ритмика' },
@@ -1477,6 +1562,8 @@ const TRACK_CRITERIA = [
   { key: 'charisma',   emoji: '⚡', name: 'Индивидуальность / харизма' },
   { key: 'vibe',       emoji: '🌌', name: 'Атмосфера / вайб' }
 ];
+const VIBE_KEY = 'vibe';
+const MAIN_CRITERIA = TRACK_CRITERIA.filter(c => c.key !== VIBE_KEY);
 
 function getTier(finalScore) {
   const pct = finalScore / FINAL_MAX;
@@ -1487,8 +1574,8 @@ function getTier(finalScore) {
 // ============================================================
 //  СОСТОЯНИЕ
 // ============================================================
-let currentUser = null;    // Firebase User
-let userProfile = null;    // { nickname, uid }
+let currentUser = null;
+let userProfile = null;
 let currentAlbum = null;
 let currentTracks = [];
 let ratingMode = 'slider';
@@ -1496,7 +1583,7 @@ let overallValue = 7;
 let currentSource = 'deezer';
 let lastFinalScore = null;
 
-let trackDetails = {};     // trackIndex -> { music, lyrics, vocals, rhythm, vibe, overall }
+let trackDetails = {};
 let lastSuggestions = [];
 let activeIndex = -1;
 let debounceTimer = null;
@@ -1504,13 +1591,19 @@ let debounceTimer = null;
 let modalTrackIndex = -1;
 let modalValues = {};
 
-let boardData = [];        // массив релизов на доске
+let boardData = [];
 let boardModalRelease = null;
+
+let myRatings = [];
+
+// Для сингла — оценка трека в 360-шкале
+let singleScore360 = null;
+let singleValues = {};
 
 // ============================================================
 //  АВТОРИЗАЦИЯ
 // ============================================================
-let authMode = 'login';    // 'login' | 'register'
+let authMode = 'login';
 
 function toggleAuthMode() {
   authMode = authMode === 'login' ? 'register' : 'login';
@@ -1536,6 +1629,7 @@ async function handleAuthSubmit() {
 
   if (!email || !password) { errEl.textContent = 'Заполните email и пароль'; return; }
   if (authMode === 'register' && !nick) { errEl.textContent = 'Введите никнейм'; return; }
+  if (authMode === 'register' && nick.length < 2) { errEl.textContent = 'Ник слишком короткий'; return; }
   if (password.length < 6) { errEl.textContent = 'Пароль минимум 6 символов'; return; }
 
   btn.disabled = true;
@@ -1577,18 +1671,15 @@ async function handleLogout() {
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   if (user) {
-    // Подгружаем профиль
     const userRef = doc(db, 'users', user.uid);
     const snap = await getDoc(userRef);
     if (snap.exists()) {
       userProfile = snap.data();
     } else {
-      // Пользователь создан вне нашего приложения — создаём профиль
       const nick = user.email.split('@')[0];
       await setDoc(userRef, { nickname: nick, email: user.email, createdAt: serverTimestamp() });
       userProfile = { nickname: nick, email: user.email };
     }
-    // Обновляем UI
     document.getElementById('authContainer').classList.add('hidden');
     document.getElementById('mainContainer').classList.remove('hidden');
     updateUserChip();
@@ -1627,26 +1718,26 @@ function toggleTheme() {
   applyTheme(next);
   localStorage.setItem(LS_THEME, next);
 }
-window.toggleTheme = toggleTheme;
 
-function initRatingMode() { setRatingMode(localStorage.getItem(LS_MODE) || 'slider', false); }
+function initRatingMode() {
+  ratingMode = localStorage.getItem(LS_MODE) || 'slider';
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === ratingMode));
+}
 function setRatingMode(mode) {
   ratingMode = mode;
   localStorage.setItem(LS_MODE, mode);
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-  
+
   if (currentTracks.length === 1) {
-    // Для сингла перерисовываем критерии
     renderSingleCriteria();
-  } else {
+  } else if (currentTracks.length > 1) {
     const scores = [];
     document.querySelectorAll('#tracksList .track-row').forEach(r => scores.push(getRowValue(r)));
     renderTracks(scores);
+    renderOverall(overallValue);
   }
-  renderOverall(overallValue);
   updateScore();
 }
-window.setRatingMode = setRatingMode;
 
 function initSource() {
   currentSource = localStorage.getItem(LS_SOURCE) || 'deezer';
@@ -1656,13 +1747,26 @@ function setSource(src) {
   currentSource = src;
   localStorage.setItem(LS_SOURCE, src);
   applySourceUI();
-  document.getElementById('newGrid').dataset.loaded = '';
-  document.getElementById('topGrid').dataset.loaded = '';
-  document.getElementById('newGrid').innerHTML = '';
-  document.getElementById('topGrid').innerHTML = '';
+
+  // Сброс кэша вкладок новинок/топа
+  const newGrid = document.getElementById('newGrid');
+  const topGrid = document.getElementById('topGrid');
+  newGrid.dataset.loaded = '';
+  topGrid.dataset.loaded = '';
+  newGrid.innerHTML = '';
+  topGrid.innerHTML = '';
+
+  // Если вкладка "новинки" активна — сразу перезагружаем
+  if (!document.getElementById('tab-new').classList.contains('hidden')) {
+    loadNew();
+  }
+  // Если вкладка "топ" активна — сразу перезагружаем
+  if (!document.getElementById('tab-top').classList.contains('hidden')) {
+    loadTop();
+  }
+
   lastSuggestions = []; closeSuggestions();
 }
-window.setSource = setSource;
 
 function applySourceUI() {
   document.querySelectorAll('.source-tab').forEach(b =>
@@ -1723,7 +1827,6 @@ function switchTab(tab) {
   if (tab === 'new' && !document.getElementById('newGrid').dataset.loaded) loadNew();
   if (tab === 'top' && !document.getElementById('topGrid').dataset.loaded) loadTop();
 }
-window.switchTab = switchTab;
 
 function renderSkeletons(grid, count = 12) {
   grid.innerHTML = '';
@@ -1839,7 +1942,6 @@ function onSearchInput() {
   renderStatus('Введите ещё…', true);
   debounceTimer = setTimeout(() => fetchSuggestions(q), DEBOUNCE_MS);
 }
-window.onSearchInput = onSearchInput;
 
 async function fetchSuggestions(q) {
   renderStatus('Поиск…', true);
@@ -1903,7 +2005,6 @@ function renderStatus(text, withSpinner) {
 }
 function showSuggestions() { if (lastSuggestions.length) document.getElementById('suggestionList').classList.add('open'); }
 function closeSuggestions() { document.getElementById('suggestionList').classList.remove('open'); }
-window.showSuggestions = showSuggestions;
 
 function updateActiveHighlight() {
   document.querySelectorAll('#suggestionList .suggestion').forEach(el => {
@@ -1933,7 +2034,6 @@ function onSearchKeydown(e) {
     closeSuggestions();
   }
 }
-window.onSearchKeydown = onSearchKeydown;
 
 function chooseSuggestion(i) {
   const album = lastSuggestions[i];
@@ -1988,10 +2088,10 @@ async function loadAlbum(album) {
     currentTracks = songs.map(s => ({ name: s.name, artist: s.artist }));
     trackDetails = {};
     overallValue = 7;
+    singleScore360 = null;
+    singleValues = {};
 
-    // Если у пользователя уже есть оценка этого релиза — подгружаем её
     await prefillUserRatingIfExists(album.source, album.id);
-
     renderAlbum();
   } catch (e) {
     errorBox.textContent = 'Не удалось загрузить: ' + e.message;
@@ -2010,11 +2110,12 @@ async function prefillUserRatingIfExists(source, releaseId) {
       currentAlbum.artwork = data.album.artwork || currentAlbum.artwork;
       overallValue = data.overall || 7;
       trackDetails = data.details || {};
-      // scores подгрузим в renderAlbum через currentAlbum._prefillScores
-      currentAlbum._prefillScores = data.scores || null;
-      // Для сингла: если есть details[0], используем их
-      if (data.details && data.details[0]) {
-        window._singleValues = { ...data.details[0] };
+
+      if (currentTracks.length === 1) {
+        singleScore360 = data.final || null;
+        singleValues = (data.details && data.details[0]) ? { ...data.details[0] } : {};
+      } else {
+        currentAlbum._prefillScores = data.scores || null;
       }
       showToast('Загружена ваша предыдущая оценка');
     }
@@ -2036,53 +2137,51 @@ function renderAlbum() {
   `;
 
   const isSingle = currentTracks.length === 1;
-
-  // Hide/show single vs album sections
   const tracksSection = document.getElementById('tracksSection');
   const singleSection = document.getElementById('singleSection');
   const overallCardEl = document.getElementById('overallCard');
+  const overallDividerEl = document.getElementById('overallDivider');
+
   if (isSingle) {
     tracksSection.classList.add('hidden');
     singleSection.classList.remove('hidden');
     if (overallCardEl) overallCardEl.style.display = 'none';
-    const overallDividerEl = document.getElementById('overallDivider');
     if (overallDividerEl) overallDividerEl.style.display = 'none';
     renderSingleCriteria();
   } else {
     tracksSection.classList.remove('hidden');
     singleSection.classList.add('hidden');
     if (overallCardEl) overallCardEl.style.display = '';
-    const overallDividerEl = document.getElementById('overallDivider');
     if (overallDividerEl) overallDividerEl.style.display = '';
     const prefill = currentAlbum._prefillScores;
     const initialScores = prefill && prefill.length === currentTracks.length
       ? prefill
       : currentTracks.map(() => 7);
     renderTracks(initialScores);
+    renderOverall(overallValue);
   }
 
   document.getElementById('step1').classList.add('hidden');
   document.getElementById('historySection').classList.add('hidden');
   document.getElementById('boardSection').classList.add('hidden');
   document.getElementById('step2').classList.remove('hidden');
-  renderOverall(overallValue);
   updateScore();
 }
 
 // ============================================================
-//  ОЦЕНКА СИНГЛА (1 трек) — критерии прямо на странице
+//  ОЦЕНКА СИНГЛА — 5 критериев, шкала 1–360
 // ============================================================
 function renderSingleCriteria() {
   const wrap = document.getElementById('singleCriteriaList');
   wrap.innerHTML = '';
 
-  // Load stored details or defaults
-  const stored = trackDetails[0];
-  const values = {};
-  TRACK_CRITERIA.forEach(c => { values[c.key] = stored ? stored[c.key] : 7; });
+  // Значения из singleValues, если есть, иначе 7
+  TRACK_CRITERIA.forEach(c => {
+    if (singleValues[c.key] == null) singleValues[c.key] = 7;
+  });
 
   TRACK_CRITERIA.forEach(c => {
-    const isVibe = c.key === 'vibe';
+    const isVibe = c.key === VIBE_KEY;
     const block = document.createElement('div');
     block.className = 'criterion single-criterion';
 
@@ -2091,52 +2190,82 @@ function renderSingleCriteria() {
     const multBadge = isVibe ? ' <span style="font-size:.72rem;color:var(--text-dim);font-weight:500">(множитель)</span>' : '';
     head.innerHTML = `
       <div class="criterion-name"><span class="criterion-emoji">${c.emoji}</span><span>${c.name}${multBadge}</span></div>
-      <div class="criterion-val" data-key="${c.key}">${values[c.key]}</div>
+      <div class="criterion-val" data-key="${c.key}">${singleValues[c.key]}</div>
     `;
     block.appendChild(head);
 
     const controls = document.createElement('div');
     controls.className = 'criterion-controls';
 
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.min = 1; slider.max = 10; slider.step = 1;
-    slider.value = values[c.key];
-    updateSliderFill(slider);
-    slider.oninput = () => {
-      values[c.key] = parseInt(slider.value);
+    if (ratingMode === 'stars') {
+      const stars = document.createElement('div');
+      stars.className = 'stars';
+      for (let s = 1; s <= 10; s++) {
+        const star = document.createElement('button');
+        star.type = 'button';
+        star.className = 'star' + (s <= singleValues[c.key] ? ' on' : '');
+        star.textContent = '★';
+        star.dataset.value = s;
+        star.onmouseenter = () => previewStars(stars, s);
+        star.onmouseleave = () => previewStars(stars, singleValues[c.key]);
+        star.onclick = () => {
+          singleValues[c.key] = s;
+          previewStars(stars, s);
+          head.querySelector('.criterion-val').textContent = s;
+          updateSingleTotal();
+        };
+        stars.appendChild(star);
+      }
+      controls.appendChild(stars);
+    } else {
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.min = 1; slider.max = 10; slider.step = 1;
+      slider.value = singleValues[c.key];
       updateSliderFill(slider);
-      head.querySelector('.criterion-val').textContent = slider.value;
-      updateSingleTotal(values);
-    };
-    controls.appendChild(slider);
+      slider.oninput = () => {
+        singleValues[c.key] = parseInt(slider.value);
+        updateSliderFill(slider);
+        head.querySelector('.criterion-val').textContent = slider.value;
+        updateSingleTotal();
+      };
+      controls.appendChild(slider);
+    }
+
     block.appendChild(controls);
     wrap.appendChild(block);
   });
 
-  updateSingleTotal(values);
-  // Store ref for updateScore
-  window._singleValues = values;
+  updateSingleTotal();
 }
 
-function updateSingleTotal(values) {
-  const mainCrits = TRACK_CRITERIA.filter(c => c.key !== 'vibe');
+// Итог сингла — в 360-шкале
+// Формула: среднее по 4 критериям × (vibe / 10) × 36 = 0..360
+function updateSingleTotal() {
   let sum = 0;
-  mainCrits.forEach(c => { sum += values[c.key]; });
-  const avg = sum / mainCrits.length;
-  const vibe = values.vibe;
-  const raw = avg * vibe / 10;
-  const rounded = Math.max(1, Math.min(10, Math.round(raw)));
+  MAIN_CRITERIA.forEach(c => { sum += singleValues[c.key]; });
+  const avg = sum / MAIN_CRITERIA.length;
+  const vibe = singleValues[VIBE_KEY] || 10;
+  const final360 = Math.max(1, Math.min(360, Math.round(avg * vibe / 10 * 36)));
+  singleScore360 = final360;
+
   const totalEl = document.getElementById('singleTotal');
   const hintEl = document.getElementById('singleHint');
-  totalEl.textContent = rounded;
-  totalEl.classList.toggle('max', rounded >= 10);
-  hintEl.innerHTML = `из 10<br><span style="opacity:.7">(${avg.toFixed(2)} × ${vibe}/10)</span>`;
-  // Store for updateScore
-  window._singleTrackScore = rounded;
-  window._singleValues = values;
+  if (totalEl) {
+    totalEl.textContent = final360;
+    totalEl.classList.toggle('max', final360 >= 360);
+  }
+  if (hintEl) {
+    hintEl.innerHTML = `из 360<br><span style="opacity:.7">(${avg.toFixed(2)} × ${vibe}/10 × 36)</span>`;
+  }
+
+  // Live-update блока результата
+  updateScore();
 }
 
+// ============================================================
+//  ОТРИСОВКА ТРЕКОВ АЛЬБОМА
+// ============================================================
 function renderTracks(values) {
   const list = document.getElementById('tracksList');
   list.innerHTML = '';
@@ -2222,11 +2351,12 @@ function updateSliderFill(slider) {
 function getRowValue(row) { return parseInt(row.dataset.value) || 7; }
 
 // ============================================================
-//  ОБЩЕЕ ВПЕЧАТЛЕНИЕ
+//  ОБЩЕЕ ВПЕЧАТЛЕНИЕ (только для альбомов)
 // ============================================================
 function renderOverall(value) {
   overallValue = value;
   const wrap = document.getElementById('overallRow');
+  if (!wrap) return;
   wrap.innerHTML = '';
 
   const control = document.createElement('div');
@@ -2288,33 +2418,34 @@ function setOverallToAvg() {
 }
 
 // ============================================================
-//  РАСЧЁТ
+//  РАСЧЁТ ИТОГА
+//  Альбом: средняя(треков 1-10) × (vibe альбома / 10) × 36 → 0-360
+//  Сингл:  singleScore360 (уже в 0-360)
 // ============================================================
 function updateScore() {
-  const isSingle = currentTracks.length === 1;
-  let scores, sum, n, avg, overall;
+  let final, avg, overall, scores;
 
-  if (isSingle && window._singleTrackScore != null) {
-    scores = [window._singleTrackScore];
-    sum = scores[0];
-    n = 1;
-    avg = sum;
-    overall = 10; // Для сингла вайб уже внутри оценки трека, альбом-множитель не нужен
+  if (currentTracks.length === 1 && singleScore360 != null) {
+    // Сингл
+    final = singleScore360;
+    avg = singleScore360 / 36; // приблизительное среднее для инфо
+    overall = singleValues[VIBE_KEY] || 10;
+    scores = [Math.round(avg)];
   } else {
+    // Альбом
     const rows = document.querySelectorAll('#tracksList .track-row');
     if (rows.length === 0) return;
     scores = [];
     rows.forEach(r => scores.push(getRowValue(r)));
-    sum = scores.reduce((a, b) => a + b, 0);
-    n = scores.length;
+    const sum = scores.reduce((a, b) => a + b, 0);
+    const n = scores.length;
     avg = sum / n;
     overall = overallValue;
+    final = Math.round(avg * overall / 10 * 36);
+    final = Math.max(1, Math.min(360, final));
   }
 
-  let final = Math.round(sum * overall * FINAL_MAX / (n * 100));
-  final = Math.max(1, Math.min(FINAL_MAX, final));
   const tier = getTier(final);
-
   const resultBox = document.getElementById('resultBox');
   TIERS.forEach(t => resultBox.classList.remove(t.cssClass));
   resultBox.classList.add(tier.cssClass);
@@ -2325,9 +2456,15 @@ function updateScore() {
   document.getElementById('finalScore').textContent = final;
   document.getElementById('verdict').textContent = VERDICTS[tier.name] || '';
 
-  document.getElementById('details').innerHTML =
-    `Средняя оценка треков: <b>${avg.toFixed(2)}</b> / 10<br>` +
-    `Атмосфера / вайб: <b>${overall}</b> / 10`;
+  if (currentTracks.length === 1) {
+    document.getElementById('details').innerHTML =
+      `Сингл, оценка трека: <b>${final}</b> / 360<br>` +
+      `Атмосфера / вайб: <b>${overall}</b> / 10`;
+  } else {
+    document.getElementById('details').innerHTML =
+      `Средняя оценка треков: <b>${avg.toFixed(2)}</b> / 10<br>` +
+      `Атмосфера / вайб: <b>${overall}</b> / 10`;
+  }
 
   const ring = document.getElementById('ringFg');
   const C = 2 * Math.PI * 50;
@@ -2345,7 +2482,7 @@ function renderHistogram(scores) {
   const barsEl = document.getElementById('histBars');
   const summaryEl = document.getElementById('histSummary');
   const counts = Array(11).fill(0);
-  scores.forEach(v => { if (v >= 1 && v <= 10) counts[v]++; });
+  scores.forEach(v => { if (v >= 1 && v <= 10) counts[Math.round(v)]++; });
   const maxCount = Math.max(...counts.slice(1), 1);
 
   barsEl.innerHTML = '';
@@ -2370,6 +2507,7 @@ function renderHistogram(scores) {
   }
 
   const n = scores.length;
+  if (n === 0) { summaryEl.textContent = ''; return; }
   const min = Math.min(...scores);
   const max = Math.max(...scores);
   const tens = counts[10];
@@ -2380,14 +2518,18 @@ function renderHistogram(scores) {
   else if (range >= 5) balance = 'контрастный';
   else balance = 'умеренно ровный';
 
-  summaryEl.innerHTML =
-    `Треков: <b>${n}</b> · разброс: <b>${min}–${max}</b> (${balance})` +
-    (tens > 0 ? ` · на 10: <b>${tens}</b>` : '') +
-    (low > 0 ? ` · слабых (1–3): <b>${low}</b>` : '');
+  if (n === 1 && currentTracks.length === 1) {
+    summaryEl.innerHTML = `Сингл · оценка трека: <b>${scores[0]}</b> / 10`;
+  } else {
+    summaryEl.innerHTML =
+      `Треков: <b>${n}</b> · разброс: <b>${min}–${max}</b> (${balance})` +
+      (tens > 0 ? ` · на 10: <b>${tens}</b>` : '') +
+      (low > 0 ? ` · слабых (1–3): <b>${low}</b>` : '');
+  }
 }
 
 // ============================================================
-//  МОДАЛЬНОЕ ОКНО ОЦЕНКИ ТРЕКА
+//  МОДАЛЬНОЕ ОКНО ОЦЕНКИ ТРЕКА (для альбома)
 // ============================================================
 function openModal(index) {
   const track = currentTracks[index];
@@ -2413,12 +2555,10 @@ function closeModal() {
   document.body.style.overflow = '';
   modalTrackIndex = -1;
 }
-window.closeModal = closeModal;
 
 function toggleHelp() {
   document.getElementById('helpBox').classList.toggle('hidden');
 }
-window.toggleHelp = toggleHelp;
 
 function renderCriteria() {
   const wrap = document.getElementById('criteriaList');
@@ -2439,7 +2579,6 @@ function renderCriteria() {
     const controls = document.createElement('div');
     controls.className = 'criterion-controls';
 
-    // Режим тот же, что и на главной: если stars — звёзды, если slider — ползунок
     if (ratingMode === 'stars') {
       const stars = document.createElement('div');
       stars.className = 'stars';
@@ -2479,7 +2618,6 @@ function renderCriteria() {
     wrap.appendChild(block);
   });
 
-
   updateModalTotal();
 }
 
@@ -2488,20 +2626,20 @@ function updateCriterionVal(key, value) {
   if (el) el.textContent = value;
 }
 
+// Итог трека в альбоме: 1–10
+// Формула: среднее(4 крит.) × (vibe / 10)
 function calcTrackRating() {
-  // Первые 4 критерия — обычные, 5-й (vibe) — множитель
-  const mainCrits = TRACK_CRITERIA.filter(c => c.key !== 'vibe');
   let sum = 0;
-  mainCrits.forEach(c => { sum += modalValues[c.key]; });
-  const avg = sum / mainCrits.length;
-  const vibe = modalValues.vibe;
+  MAIN_CRITERIA.forEach(c => { sum += modalValues[c.key]; });
+  const avg = sum / MAIN_CRITERIA.length;
+  const vibe = modalValues[VIBE_KEY] || 10;
   const raw = avg * vibe / 10;
   const rounded = Math.max(1, Math.min(10, Math.round(raw)));
   return { avg, vibe, raw, rounded };
 }
 
 function updateModalTotal() {
-  const { avg, raw, rounded } = calcTrackRating();
+  const { avg, vibe, rounded } = calcTrackRating();
   const totalEl = document.getElementById('modalTotal');
   const hintEl = document.getElementById('modalHint');
   totalEl.textContent = rounded;
@@ -2535,37 +2673,35 @@ function applyModalRating() {
   closeModal();
   showToast('Оценка трека: ' + rounded);
 }
-window.applyModalRating = applyModalRating;
 
 // ============================================================
-//  СОХРАНЕНИЕ ОЦЕНКИ В FIRESTORE
+//  СОХРАНЕНИЕ ОЦЕНКИ
 // ============================================================
 async function submitRating() {
   if (!currentUser) { showToast('Нужно войти'); return; }
   if (!currentAlbum) return;
 
   const isSingle = currentTracks.length === 1;
-  let scores, sum, n, avg, overall, final;
+  let scores, avg, overall, final;
 
-  if (isSingle && window._singleTrackScore != null) {
-    scores = [window._singleTrackScore];
-    sum = scores[0]; n = 1; avg = sum;
-    overall = 10; // Для сингла вайб уже внутри, без альбом-множителя
-    final = Math.round(sum * overall * FINAL_MAX / (n * 100));
-    // Save single track details
-    trackDetails[0] = { ...window._singleValues };
+  if (isSingle) {
+    if (singleScore360 == null) { showToast('Поставьте оценку'); return; }
+    final = singleScore360;
+    avg = Math.round(final / 36);
+    overall = singleValues[VIBE_KEY] || 10;
+    scores = [avg];
+    trackDetails[0] = { ...singleValues };
   } else {
     const rows = document.querySelectorAll('#tracksList .track-row');
     if (!rows.length) return;
     scores = [];
     rows.forEach(r => scores.push(getRowValue(r)));
-    sum = scores.reduce((a, b) => a + b, 0);
-    n = scores.length;
-    avg = sum / n;
+    const sum = scores.reduce((a, b) => a + b, 0);
+    avg = sum / scores.length;
     overall = overallValue;
-    final = Math.round(sum * overall * FINAL_MAX / (n * 100));
+    final = Math.round(avg * overall / 10 * 36);
+    final = Math.max(1, Math.min(360, final));
   }
-  final = Math.max(1, Math.min(FINAL_MAX, final));
 
   const btn = document.getElementById('rateBtn');
   btn.disabled = true;
@@ -2589,6 +2725,7 @@ async function submitRating() {
       details: trackDetails,
       avg: +avg.toFixed(2),
       final: final,
+      isSingle: isSingle,
       ts: serverTimestamp()
     });
 
@@ -2600,19 +2737,30 @@ async function submitRating() {
     setTimeout(() => wrap.classList.remove('spin'), 950);
 
     showToast('Оценка сохранена: ' + final);
+    await loadMyRatings();
   } catch (e) {
     showToast('Ошибка сохранения: ' + e.message);
   } finally {
     btn.disabled = false;
   }
 }
-window.submitRating = submitRating;
+
+async function deleteMyRating(source, releaseId, onDone) {
+  if (!currentUser) return;
+  if (!confirm('Удалить вашу оценку этого альбома?')) return;
+  const docId = `${source}_${releaseId}_${currentUser.uid}`;
+  try {
+    await deleteDoc(doc(db, 'ratings', docId));
+    showToast('Оценка удалена');
+    if (onDone) onDone();
+  } catch (e) {
+    showToast('Ошибка удаления: ' + e.message);
+  }
+}
 
 // ============================================================
-//  МОИ ОЦЕНКИ (из Firestore)
+//  МОИ ОЦЕНКИ
 // ============================================================
-let myRatings = [];
-
 async function loadMyRatings() {
   if (!currentUser) return;
   try {
@@ -2632,14 +2780,12 @@ function openHistory() {
   document.getElementById('historySection').classList.remove('hidden');
   renderHistory();
 }
-window.openHistory = openHistory;
 
 function closeHistory() {
   document.getElementById('historySection').classList.add('hidden');
   if (currentAlbum) document.getElementById('step2').classList.remove('hidden');
   else document.getElementById('step1').classList.remove('hidden');
 }
-window.closeHistory = closeHistory;
 
 function renderHistory() {
   const list = [...myRatings];
@@ -2647,7 +2793,6 @@ function renderHistory() {
   const listEl = document.getElementById('historyList');
   const statsEl = document.getElementById('artistStats');
 
-  // Сортировка
   list.sort((a, b) => {
     switch (sort) {
       case 'date_desc': return (b.ts?.seconds || 0) - (a.ts?.seconds || 0);
@@ -2660,7 +2805,6 @@ function renderHistory() {
     }
   });
 
-  // Статистика по артистам
   const byArtist = {};
   list.forEach(x => {
     const a = x.album.artist || 'Unknown';
@@ -2699,12 +2843,22 @@ function renderHistory() {
       </div>
       <span class="tier-tag">${tier.emoji} ${tier.name}</span>
       <div class="score">${item.final}</div>
+      <button class="del" title="Удалить оценку">×</button>
     `;
-    el.onclick = () => restoreFromMyRatings(item);
+    el.onclick = (ev) => {
+      if (ev.target.classList.contains('del')) return;
+      restoreFromMyRatings(item);
+    };
+    el.querySelector('.del').onclick = async (ev) => {
+      ev.stopPropagation();
+      await deleteMyRating(item.source, item.releaseId, async () => {
+        await loadMyRatings();
+        renderHistory();
+      });
+    };
     listEl.appendChild(el);
   });
 }
-window.renderHistory = renderHistory;
 
 async function restoreFromMyRatings(item) {
   currentAlbum = {
@@ -2718,7 +2872,7 @@ async function restoreFromMyRatings(item) {
     name: `Трек ${i + 1}`,
     artist: currentAlbum.artist
   }));
-  // Нужно подгрузить настоящий список треков — дергаем API
+
   try {
     if (currentAlbum.source === 'deezer') {
       const data = await jsonp('https://api.deezer.com/album/' + currentAlbum.id);
@@ -2740,8 +2894,12 @@ async function restoreFromMyRatings(item) {
   overallValue = item.overall || 7;
   trackDetails = item.details || {};
   currentAlbum._prefillScores = item.scores || null;
-  if (item.details && item.details[0]) {
-    window._singleValues = { ...item.details[0] };
+  singleScore360 = null;
+  singleValues = {};
+
+  if (currentTracks.length === 1 && item.details && item.details[0]) {
+    singleValues = { ...item.details[0] };
+    singleScore360 = item.final || null;
   }
 
   document.getElementById('historySection').classList.add('hidden');
@@ -2761,25 +2919,21 @@ function openBoard() {
   document.getElementById('boardSection').classList.remove('hidden');
   refreshBoard();
 }
-window.openBoard = openBoard;
 
 function closeBoard() {
   document.getElementById('boardSection').classList.add('hidden');
   if (currentAlbum) document.getElementById('step2').classList.remove('hidden');
   else document.getElementById('step1').classList.remove('hidden');
 }
-window.closeBoard = closeBoard;
 
 async function refreshBoard() {
   const listEl = document.getElementById('boardList');
   listEl.innerHTML = '<div class="empty-msg"><span class="spinner"></span> Загрузка…</div>';
 
   try {
-    // Загружаем ВСЕ оценки (для простоты — до 500)
     const snap = await getDocs(collection(db, 'ratings'));
     const all = snap.docs.map(d => d.data());
 
-    // Группируем по releaseId (source_id)
     const groups = {};
     all.forEach(r => {
       const key = `${r.source}_${r.releaseId}`;
@@ -2806,7 +2960,6 @@ async function refreshBoard() {
       if ((r.ts?.seconds || 0) > g.lastTs) g.lastTs = r.ts?.seconds || 0;
     });
 
-    // Вычисляем среднюю
     boardData = Object.values(groups).map(g => {
       const sum = g.ratings.reduce((a, r) => a + r.final, 0);
       g.avgFinal = Math.round(sum / g.ratings.length);
@@ -2821,7 +2974,6 @@ async function refreshBoard() {
     listEl.innerHTML = `<div class="empty-msg" style="color:var(--danger)">Ошибка: ${escapeHtml(e.message)}</div>`;
   }
 }
-window.refreshBoard = refreshBoard;
 
 function renderBoard() {
   const listEl = document.getElementById('boardList');
@@ -2873,11 +3025,7 @@ function renderBoard() {
     listEl.appendChild(el);
   });
 }
-window.renderBoard = renderBoard;
 
-// ============================================================
-//  МОДАЛКА РЕЛИЗА НА ДОСКЕ
-// ============================================================
 function openBoardModal(group) {
   boardModalRelease = group;
   document.getElementById('boardModalCover').src = group.album.artwork || '';
@@ -2890,7 +3038,6 @@ function openBoardModal(group) {
   document.getElementById('boardModalAdmin').textContent = hasAdmin ? group.adminRating : '—';
   document.getElementById('boardModalAdminHint').textContent = hasAdmin ? `из ${FINAL_MAX}` : 'ещё не оценил';
 
-  // Список пользователей
   const usersEl = document.getElementById('boardModalUsers');
   usersEl.innerHTML = '';
   const sorted = [...group.ratings].sort((a, b) => b.final - a.final);
@@ -2909,7 +3056,19 @@ function openBoardModal(group) {
         ${isMe ? '<span style="color:var(--accent-3); margin-left:6px; font-size:.75rem;">(вы)</span>' : ''}
       </div>
       <div style="font-weight:800; color:var(--accent-3); font-variant-numeric:tabular-nums;">${r.final}</div>
+      ${isMe ? '<button class="del-sm" style="width:26px;height:26px;padding:0;background:transparent;color:var(--text-dim);border:1px solid transparent;border-radius:7px;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Удалить мою оценку">×</button>' : ''}
     `;
+    const delBtn = row.querySelector('.del-sm');
+    if (delBtn) {
+      delBtn.onclick = async (ev) => {
+        ev.stopPropagation();
+        await deleteMyRating(group.source, group.releaseId, async () => {
+          closeBoardModal();
+          await loadMyRatings();
+          await refreshBoard();
+        });
+      };
+    }
     usersEl.appendChild(row);
   });
 
@@ -2921,7 +3080,6 @@ function closeBoardModal() {
   document.getElementById('boardModalBackdrop').classList.remove('open');
   document.body.style.overflow = '';
 }
-window.closeBoardModal = closeBoardModal;
 
 async function openCalculatorFromBoard() {
   if (!boardModalRelease) return;
@@ -2934,7 +3092,6 @@ async function openCalculatorFromBoard() {
     source: g.source
   });
 }
-window.openCalculatorFromBoard = openCalculatorFromBoard;
 
 // ============================================================
 //  УТИЛИТЫ
@@ -2957,7 +3114,6 @@ function showToast(text) {
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove('show'), 1800);
 }
-window.showToast = showToast;
 
 document.addEventListener('mousedown', (e) => {
   const wrap = document.querySelector('.autocomplete-wrap');
@@ -2982,10 +3138,9 @@ function reset() {
   currentAlbum = null; currentTracks = [];
   trackDetails = {};
   overallValue = 7;
-  window._singleTrackScore = null;
-  window._singleValues = null;
+  singleScore360 = null;
+  singleValues = {};
 }
-window.reset = reset;
 
 // Discogs helpers
 function stripDiscogsTitle(t) {
@@ -3003,11 +3158,32 @@ function cleanTrackTitle(t) {
 }
 
 // ============================================================
-//  ЭКСПОРТ ФУНКЦИЙ В WINDOW (для onclick="...")
+//  ЭКСПОРТ ФУНКЦИЙ В WINDOW
 // ============================================================
 window.handleAuthSubmit = handleAuthSubmit;
 window.toggleAuthMode = toggleAuthMode;
 window.handleLogout = handleLogout;
+window.toggleTheme = toggleTheme;
+window.setRatingMode = setRatingMode;
+window.setSource = setSource;
+window.switchTab = switchTab;
+window.onSearchInput = onSearchInput;
+window.onSearchKeydown = onSearchKeydown;
+window.showSuggestions = showSuggestions;
+window.openBoard = openBoard;
+window.closeBoard = closeBoard;
+window.refreshBoard = refreshBoard;
+window.renderBoard = renderBoard;
+window.closeBoardModal = closeBoardModal;
+window.openCalculatorFromBoard = openCalculatorFromBoard;
+window.openHistory = openHistory;
+window.closeHistory = closeHistory;
+window.renderHistory = renderHistory;
+window.closeModal = closeModal;
+window.toggleHelp = toggleHelp;
+window.applyModalRating = applyModalRating;
+window.submitRating = submitRating;
+window.reset = reset;
 
 // ============================================================
 //  СТАРТ
@@ -3015,9 +3191,6 @@ window.handleLogout = handleLogout;
 initTheme();
 initRatingMode();
 initSource();
-document.querySelectorAll('.mode-btn').forEach(b => {
-  b.classList.toggle('active', b.dataset.mode === ratingMode);
-});
 </script>
 </body>
 </html>
