@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Оценка альбома</title>
+<title>Оценка релизов</title>
 <style>
   :root {
     --bg-1: #0f1020;
@@ -64,8 +64,9 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
-  body {
+  html, body { min-height: 100%; height: auto; }
+html { overflow-y: auto; overflow-x: hidden; }
+body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg-1);
     color: var(--text);
@@ -73,10 +74,12 @@
     padding: 32px 16px 60px;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
     transition: background .4s ease, color .3s ease;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
-  }
+    overflow-y: auto;
+}
   .container {
     background: var(--panel);
     border-radius: 22px;
@@ -1122,6 +1125,188 @@
     .history-item:hover { transform: none; }
     .board-item:hover { transform: none; }
   }
+  /* Выделенный критерий vibe в модалке оценки трека */
+  .criterion.vibe-criterion {
+    padding: 12px 14px;
+    margin: 8px 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(126,224,212,.10), rgba(130,200,255,.10));
+    border: 1.5px solid rgba(126,224,212,.5);
+    box-shadow: 0 0 20px rgba(126,224,212,.15), inset 0 0 0 1px rgba(255,255,255,.03);
+  }
+  body.light .criterion.vibe-criterion {
+    background: linear-gradient(135deg, rgba(126,224,212,.18), rgba(130,200,255,.14));
+    border-color: rgba(90,180,170,.55);
+  }
+
+  .criterion.vibe-criterion .criterion-val {
+    color: #7ee0d4;
+    font-weight: 800;
+  }
+  body.light .criterion.vibe-criterion .criterion-val { color: #17786e; }
+
+  .criterion.vibe-criterion .mult-badge {
+    display: inline-block;
+    font-size: .62rem;
+    padding: 3px 8px;
+    margin-left: 6px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #7ee0d4, #82c8ff);
+    color: #0a1a1a;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(126,224,212,.4);
+  }
+
+  /* Ползунок внутри vibe — бирюзовый */
+  .criterion.vibe-criterion input[type="range"] {
+    background: rgba(126,224,212,.2);
+  }
+  .criterion.vibe-criterion input[type="range"]::-webkit-slider-thumb {
+    background: linear-gradient(135deg, #7ee0d4, #82c8ff);
+    border: 2px solid #fff;
+  }
+  .criterion.vibe-criterion input[type="range"]:hover::-webkit-slider-thumb {
+    box-shadow: 0 0 0 6px rgba(126,224,212,.35);
+  }
+  .criterion.vibe-criterion input[type="range"]:active::-webkit-slider-thumb {
+    box-shadow: 0 0 0 10px rgba(126,224,212,.45);
+  }
+  .criterion.vibe-criterion input[type="range"]::-moz-range-thumb {
+    background: linear-gradient(135deg, #7ee0d4, #82c8ff);
+    border: 2px solid #fff;
+  }
+
+  /* Звёзды внутри vibe — бирюзовые */
+  .criterion.vibe-criterion .star.on {
+    color: #7ee0d4;
+    text-shadow: 0 0 10px rgba(126,224,212,.7);
+  }
+  .criterion.vibe-criterion .star:hover { color: #a8ecff; }
+
+  /* Мобильная адаптация новых элементов */
+  @media (max-width: 700px) {
+    /* Vibe-бейдж в модалке */
+    .criterion.vibe-criterion {
+      padding: 10px 12px;
+      margin: 6px 0;
+    }
+    .criterion.vibe-criterion .mult-badge {
+      font-size: .58rem;
+      padding: 2px 6px;
+      margin-left: 4px;
+    }
+
+    /* Множитель в блоке результата */
+    .overall-inline {
+      padding: 12px 14px;
+      margin-top: 12px;
+    }
+    .overall-inline-head {
+      gap: 8px;
+    }
+    .overall-inline-head .lbl {
+      font-size: .85rem;
+      flex-wrap: wrap;
+    }
+    .overall-inline-head .lbl .mult-badge {
+      font-size: .58rem;
+      padding: 2px 7px;
+    }
+    .overall-inline-head .badge {
+      font-size: .85rem;
+      padding: 4px 12px;
+    }
+    .overall-body {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .overall-body .control { flex: 1 1 auto; }
+    .overall-body .auto-btn { width: 100%; }
+
+    /* Модалка — компактнее */
+    .criterion {
+      padding: 10px 0;
+    }
+    .criterion-head {
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .criterion-name {
+      font-size: .84rem;
+      flex-wrap: wrap;
+    }
+    .criterion-emoji { font-size: .95rem; }
+    .criterion-val { font-size: .9rem; }
+    .criterion-controls { gap: 8px; }
+    .criterion-controls .stars .star { font-size: 1.15rem; }
+
+    /* Итог в модалке */
+    .modal-total {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      text-align: center;
+      padding: 14px;
+    }
+    .modal-total .value { font-size: 2.2rem; }
+    .modal-total .hint { font-size: .75rem; }
+    .modal-total button { width: 100%; padding: 14px; font-size: 1rem; }
+
+    /* Заголовок модалки — компактнее */
+    .modal .track-header img {
+      width: 52px;
+      height: 52px;
+    }
+    .modal .track-header .track-title { font-size: .95rem; }
+    .modal .track-header .track-artist { font-size: .78rem; }
+
+    /* Подсказка «Что означают критерии» */
+    .criteria-help {
+      padding: 12px 14px;
+      font-size: .8rem;
+    }
+    .criteria-help .row { margin-bottom: 8px; }
+    .criteria-help b { font-size: .85rem; }
+    .criteria-help .ex { font-size: .75rem; }
+  }
+
+  @media (max-width: 420px) {
+    .overall-inline-head .lbl { font-size: .8rem; }
+    .overall-inline-head .lbl .mult-badge { font-size: .55rem; padding: 2px 5px; }
+    .criterion-name { font-size: .8rem; }
+    .criterion-controls .stars .star { font-size: 1.05rem; }
+  }
+  /* Индикатор фоновой фильтрации */
+  .refine-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .74rem;
+    color: var(--text-dim);
+    padding: 4px 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 20px;
+    margin-bottom: 8px;
+    animation: fadeUp .3s ease;
+  }
+  .refine-indicator .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-3);
+    animation: refinePulse 1.2s ease-in-out infinite;
+  }
+  @keyframes refinePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: .4; transform: scale(.7); }
+  }
+  @media (max-width: 700px) {
+    .refine-indicator { font-size: .7rem; padding: 3px 8px; }
+  }
 </style>
 </head>
 <body>
@@ -1150,7 +1335,7 @@
 <div class="container hidden" id="mainContainer">
 
   <div class="top-bar">
-    <h1>🎵 Оценка альбома</h1>
+    <h1>🎵 Оценка релизов</h1>
     <div class="top-actions">
       <button class="icon-btn" onclick="openBoard()" title="Доска оценок">📊</button>
       <button class="icon-btn" onclick="openHistory()" title="Мои оценки">💿</button>
@@ -1378,13 +1563,13 @@
         <span class="ex">Пример: 3 — забывается сразу, 7 — приятное настроение, 10 — целый мир в одной песне.</span>
       </div>
       <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
-        <b>Формула для трека в альбоме:</b> среднее по 4 критериям × (атмосфера ÷ 10). Итог 1–10.
+        <b>Оценка трека в альбоме:</b> среднее по 4 критериям × атмосфера. Итог от 1 до 10.
       </div>
       <div class="row" style="margin-top:6px;">
-        <b>Формула для сингла:</b> среднее по 4 критериям × (атмосфера ÷ 10) × 36. Итог 1–360.
+        <b>Оценка сингла:</b> среднее по 4 критериям × атмосфера. Итог от 1 до 360.
       </div>
       <div class="row" style="margin-top:6px;">
-        <b>Формула для альбома:</b> среднее по всем трекам × (общая атмосфера ÷ 10) × 36. Итог 1–360.
+        <b>Оценка альбома:</b> среднее по всем трекам × общая атмосфера. Итог от 1 до 360.
       </div>
     </div>
 
@@ -1472,6 +1657,10 @@ const db = getFirestore(app);
 //  КОНСТАНТЫ
 // ============================================================
 const ADMIN_UID = 'raYJInjPDLOvflxoaVvoKrbBsUc2';
+// Проверка: есть ли кириллица в строке
+function hasCyrillic(s) {
+  return /[а-яёА-ЯЁ]/.test(String(s || ''));
+}
 const DISCOGS_TOKEN = 'zpepVCgybqgOwbIRcJCzTjDCRkoxbbyCTSVNlxiV';
 const DISCOGS_BASE = 'https://api.discogs.com';
 
@@ -1493,7 +1682,7 @@ const TIERS = [
   { min: 0.999,max: 2.00, name: 'Бриллиант',  emoji: '👑', cssClass: 'tier-brill',   color: 'var(--brill)' }
 ];
 
-const VERDICTS = {
+const VERDICTS_ALBUM = {
   'Уголь':     'Забудь и не вспоминай',
   'Бронза':    'Есть моменты, но в целом мимо',
   'Серебро':   'Середнячок с проблесками',
@@ -1503,6 +1692,31 @@ const VERDICTS = {
   'Алмаз':     'Крепкий шедевр, слушать и слушать',
   'Бриллиант': 'Идеальный альбом. Без единой слабины.'
 };
+
+const VERDICTS_SINGLE = {
+  'Уголь':     'Забудь и не вспоминай',
+  'Бронза':    'Есть за что зацепиться, но сыро',
+  'Серебро':   'Неплохо, но чего-то не хватает',
+  'Золото':    'Хороший трек, можно переслушать',
+  'Платина':   'Отличный трек, один из лучших',
+  'Рубин':     'Почти шедевр, редкие недочёты',
+  'Алмаз':     'Крепкий хит, слушать и слушать',
+  'Бриллиант': 'Идеальный трек. Без единой слабины.'
+};
+
+const VERDICTS_TRACK = {
+  'Уголь':     'Слабое место альбома',
+  'Бронза':    'Проходной трек',
+  'Серебро':   'Средний трек',
+  'Золото':    'Хороший трек',
+  'Платина':   'Сильный трек',
+  'Рубин':     'Один из лучших в альбоме',
+  'Алмаз':     'Хит альбома',
+  'Бриллиант': 'Жемчужина альбома'
+};
+
+// Совместимость: старое имя, если где-то ещё используется
+const VERDICTS = VERDICTS_ALBUM;
 
 const TRACK_CRITERIA = [
   { key: 'rhymes',     emoji: '🖋', name: 'Рифмы / образы' },
@@ -1787,25 +2001,57 @@ async function loadNew() {
   try {
     let items = [];
     if (currentSource === 'deezer') {
-      const year = new Date().getFullYear();
-      const q1 = await jsonp(`https://api.deezer.com/search/album?q=${year}&limit=25`);
-      const q2 = await jsonp(`https://api.deezer.com/search/album?q=${year-1}&limit=25`);
-      const seen = new Set();
-      items = [...(q1.data || []), ...(q2.data || [])]
-        .filter(a => !seen.has(a.id) && seen.add(a.id))
-        .slice(0, 24);
+      // Пробуем editorial — там реальные новые релизы
+      try {
+        const editorial = await jsonp('https://api.deezer.com/editorial');
+        const editors = editorial.data || [];
+        let target = editors.find(e => /new/i.test(e.name)) || editors[0];
+        if (target) {
+          const releases = await jsonp('https://api.deezer.com/editorial/' + target.id + '/releases?limit=50');
+          items = (releases.data || []).map(a => ({
+            id: a.id, title: a.title,
+            artist: a.artist ? a.artist.name : '',
+            cover: a.cover_medium || a.cover || '',
+            source: 'deezer'
+          }));
+        }
+      } catch (e) { items = []; }
+
+      // Фолбэк
+      if (items.length === 0) {
+        const r = await jsonp('https://api.deezer.com/search/album?q=new%20releases&limit=50');
+        items = (r.data || []).map(a => ({
+          id: a.id, title: a.title,
+          artist: a.artist ? a.artist.name : '',
+          cover: a.cover_medium || a.cover || '',
+          source: 'deezer'
+        }));
+      }
+
+      // Фильтр по кириллице для вкладок
+      const wantRu = currentSource === 'deezer'; // русский = Deezer
+      const filtered = items.filter(it => {
+        const hasCyr = hasCyrillic(it.title) || hasCyrillic(it.artist);
+        return wantRu ? hasCyr : !hasCyr;
+      });
+
+      // Если после фильтра мало — показываем всё
+      items = filtered.length >= 6 ? filtered : items;
     } else {
+      // Discogs — оставляем как было
       const year = new Date().getFullYear();
       const r = await discogsFetch('/database/search', {
-        type: 'release', format: 'album', year: year, per_page: 50, sort: 'have', sort_order: 'desc'
+        type: 'release', format: 'album', year: year, per_page: 50,
+        sort: 'have', sort_order: 'desc'
       });
       items = dedupeDiscogs(r.results || []).slice(0, 24);
     }
-    renderAlbumGrid(grid, items, currentSource);
+    renderAlbumGrid(grid, items.slice(0, 24), currentSource);
   } catch (e) {
     grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--danger);">${escapeHtml(e.message)}</div>`;
   }
 }
+
 
 async function loadTop() {
   const grid = document.getElementById('topGrid');
@@ -1813,8 +2059,34 @@ async function loadTop() {
   try {
     let items = [];
     if (currentSource === 'deezer') {
-      const r = await jsonp('https://api.deezer.com/search/album?q=top%20hits&limit=24');
-      items = r.data || [];
+      try {
+        const chart = await jsonp('https://api.deezer.com/chart/0/albums?limit=50');
+        items = (chart.data || []).map(a => ({
+          id: a.id, title: a.title,
+          artist: a.artist ? a.artist.name : '',
+          cover: a.cover_medium || a.cover || '',
+          source: 'deezer'
+        }));
+      } catch (e) { items = []; }
+
+      if (items.length === 0) {
+        const r = await jsonp('https://api.deezer.com/search/album?q=top%20albums&limit=50');
+        items = (r.data || []).map(a => ({
+          id: a.id, title: a.title,
+          artist: a.artist ? a.artist.name : '',
+          cover: a.cover_medium || a.cover || '',
+          source: 'deezer'
+        }));
+      }
+
+      // Фильтр по кириллице для вкладок
+      const wantRu = currentSource === 'deezer';
+      const filtered = items.filter(it => {
+        const hasCyr = hasCyrillic(it.title) || hasCyrillic(it.artist);
+        return wantRu ? hasCyr : !hasCyr;
+      });
+
+      items = filtered.length >= 6 ? filtered : items;
     } else {
       const g1 = await discogsFetch('/database/search', {
         type: 'release', format: 'album', genre: 'Rock',
@@ -1826,7 +2098,7 @@ async function loadTop() {
       });
       items = dedupeDiscogs([...(g1.results || []), ...(g2.results || [])]).slice(0, 24);
     }
-    renderAlbumGrid(grid, items, currentSource);
+    renderAlbumGrid(grid, items.slice(0, 24), currentSource);
   } catch (e) {
     grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--danger);">${escapeHtml(e.message)}</div>`;
   }
@@ -1846,6 +2118,15 @@ function dedupeDiscogs(items) {
 }
 
 function renderAlbumGrid(grid, items, source) {
+  // Фильтр от мусора
+  items = (items || []).filter(a => {
+    const t = String(a.title || a.name || '').trim();
+    if (!t) return false;
+    if (/^\d{4}$/.test(t)) return false;
+    if (/^top$/i.test(t)) return false;
+    return true;
+  });
+
   if (!items || items.length === 0) {
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-dim);">Пусто.</div>';
     return;
@@ -1883,21 +2164,22 @@ function onSearchInput() {
   renderStatus('Введите ещё…', true);
   debounceTimer = setTimeout(() => fetchSuggestions(q), DEBOUNCE_MS);
 }
-
 async function fetchSuggestions(q) {
   renderStatus('Поиск…', true);
   try {
     let items = [];
     if (currentSource === 'deezer') {
-      const data = await jsonp('https://api.deezer.com/search/album?q=' + encodeURIComponent(q) + '&limit=8');
+      // Поиск БЕЗ фильтра — показываем всё
+      const data = await jsonp('https://api.deezer.com/search/album?q=' + encodeURIComponent(q) + '&limit=15');
       items = (data.data || []).map(a => ({
         id: a.id, title: a.title,
         artist: a.artist ? a.artist.name : 'Unknown',
-        cover: a.cover_medium || a.cover || '', source: 'deezer'
+        cover: a.cover_medium || a.cover || '',
+        source: 'deezer'
       }));
     } else {
       const data = await discogsFetch('/database/search', {
-        q: q, type: 'release', format: 'album', per_page: 25
+        q: q, type: 'release', format: 'album', per_page: 15
       });
       items = dedupeDiscogs(data.results || []).slice(0, 8).map(r => ({
         id: r.id, title: stripDiscogsTitle(r.title || ''),
@@ -1905,8 +2187,9 @@ async function fetchSuggestions(q) {
         year: r.year || '', cover: r.cover_image || r.thumb || '', source: 'discogs'
       }));
     }
+
     if (items.length === 0) { lastSuggestions = []; renderStatus('Ничего не найдено'); return; }
-    lastSuggestions = items;
+    lastSuggestions = items.slice(0, 8);
     activeIndex = -1;
     renderSuggestions();
   } catch (e) {
@@ -1914,6 +2197,7 @@ async function fetchSuggestions(q) {
     renderStatus('Ошибка: ' + e.message);
   }
 }
+
 
 function renderSuggestions() {
   const list = document.getElementById('suggestionList');
@@ -2379,7 +2663,8 @@ function updateScore() {
   document.getElementById('tierName').textContent = tier.name;
   document.getElementById('tierRow').style.color = tier.color;
   document.getElementById('finalScore').textContent = final;
-  document.getElementById('verdict').textContent = VERDICTS[tier.name] || '';
+  const verdictMap = currentTracks.length === 1 ? VERDICTS_SINGLE : VERDICTS_ALBUM;
+  document.getElementById('verdict').textContent = verdictMap[tier.name] || '';
 
   if (currentTracks.length === 1) {
     document.getElementById('details').innerHTML =
@@ -2388,7 +2673,7 @@ function updateScore() {
   } else {
     document.getElementById('details').innerHTML =
       `Средняя оценка треков: <b>${avg.toFixed(2)}</b> / 10<br>` +
-      `Атмосфера / вайб: <b>${overall}</b> / 10`;
+      `Атмосфера / вайб альбома: <b>${overall}</b> / 10`;
   }
 
   const ring = document.getElementById('ringFg');
@@ -2447,7 +2732,7 @@ function renderHistogram(scores) {
     summaryEl.innerHTML = `Сингл · среднее по 4 критериям: <b>${scores[0]}</b> / 10`;
   } else {
     summaryEl.innerHTML =
-      `Треков: <b>${n}</b> · разброс: <b>${min}–${max}</b> (${balance})` +
+      `${plural(n, 'Трек', 'Трека', 'Треков')}: <b>${n}</b> · разброс: <b>${min}–${max}</b> (${balance})` +
       (tens > 0 ? ` · на 10: <b>${tens}</b>` : '') +
       (low > 0 ? ` · слабых (1–3): <b>${low}</b>` : '');
   }
@@ -2490,13 +2775,13 @@ function renderCriteria() {
   wrap.innerHTML = '';
 
   TRACK_CRITERIA.forEach(c => {
+    const isVibe = c.key === VIBE_KEY;
     const block = document.createElement('div');
-    block.className = 'criterion';
+    block.className = 'criterion' + (isVibe ? ' vibe-criterion' : '');
 
     const head = document.createElement('div');
     head.className = 'criterion-head';
-    const isVibe = c.key === VIBE_KEY;
-    const multBadge = isVibe ? ' <span style="font-size:.72rem;color:var(--text-dim);font-weight:500">(множитель)</span>' : '';
+    const multBadge = isVibe ? '<span class="mult-badge">×Множитель</span>' : '';
     head.innerHTML = `
       <div class="criterion-name"><span class="criterion-emoji">${c.emoji}</span><span>${c.name}${multBadge}</span></div>
       <div class="criterion-val" data-key="${c.key}">${modalValues[c.key]}</div>
@@ -2570,7 +2855,11 @@ function updateModalTotal() {
   const hintEl = document.getElementById('modalHint');
   totalEl.textContent = rounded;
   totalEl.classList.toggle('max', rounded >= 10);
-  hintEl.innerHTML = `из 10<br><span style="opacity:.7">(среднее ${avg.toFixed(2)} × ${vibe}/10)</span>`;
+  const tier = getTier(Math.round(rounded / 10 * 360));
+  const verdict = VERDICTS_TRACK[tier.name] || '';
+  hintEl.innerHTML =
+    `из 10 · <b>${verdict}</b><br>` +
+    `<span style="opacity:.7">(среднее ${avg.toFixed(2)} × ${vibe}/10)</span>`;
 }
 
 function applyModalRating() {
@@ -2754,7 +3043,7 @@ function renderHistory() {
     : '';
 
   if (list.length === 0) {
-    listEl.innerHTML = '<div class="empty-msg">Здесь пока пусто.<br>Оцените альбом и нажмите «Поставить оценку».</div>';
+      listEl.innerHTML = '<div class="empty-msg">Здесь пока пусто.<br>Оцените релиз и нажмите «Поставить оценку».</div>';
     return;
   }
 
@@ -2921,7 +3210,7 @@ function renderBoard() {
   });
 
   if (list.length === 0) {
-    listEl.innerHTML = '<div class="empty-msg">Пока никто не оценил ни одного альбома.<br>Будьте первым!</div>';
+      listEl.innerHTML = '<div class="empty-msg">Пока никто не оценил ни одного релиза.<br>Будьте первым!</div>';
     return;
   }
 
