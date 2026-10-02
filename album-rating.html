@@ -1420,9 +1420,40 @@ body {
       </div>
     </div>
 
-    <div id="singleSection" class="hidden">
+        <div id="singleSection" class="hidden">
       <div class="single-card">
         <div class="single-header">Оценка сингла · 4 критерия + множитель</div>
+
+        <button class="help-toggle" onclick="toggleHelpSingle()">
+          <span>ℹ️</span><span>Что означают критерии?</span>
+        </button>
+
+        <div class="criteria-help hidden" id="singleHelpBox">
+          <div class="row">
+            <b>🖋 Рифмы / образы</b> — качество текста: метафоры, сравнения, игра слов. Насколько образы живые и точные, рифмы свежие или заезженные, есть ли слой смысла за прямым текстом.
+            <span class="ex">Пример: 3 — банальные рифмы «любовь-кровь», 7 — неожиданные образы и двойные смыслы, 10 — каждая строка — отдельное произведение.</span>
+          </div>
+          <div class="row">
+            <b>🎼 Структура / ритмика</b> — как трек выстроен: куплет-припев, смена частей, динамика развития. Держит ли ритм, есть ли напряжение и разрешение, не проваливается ли середина.
+            <span class="ex">Пример: 3 — монотонно, ничего не происходит, 7 — есть развитие и кульминация, 10 — идеальная архитектура, каждая секунда на месте.</span>
+          </div>
+          <div class="row">
+            <b>🎭 Реализация стиля</b> — насколько трек воплощает свой жанр или идею. Если это бум-бэп — качает ли как надо, если эксперимент — удивляет ли, если лирика — трогает ли.
+            <span class="ex">Пример: 3 — стиль заявлен, но не дотянут, 7 — уверенно в жанре, 10 — эталон своего стиля, ориентир для других.</span>
+          </div>
+          <div class="row">
+            <b>⚡ Индивидуальность / харизма</b> — отличие от других, узнаваемость, личная подача. Можно ли узнать исполнителя с первых секунд, есть ли своя фишка, или это копия.
+            <span class="ex">Пример: 3 — звучит как все, 7 — есть своя изюминка, 10 — неповторимый почерк, невозможно спутать.</span>
+          </div>
+          <div class="row">
+            <b>🌌 Атмосфера / вайб</b> — настроение и погружение. Создаёт ли трек особое пространство, хочется ли в него возвращаться. Работает как <b>множитель</b>: даже при средних критериях высокий вайб сильно поднимет оценку и наоборот.
+            <span class="ex">Пример: 3 — забывается сразу, 7 — приятное настроение, 10 — целый мир в одной песне.</span>
+          </div>
+          <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
+            <b>Оценка сингла:</b> среднее по 4 критериям × атмосфера. Итог от 1 до 360.
+          </div>
+        </div>
+
         <div id="singleCriteriaList"></div>
       </div>
     </div>
@@ -2769,7 +2800,9 @@ function closeModal() {
 function toggleHelp() {
   document.getElementById('helpBox').classList.toggle('hidden');
 }
-
+function toggleHelpSingle() {
+  document.getElementById('singleHelpBox').classList.toggle('hidden');
+}
 function renderCriteria() {
   const wrap = document.getElementById('criteriaList');
   wrap.innerHTML = '';
@@ -3394,6 +3427,7 @@ window.closeHistory = closeHistory;
 window.renderHistory = renderHistory;
 window.closeModal = closeModal;
 window.toggleHelp = toggleHelp;
+window.toggleHelpSingle = toggleHelpSingle;
 window.applyModalRating = applyModalRating;
 window.submitRating = submitRating;
 window.reset = reset;
