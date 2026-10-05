@@ -3134,19 +3134,8 @@
 
     <!-- ШАГ 1: ПОИСК -->
     <div id="step1">
-      <div class="source-block">
-        <div class="source-label">Что ищем?</div>
-        <div class="source-tabs">
-          <button class="source-tab" data-src="itunes" onclick="setSource('itunes')">
-            <span class="headline">🍎 Иностранные релизы — iTunes</span>
-            <span class="subline">Западные, новые и старые. Огромная база</span>
-          </button>
-          <button class="source-tab" data-src="deezer" onclick="setSource('deezer')">
-            <span class="headline">🎧 Русские релизы — Deezer</span>
-            <span class="subline">Русскоязычные, современные и мейнстримные</span>
-          </button>
-        </div>
-        <div class="source-note hidden" id="sourceNote"></div>
+      <div class="source-block" style="padding: 12px 16px;">
+        <div class="source-label" style="margin-bottom: 0;">🔍 Поиск релиза</div>
       </div>
 
       <div id="tab-search">
@@ -4945,33 +4934,18 @@ function goHome() { switchNav("main"); reset(); }
 
 // ---------- ИСТОЧНИКИ ----------
 function initSource() {
-  currentSource = localStorage.getItem(LS_SOURCE) || "itunes";
-  if (currentSource === "discogs") currentSource = "itunes";
+  // Источник один — Deezer, всегда
+  currentSource = "deezer";
   applySourceUI();
 }
+
 function setSource(src) {
-  currentSource = src;
-  localStorage.setItem(LS_SOURCE, src);
+  // Источник один — Deezer. Функция оставлена для совместимости.
+  currentSource = "deezer";
   applySourceUI();
-  lastSuggestions = []; closeSuggestions();
-  hideWarning();
-  if (src === "itunes") testItunesAvailability();
 }
 function applySourceUI() {
   document.querySelectorAll(".source-tab").forEach(b => b.classList.toggle("active", b.dataset.src === currentSource));
-}
-async function testItunesAvailability() {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    const target = "https://itunes.apple.com/search?term=test&entity=album&limit=1";
-    const res = await fetch(ITUNES_PROXY + "?u=" + encodeURIComponent(target), { signal: controller.signal });
-    clearTimeout(timeout);
-    if (!res.ok) throw new Error("bad");
-    hideWarning();
-  } catch (e) {
-    showWarning("🍎 iTunes временно недоступен, попробуйте позже или выберите другой источник.");
-  }
 }
 
 // ---------- JSONP ----------
