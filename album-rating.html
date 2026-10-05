@@ -1398,6 +1398,71 @@
   .num-block.none .num-value { color: var(--text-dim); font-weight: 500; font-size: 1.05rem; }
   .board-item .tier-emoji-badge { margin-left: 6px; display: inline-flex; vertical-align: middle; }
 
+    /* БЕЙДЖ ТИРА С ТЕКСТОМ (вместо круглых медальонов) */
+  .tier-text-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    vertical-align: middle;
+    margin-left: 6px;
+    border: 1px solid transparent;
+    position: relative;
+    top: -1px;
+  }
+  .tier-text-badge.tier-coal {
+    background: linear-gradient(135deg, rgba(74,74,82,.25), rgba(44,44,50,.35));
+    color: #c8c8d0;
+    border-color: rgba(74,74,82,.8);
+  }
+  .tier-text-badge.tier-bronze {
+    background: linear-gradient(135deg, rgba(214,150,88,.25), rgba(122,74,31,.3));
+    color: #e8b878;
+    border-color: rgba(184,115,51,.8);
+  }
+  .tier-text-badge.tier-silver {
+    background: linear-gradient(135deg, rgba(240,240,248,.22), rgba(144,148,160,.28));
+    color: #e8eaf2;
+    border-color: rgba(192,192,200,.7);
+  }
+  .tier-text-badge.tier-gold {
+    background: linear-gradient(135deg, rgba(255,224,138,.28), rgba(199,138,26,.32));
+    color: #ffe08a;
+    border-color: rgba(245,196,81,.85);
+    box-shadow: 0 0 10px rgba(245,196,81,.25);
+  }
+  .tier-text-badge.tier-plat {
+    background: linear-gradient(135deg, rgba(232,244,248,.22), rgba(143,166,184,.28));
+    color: #e0f2f8;
+    border-color: rgba(185,222,235,.8);
+    box-shadow: 0 0 10px rgba(200,232,245,.3);
+  }
+  .tier-text-badge.tier-ruby {
+    background: linear-gradient(135deg, rgba(255,90,122,.28), rgba(109,10,25,.4));
+    color: #ff8aa0;
+    border-color: rgba(155,17,30,.9);
+    box-shadow: 0 0 12px rgba(155,17,30,.4);
+  }
+  .tier-text-badge.tier-diamond {
+    background: linear-gradient(135deg, rgba(214,246,255,.25), rgba(90,170,203,.32));
+    color: #d6f6ff;
+    border-color: rgba(185,242,255,.85);
+    box-shadow: 0 0 14px rgba(185,242,255,.45);
+  }
+  .tier-text-badge.tier-brill {
+    background: linear-gradient(135deg, #ff5577, #ffb84d, #ffe066, #7ee0d4, #7c6cf0);
+    color: #fff;
+    border-color: rgba(255,255,255,.6);
+    box-shadow: 0 0 18px rgba(255,255,255,.6);
+    animation: brillShine 2.4s ease-in-out infinite;
+    text-shadow: 0 1px 3px rgba(0,0,0,.5);
+  }
   /* НОВАЯ ДОСКА (с медальонами) */
   .board-item {
     padding: 12px 14px 12px 16px;
@@ -2817,10 +2882,10 @@
       flex-wrap: wrap;
       gap: 4px;
     }
-    .board-item .info .title .tier-medal {
-      width: 26px;
-      height: 26px;
-      font-size: .85rem;
+    .board-item .info .title .tier-text-badge {
+      font-size: .6rem;
+      padding: 2px 7px;
+      margin-left: 4px;
     }
     .board-item .info .artist { font-size: .72rem; }
     .board-item .numbers {
@@ -4072,6 +4137,14 @@ function tierMedalHtml(tier, size) {
   size = size || "";
   const cls = "tier-medal " + tier.medal + (size ? " " + size : "");
   return '<span class="' + cls + '" title="' + escapeHtml(tier.name) + '">' + tier.emoji + '</span>';
+}
+
+// Новый бейдж тира: цветной, с текстом
+function tierBadgeHtml(tier) {
+  const tierClass = tier.cssClass; // tier-coal, tier-bronze, ..., tier-brill
+  return '<span class="tier-text-badge ' + tierClass + '" title="' + escapeHtml(tier.name) + '">' +
+    tier.emoji + ' ' + escapeHtml(tier.name) +
+  '</span>';
 }
 
 // ---------- ГЛОБАЛЬНОЕ СОСТОЯНИЕ ----------
@@ -6308,11 +6381,11 @@ function appendBoardChunk() {
     const el = document.createElement("div");
     el.className = "board-item " + tier.cssClass;
     const hasAdmin = g.adminRating != null;
-    el.innerHTML = '<img src="' + escapeHtml(g.album.artwork || "") + '" alt="" data-cacheable="1" data-src="' + escapeHtml(g.album.artwork || "") + '" onerror="this.style.visibility=\'hidden\'">' +
-      '<div class="info"><div class="title">' + escapeHtml(g.album.title) + ' ' + tierMedalHtml(tier, "sm") + '</div>' +
-      '<div class="artist">' + escapeHtml(g.album.artist) + '</div></div>' +
-      '<div class="numbers"><div class="num-block avg"><div class="num-label">Средняя (' + g.userCount + ')</div><div class="num-value">' + g.avgFinal + '</div></div>' +
-      '<div class="num-block admin ' + (hasAdmin ? "" : "none") + '"><div class="num-label">👑 Админ</div><div class="num-value">' + (hasAdmin ? g.adminRating : "—") + '</div></div></div>';
+      el.innerHTML = '<img src="' + escapeHtml(g.album.artwork || "") + '" alt="" data-cacheable="1" data-src="' + escapeHtml(g.album.artwork || "") + '" onerror="this.style.visibility=\'hidden\'">' +
+        '<div class="info"><div class="title">' + escapeHtml(g.album.title) + tierBadgeHtml(tier) + '</div>' +
+        '<div class="artist">' + escapeHtml(g.album.artist) + '</div></div>' +
+        '<div class="numbers"><div class="num-block avg"><div class="num-label">Средняя (' + g.userCount + ')</div><div class="num-value">' + g.avgFinal + '</div></div>' +
+        '<div class="num-block admin ' + (hasAdmin ? "" : "none") + '"><div class="num-label">👑 Админ</div><div class="num-value">' + (hasAdmin ? g.adminRating : "—") + '</div></div></div>';
     el.onclick = () => openBoardModal(g);
     fragment.appendChild(el);
     if (g.album.artwork) urlsToCache.push(g.album.artwork);
@@ -6651,7 +6724,7 @@ async function renderTops() {
       const el = document.createElement("div");
       el.className = "board-item " + tier.cssClass;
       el.innerHTML = '<img src="' + escapeHtml(g.album.artwork || "") + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
-        '<div class="info"><div class="title">' + (i + 1) + '. ' + escapeHtml(g.album.title) + ' ' + tierMedalHtml(tier, "sm") + '</div>' +
+        '<div class="info"><div class="title">' + (i + 1) + '. ' + escapeHtml(g.album.title) + tierBadgeHtml(tier) + '</div>' +
         '<div class="artist">' + escapeHtml(g.album.artist) + '</div></div>' +
         '<div class="numbers"><div class="num-block avg"><div class="num-label">Средняя</div><div class="num-value">' + g.avg + '</div></div>' +
         '<div class="num-block"><div class="num-label">Оценок</div><div class="num-value" style="font-size:1rem;color:var(--text-dim);">' + g.count + '</div></div></div>';
