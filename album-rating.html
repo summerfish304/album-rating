@@ -527,6 +527,11 @@
     flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(255,184,77,.35);
   }
+  .user-chip .lvl-badge.admin-badge-chip {
+    background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
+    box-shadow: 0 2px 12px var(--gold-glow);
+    animation: goldPulse 2.5s ease-in-out infinite;
+  }
   .user-chip .lvl-badge .lvl-num { opacity: .85; }
   .user-chip .rating-count {
     display: inline-flex; align-items: center; gap: 3px;
@@ -1413,8 +1418,9 @@
     vertical-align: middle;
     margin-left: 6px;
     border: 1px solid transparent;
-    position: relative;
-    top: -1px;
+    position: static;
+    line-height: 1.2;
+    box-sizing: border-box;
   }
   .tier-text-badge.tier-coal {
     background: linear-gradient(135deg, rgba(74,74,82,.25), rgba(44,44,50,.35));
@@ -1479,6 +1485,8 @@
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    line-height: 1.4;
+    padding: 2px 0;
   }
   .board-item .info .title .tier-medal {
     margin: 0;
@@ -1699,6 +1707,30 @@
   .user-profile-meta {
     font-size: .82rem; color: var(--text-dim);
     display: flex; gap: 12px; flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .user-level-badge-line {
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+  .user-level-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: .82rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    background: linear-gradient(135deg, var(--xp-1), var(--xp-2));
+    box-shadow: 0 4px 14px rgba(255,184,77,.35);
+    letter-spacing: .01em;
+  }
+    .user-level-badge.admin-user-badge {
+    background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
+    box-shadow: 0 4px 18px var(--gold-glow);
+    animation: goldPulse 2.5s ease-in-out infinite;
+    color: #2a1a00;
   }
   .user-profile-stats {
     display: grid;
@@ -1718,6 +1750,11 @@
   .user-profile-stat .ups-lbl {
     font-size: .72rem; color: var(--text-dim); margin-top: 3px;
     text-transform: uppercase; letter-spacing: .04em;
+  }
+  .user-profile-stat .ups-sub {
+    font-size: .7rem; color: var(--text-dim); margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+    opacity: .85;
   }
   .user-best-release {
     display: flex; gap: 14px; align-items: center;
@@ -1768,6 +1805,97 @@
     display: flex; gap: 10px; flex-wrap: wrap;
   }
   .user-profile-actions button { flex: 1; min-width: 140px; }
+
+    /* БЛОКИ ТОП-3 В ПРОФИЛЕ */
+  .user-top-section {
+    margin-top: 16px;
+  }
+  .user-top-header {
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .user-top-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .user-top-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .15s;
+  }
+  .user-top-item:hover {
+    border-color: var(--accent);
+    background: var(--panel-3);
+    transform: translateX(2px);
+  }
+  .user-top-item .uti-rank {
+    font-size: .82rem;
+    font-weight: 800;
+    color: var(--text-dim);
+    min-width: 18px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .user-top-item img {
+    width: 40px;
+    height: 40px;
+    border-radius: 7px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--panel-3);
+  }
+  .user-top-item .uti-noart {
+    width: 40px;
+    height: 40px;
+    border-radius: 7px;
+    background: var(--panel-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  .user-top-item .uti-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .user-top-item .uti-title {
+    font-size: .86rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .user-top-item .uti-artist {
+    font-size: .72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+  }
+  .user-top-item .uti-score {
+    font-size: 1.05rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    padding: 0 4px;
+  }
 
   /* СЛУШАЮ СЕЙЧАС */
   .now-playing {
@@ -2004,7 +2132,62 @@
     flex: 1;
     min-width: 120px;
   }
+  /* АДМИНСКИЙ БЕЙДЖ В ПРОФИЛЕ */
+  .admin-badge-box {
+    margin: 16px 0 20px;
+    padding: 20px 22px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(245,196,81,.15), rgba(224,165,44,.06));
+    border: 1.5px solid var(--gold-lvl);
+    box-shadow: 0 0 30px rgba(245,196,81,.25), inset 0 0 0 1px rgba(255,255,255,.04);
+    position: relative;
+    overflow: hidden;
+    animation: goldPulse 3s ease-in-out infinite;
+  }
+  .admin-badge-box::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(115deg, transparent 40%, rgba(255,244,209,.18) 50%, transparent 60%);
+    transform: skewX(-20deg);
+    animation: shine 5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .admin-badge-inner {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    position: relative;
+    z-index: 1;
+  }
+  .admin-badge-icon {
+    font-size: 2.6rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 14px var(--gold-glow));
+    animation: levelUp .6s ease;
+  }
+  .admin-badge-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .admin-badge-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -.01em;
+    background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px var(--gold-glow);
+  }
+  .admin-badge-subtitle {
+    font-size: .82rem;
+    color: var(--text-mid);
+    margin-top: 4px;
+  }
 
+  /* PROFILE CARD */
   /* PROFILE CARD */
   .profile-card {
     background: linear-gradient(135deg, var(--panel-2), var(--panel-3));
@@ -2386,11 +2569,30 @@
     box-shadow: 0 0 0 2px var(--panel-2);
   }
   .board-modal-user-row .name {
-    flex: 1; min-width: 0; font-size: .88rem; color: var(--text-mid);
+    flex: 1 1 auto; min-width: 0; font-size: .88rem; color: var(--text-mid);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    cursor: pointer;
+    transition: color .15s;
+    /* по умолчанию НЕ курсор-указатель и без подчёркивания */
   }
-  .board-modal-user-row .name:hover { color: var(--accent-3); }
+  .board-modal-user-row .name .clickable-name {
+    cursor: pointer;
+    transition: color .15s;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 3px;
+  }
+  .board-modal-user-row .name .clickable-name:hover {
+    color: var(--accent-3);
+    text-decoration-color: var(--accent-3);
+  }
+  .board-modal-user-row .clickable-avatar {
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .board-modal-user-row .clickable-avatar:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 2px var(--accent);
+  }
   .board-modal-user-row .num {
     font-weight: 800; color: var(--accent-3);
     font-variant-numeric: tabular-nums; flex-shrink: 0;
@@ -2772,7 +2974,17 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
+  /* ЗОЛОТАЯ КОРОНА У АДМИНА — вместо уровня */
+  .mini-level.admin-mini {
+    background: linear-gradient(135deg, var(--gold-1), var(--gold-2)) !important;
+    box-shadow: 0 0 0 2px var(--panel-2), 0 0 8px var(--gold-glow) !important;
+    font-size: .7rem !important;
+    padding: 0 5px !important;
+    color: #2a1a00 !important;
+    min-width: 18px !important;
+    height: 18px !important;
+    border-radius: 9px !important;
+  }
   @media (max-width: 700px) {
     body { padding: 10px 6px 100px; }
     .container { padding: 16px 12px; border-radius: 18px; }
@@ -2886,6 +3098,7 @@
       font-size: .6rem;
       padding: 2px 7px;
       margin-left: 4px;
+      line-height: 1.3;
     }
     .board-item .info .artist { font-size: .72rem; }
     .board-item .numbers {
@@ -3466,7 +3679,16 @@
         <div class="profile-stats" id="profileStats"></div>
       </div>
     </div>
-
+    <!-- ОСОБЫЙ БЕЙДЖ АДМИНА (показывается только админу вместо уровня) -->
+    <div class="admin-badge-box hidden" id="adminBadgeBox">
+      <div class="admin-badge-inner">
+        <div class="admin-badge-icon">👑</div>
+        <div class="admin-badge-info">
+          <div class="admin-badge-title">Администратор</div>
+          <div class="admin-badge-subtitle">Полный доступ к сайту</div>
+        </div>
+      </div>
+    </div>
     <div class="level-card" id="levelCard">
       <div class="level-head">
         <div class="level-icon" id="levelIcon">🎧</div>
@@ -3499,7 +3721,7 @@
     <div class="top10-grid" id="top10Grid"></div>
 
     <!-- ДОСТИЖЕНИЯ -->
-    <div class="history-header" style="margin-top: 20px;">
+    <div class="history-header" style="margin-top: 20px;" id="achievementsHeader">
       <h2>🏆 Достижения <span class="hint" id="achCount" style="margin:0; font-weight:400;"></span></h2>
     </div>
     <div class="achievements-grid" id="achievementsGrid"></div>
@@ -4867,7 +5089,10 @@ async function registerLoginDay() {
 }
 function updateUserChip() {
   const nick = userProfile ? userProfile.nickname : "—";
-  const avatar = userProfile && userProfile.avatar ? userProfile.avatar : "🎵";
+  const isAdmin = currentUser && currentUser.uid === ADMIN_UID;
+  let avatar = userProfile && userProfile.avatar ? userProfile.avatar : "🎵";
+  // У обычного юзера не может быть короны — принудительно меняем на стандартную
+  if (avatar === "👑" && !isAdmin) avatar = "🎵";
   document.getElementById("userNick").textContent = nick;
   document.getElementById("userAvatar").textContent = avatar;
   document.getElementById("userAvatar").style.background = colorFromString(nick);
@@ -4881,12 +5106,20 @@ function updateUserRatingCount() {
 }
 function updateUserLevelUI() {
   if (!userProfile) return;
-  const xp = userProfile.xp || 0;
-  const lvl = getLevelByXp(xp);
+  const isAdmin = currentUser && currentUser.uid === ADMIN_UID;
   const badge = document.getElementById("userLevelBadge");
-  if (badge) {
+  if (!badge) return;
+
+  if (isAdmin) {
+    badge.innerHTML = '👑 <span class="lvl-num">ADM</span>';
+    badge.title = "Администратор";
+    badge.classList.add("admin-badge-chip");
+  } else {
+    const xp = userProfile.xp || 0;
+    const lvl = getLevelByXp(xp);
     badge.innerHTML = lvl.emoji + ' <span class="lvl-num">' + lvl.level + '</span>';
     badge.title = lvl.emoji + " " + lvl.name + " · Уровень " + lvl.level;
+    badge.classList.remove("admin-badge-chip");
   }
 }
 function showAdminNavIfNeeded() {
@@ -6145,7 +6378,7 @@ function buildFeedItem(item) {
   const isAdmin = item.uid === ADMIN_UID;
   const adminStyle = isAdmin ? 'background:linear-gradient(135deg,var(--gold-1),var(--gold-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;' : '';
   const timeStr = item._tsSec ? formatTime(item._tsSec) : "";
-  const lvl = item.level || 1;
+  const lvl = isAdmin ? "👑" : (item.level || 1);
   // бейдж типа
   let badge = "";
   if (item.type === "rating") badge = '<span class="feed-badge">⭐ Оценка</span>';
@@ -6187,7 +6420,7 @@ function buildFeedItem(item) {
     content = '<div class="feed-text">' + (item.emoji || "🏆") + " " + escapeHtml(item.text || "") + '</div>';
   }
   el.innerHTML =
-    '<div class="feed-avatar" style="background:' + colorFromString(item.nickname || "?") + '">' + escapeHtml(item.avatar || "🎵") + '<span class="mini-level">' + lvl + '</span></div>' +
+    '<div class="feed-avatar" style="background:' + colorFromString(item.nickname || "?") + '">' + escapeHtml(item.avatar || "🎵") + '<span class="mini-level' + (isAdmin ? ' admin-mini' : '') + '">' + lvl + '</span></div>' +
     '<div class="feed-body">' +
       '<div class="feed-head">' +
         '<b class="' + (isAdmin ? "admin-nick" : "") + '" style="' + adminStyle + '">' + escapeHtml(item.nickname || "—") + '</b>' +
@@ -6455,21 +6688,26 @@ function renderBoardModalUsers(group) {
     const isAdmin = r.uid === ADMIN_UID;
     const isMe = currentUser && r.uid === currentUser.uid;
     const avatar = r.avatar || "🎵";
-    const lvlNum = r.level || 1;
+    const lvlNum = isAdmin ? "👑" : (r.level || 1);
     const row = document.createElement("div");
     row.className = "board-modal-user-row";
     const adminStyle = isAdmin ? 'background:linear-gradient(135deg,var(--gold-1),var(--gold-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;' : '';
-    row.innerHTML = '<div class="avatar-sm" style="background:' + colorFromString(r.nickname || "?") + '">' + escapeHtml(avatar) + '<span class="mini-level">' + lvlNum + '</span></div>' +
-      '<div class="name" style="' + adminStyle + '" data-uid="' + r.uid + '">' + escapeHtml(r.nickname || "Без имени") + (isAdmin ? ' <span style="color:var(--gold-lvl);">👑</span>' : "") + (isMe ? ' <span style="color:var(--accent-3);font-size:.75rem;">(вы)</span>' : "") + '</div>' +
+    row.innerHTML = '<div class="avatar-sm clickable-avatar" style="background:' + colorFromString(r.nickname || "?") + '" data-uid="' + r.uid + '" title="Открыть профиль">' + escapeHtml(avatar) + '<span class="mini-level' + (isAdmin ? ' admin-mini' : '') + '">' + lvlNum + '</span></div>' +
+      '<div class="name"><span class="clickable-name" style="' + adminStyle + '" data-uid="' + r.uid + '" title="Открыть профиль">' + escapeHtml(r.nickname || "Без имени") + (isAdmin ? ' <span style="color:var(--gold-lvl);">👑</span>' : "") + (isMe ? ' <span style="color:var(--accent-3);font-size:.75rem;">(вы)</span>' : "") + '</span></div>' +
       '<div class="num">' + r.final + '</div>' +
       (isMe ? '<button class="del-sm" title="Удалить мою оценку">×</button>' : "");
     row.onclick = (ev) => {
+      // Кнопка удаления — отдельная логика
       if (ev.target.classList.contains("del-sm")) return;
-      if (ev.target.classList.contains("name") || ev.target.closest(".name")) {
+
+      // Клик по нику или аватарке → профиль пользователя
+      if (ev.target.closest(".clickable-name") || ev.target.closest(".clickable-avatar")) {
         ev.stopPropagation();
         openUserProfile(r.uid);
         return;
       }
+
+      // Клик по любому другому месту строки → развернуть подробную оценку
       showUserRatingInline(group, r.uid, row);
     };
     const delBtn = row.querySelector(".del-sm");
@@ -6592,7 +6830,7 @@ function buildCommentItem(c, source, releaseId) {
   const isReply = /^@[^,]+,/.test(c.text || "");
   el.className = "comment-item" + (isAdmin ? " admin-comment" : "") + (isReply ? " reply-mention" : "");
   const time = c.ts?.seconds ? formatTime(c.ts.seconds) : "";
-  const lvl = c.level || 1;
+  const lvl = isAdmin ? "👑" : (c.level || 1);
   let textHtml;
   if (isReply) {
     const m = c.text.match(/^(@[^,]+),?\s*/);
@@ -6605,7 +6843,7 @@ function buildCommentItem(c, source, releaseId) {
   } else {
     textHtml = escapeHtml(c.text);
   }
-  el.innerHTML = '<div class="comment-avatar" style="background:' + colorFromString(c.nickname || "?") + '">' + escapeHtml(c.avatar || "🎵") + '<span class="mini-level">' + lvl + '</span></div>' +
+  el.innerHTML = '<div class="comment-avatar" style="background:' + colorFromString(c.nickname || "?") + '">' + escapeHtml(c.avatar || "🎵") + '<span class="mini-level' + (isAdmin ? ' admin-mini' : '') + '">' + lvl + '</span></div>' +
     '<div class="comment-body">' +
       '<div class="comment-head">' +
         '<span class="comment-nick' + (isAdmin ? " admin-nick" : "") + '" data-uid="' + c.uid + '">' + escapeHtml(c.nickname || "Без имени") + (isAdmin ? " 👑" : "") + '</span>' +
@@ -6828,11 +7066,32 @@ function openRandomWishlist() {
 // ---------- ПРОФИЛЬ ----------
 function renderProfile() {
   if (!userProfile) return;
+  const isAdmin = currentUser && currentUser.uid === ADMIN_UID;
+
+  // Скрываем/показываем блоки в зависимости от статуса
+  const levelCard = document.getElementById("levelCard");
+  const achievementsHeader = document.getElementById("achievementsHeader");
+  const achievementsGrid = document.getElementById("achievementsGrid");
+  const adminBadgeBox = document.getElementById("adminBadgeBox");
+
+  if (isAdmin) {
+    if (levelCard) levelCard.classList.add("hidden");
+    if (achievementsHeader) achievementsHeader.classList.add("hidden");
+    if (achievementsGrid) achievementsGrid.classList.add("hidden");
+    if (adminBadgeBox) adminBadgeBox.classList.remove("hidden");
+  } else {
+    if (levelCard) levelCard.classList.remove("hidden");
+    if (achievementsHeader) achievementsHeader.classList.remove("hidden");
+    if (achievementsGrid) achievementsGrid.classList.remove("hidden");
+    if (adminBadgeBox) adminBadgeBox.classList.add("hidden");
+  }
+
   document.getElementById("profileAvatarBig").textContent = userProfile.avatar || "🎵";
   document.getElementById("profileNickInput").value = userProfile.nickname || "";
   const grid = document.getElementById("emojiGrid");
   grid.innerHTML = "";
-  EMOJI_AVATARS.forEach(e => {
+  const availableEmojis = EMOJI_AVATARS.filter(e => e !== "👑" || isAdmin);
+  availableEmojis.forEach(e => {
     const btn = document.createElement("button");
     btn.className = "emoji-cell" + (e === (userProfile.avatar || "🎵") ? " active" : "");
     btn.textContent = e;
@@ -6891,6 +7150,11 @@ function getFavoriteArtist() {
 }
 async function selectAvatar(emoji) {
   if (!currentUser) return;
+  const isAdmin = currentUser.uid === ADMIN_UID;
+  if (emoji === "👑" && !isAdmin) {
+    showToast("Эта аватарка только для админа");
+    return;
+  }
   try {
     await updateDoc(doc(db, "users", currentUser.uid), { avatar: emoji });
     userProfile.avatar = emoji;
@@ -7346,31 +7610,60 @@ async function openUserProfile(uid) {
       return;
     }
     const u = userSnap.data();
-    // Получаем оценки
     const q = query(collection(db, "ratings"), where("uid", "==", uid));
     const snap = await getDocs(q);
     let ratings = snap.docs.map(d => ({ _id: d.id, ...d.data() })).filter(r => !r.hidden);
     ratings.sort((a, b) => b.final - a.final);
-    const avg = ratings.length ? Math.round(ratings.reduce((a, r) => a + r.final, 0) / ratings.length) : 0;
-    const tier = avg ? getTier(avg) : null;
-    const bestRelease = ratings[0] || null;
-    const level = getLevelByXp(u.xp || 0);
+
     const isAdmin = uid === ADMIN_UID;
     const isMe = currentUser && uid === currentUser.uid;
+    const level = getLevelByXp(u.xp || 0);
     const avatarColor = colorFromString(u.nickname || "?");
+
+    // Разделяем на альбомы и синглы
+    const albums = ratings.filter(r => !r.isSingle);
+    const singles = ratings.filter(r => r.isSingle);
+
+    const avgOf = arr => arr.length ? Math.round(arr.reduce((a, r) => a + r.final, 0) / arr.length) : 0;
+    const avgAll = avgOf(ratings);
+    const avgAlbums = avgOf(albums);
+    const avgSingles = avgOf(singles);
+    const tierAll = avgAll ? getTier(avgAll) : null;
+
+    // Топ-3 лучших и худших (общий список, включая и альбомы, и синглы)
+    const top3 = ratings.slice(0, 3);
+    const bottom3 = ratings.length > 3 ? ratings.slice(-3).reverse() : [];
+
+    // Любимый артист (по количеству оценок)
+    const artistCount = {};
+    ratings.forEach(r => {
+      const a = r.album && r.album.artist;
+      if (a) artistCount[a] = (artistCount[a] || 0) + 1;
+    });
+    const favArtistEntry = Object.entries(artistCount).sort((a, b) => b[1] - a[1])[0];
+    const favArtist = favArtistEntry ? { name: favArtistEntry[0], count: favArtistEntry[1] } : null;
+
     let html = '';
+
+    // ===== ЗАГОЛОВОК ПРОФИЛЯ =====
     html += '<div class="user-profile-header">' +
       '<div class="user-profile-avatar" style="background:' + avatarColor + '">' + escapeHtml(u.avatar || "🎵") +
         '<span class="mini-level">' + level.level + '</span>' +
       '</div>' +
       '<div class="user-profile-info">' +
         '<div class="user-profile-nick' + (isAdmin ? ' admin-nick' : '') + '">' + escapeHtml(u.nickname || "—") + (isAdmin ? ' 👑' : '') + '</div>' +
+        '<div class="user-level-badge-line">' +
+          (isAdmin
+            ? '<span class="user-level-badge admin-user-badge">👑 Администратор</span>'
+            : '<span class="user-level-badge">' + level.emoji + ' Уровень ' + level.level + ' · ' + level.name + '</span>') +
+        '</div>' +
         '<div class="user-profile-meta">' +
-          '<span>' + level.emoji + ' Ур. ' + level.level + ' · ' + level.name + '</span>' +
+          (favArtist ? '<span>🎤 Любимый артист: <b>' + escapeHtml(favArtist.name) + '</b> (' + favArtist.count + ' релизов)</span>' : '') +
         '</div>' +
       '</div>' +
     '</div>';
-    // Слушает сейчас (если свежее)
+
+    // ===== СЛУШАЕТ СЕЙЧАС =====
     if (u.nowPlaying && u.nowPlaying.ts) {
       const tsMs = u.nowPlaying.ts.seconds ? u.nowPlaying.ts.seconds * 1000 : 0;
       if (Date.now() - tsMs < NOW_PLAYING_TTL) {
@@ -7384,29 +7677,79 @@ async function openUserProfile(uid) {
         '</div>';
       }
     }
-    // Статы
+
+    // ===== ОБЩАЯ СТАТИСТИКА =====
     html += '<div class="user-profile-stats">' +
-      '<div class="user-profile-stat"><div class="ups-num">' + ratings.length + '</div><div class="ups-lbl">Оценок</div></div>' +
-      '<div class="user-profile-stat"><div class="ups-num">' + (avg || "—") + '</div><div class="ups-lbl">Средний балл</div></div>' +
-      '<div class="user-profile-stat"><div class="ups-num">' + (tier ? tier.emoji : "—") + '</div><div class="ups-lbl">' + (tier ? tier.name : "—") + '</div></div>' +
-      '<div class="user-profile-stat"><div class="ups-num">' + (u.xp || 0) + '</div><div class="ups-lbl">XP</div></div>' +
+      // Всего оценок
+      '<div class="user-profile-stat">' +
+        '<div class="ups-num">' + ratings.length + '</div>' +
+        '<div class="ups-lbl">Всего оценок</div>' +
+        '<div class="ups-sub">' + albums.length + ' альб · ' + singles.length + ' сингл</div>' +
+      '</div>' +
+      // Средний балл
+      '<div class="user-profile-stat">' +
+        '<div class="ups-num">' + (avgAll || "—") + '</div>' +
+        '<div class="ups-lbl">Средний балл</div>' +
+        (tierAll ? '<div class="ups-sub">' + tierAll.emoji + ' ' + tierAll.name + '</div>' : '<div class="ups-sub">—</div>') +
+      '</div>' +
+      // Альбомы
+      '<div class="user-profile-stat">' +
+        '<div class="ups-num">' + albums.length + '</div>' +
+        '<div class="ups-lbl">Альбомов</div>' +
+        '<div class="ups-sub">средний ' + (avgAlbums || "—") + '</div>' +
+      '</div>' +
+      // Синглы
+      '<div class="user-profile-stat">' +
+        '<div class="ups-num">' + singles.length + '</div>' +
+        '<div class="ups-lbl">Синглов</div>' +
+        '<div class="ups-sub">средний ' + (avgSingles || "—") + '</div>' +
+      '</div>' +
     '</div>';
-    // Лучший релиз
-    if (bestRelease && bestRelease.album) {
-      const bestTier = getTier(bestRelease.final);
-      html += '<div class="user-best-release">' +
-        '<div class="bg-blur" style="background-image:url(\'' + escapeHtml(bestRelease.album.artwork || "") + '\')"></div>' +
-        (bestRelease.album.artwork ? '<img src="' + escapeHtml(bestRelease.album.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '') +
-        '<div class="ubr-info">' +
-          '<div class="ubr-label">🏆 Лучший релиз</div>' +
-          '<div class="ubr-title">' + escapeHtml(bestRelease.album.title || "") + '</div>' +
-          '<div class="ubr-artist">' + escapeHtml(bestRelease.album.artist || "") + '</div>' +
-        '</div>' +
-        '<div class="ubr-score">' + bestRelease.final + '</div>' +
-      '</div>';
+
+    // ===== ТОП-3 ЛУЧШИХ =====
+    if (top3.length > 0) {
+      html += '<div class="user-top-section">' +
+        '<div class="user-top-header">🏆 Лучшие релизы</div>' +
+        '<div class="user-top-list">';
+      top3.forEach((item, i) => {
+        const tier = getTier(item.final);
+        const typeLabel = item.isSingle ? 'Сингл' : 'Альбом';
+        html += '<div class="user-top-item" data-release-uid="' + escapeHtml(uid) + '" data-source="' + escapeHtml(item.source) + '" data-release-id="' + escapeHtml(String(item.releaseId)) + '">' +
+          '<div class="uti-rank">' + (i + 1) + '</div>' +
+          (item.album && item.album.artwork ? '<img src="' + escapeHtml(item.album.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '<div class="uti-noart">💿</div>') +
+          '<div class="uti-info">' +
+            '<div class="uti-title">' + escapeHtml(item.album.title || "") + '</div>' +
+            '<div class="uti-artist">' + escapeHtml(item.album.artist || "") + ' · <span style="opacity:.7">' + typeLabel + '</span></div>' +
+          '</div>' +
+          '<div class="uti-score" style="color:' + tier.color + '">' + item.final + '</div>' +
+        '</div>';
+      });
+      html += '</div></div>';
     }
-    // Кнопки
-    html += '<div class="user-profile-actions">';
+
+    // ===== ТОП-3 ХУДШИХ =====
+    if (bottom3.length > 0) {
+      html += '<div class="user-top-section">' +
+        '<div class="user-top-header">💀 Худшие релизы</div>' +
+        '<div class="user-top-list">';
+      bottom3.forEach((item) => {
+        const tier = getTier(item.final);
+        const typeLabel = item.isSingle ? 'Сингл' : 'Альбом';
+        html += '<div class="user-top-item" data-release-uid="' + escapeHtml(uid) + '" data-source="' + escapeHtml(item.source) + '" data-release-id="' + escapeHtml(String(item.releaseId)) + '">' +
+          '<div class="uti-rank">—</div>' +
+          (item.album && item.album.artwork ? '<img src="' + escapeHtml(item.album.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '<div class="uti-noart">💿</div>') +
+          '<div class="uti-info">' +
+            '<div class="uti-title">' + escapeHtml(item.album.title || "") + '</div>' +
+            '<div class="uti-artist">' + escapeHtml(item.album.artist || "") + ' · <span style="opacity:.7">' + typeLabel + '</span></div>' +
+          '</div>' +
+          '<div class="uti-score" style="color:' + tier.color + '">' + item.final + '</div>' +
+        '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // ===== КНОПКИ =====
+    html += '<div class="user-profile-actions" style="margin-top:16px;">';
     if (isMe) {
       html += '<button class="btn-secondary" onclick="closeUserProfile();switchNav(\'profile\')">👤 Открыть мой профиль</button>';
     } else {
@@ -7414,7 +7757,25 @@ async function openUserProfile(uid) {
     }
     html += '<button class="btn-secondary" onclick="closeUserProfile()">Закрыть</button>';
     html += '</div>';
+
     content.innerHTML = html;
+
+    // Клик по релизу — открыть расчёт или доску
+    content.querySelectorAll(".user-top-item").forEach(el => {
+      el.onclick = () => {
+        const src = el.dataset.source;
+        const rid = el.dataset.releaseId;
+        closeUserProfile();
+        const group = boardData.find(b => b.source === src && b.releaseId === String(rid));
+        if (group) {
+          switchNav("board");
+          setTimeout(() => openBoardModal(group), 250);
+        } else {
+          switchNav("main");
+          loadAlbum({ id: rid, title: "", cover: "", source: src });
+        }
+      };
+    });
   } catch (e) {
     content.innerHTML = '<div class="error">Ошибка: ' + escapeHtml(e.message) + '</div>';
   }
@@ -7553,6 +7914,7 @@ async function renderAdminUsers() {
         '<div class="info"><div class="nick">' + escapeHtml(u.nickname || "—") + ' ' + (u._id === ADMIN_UID ? "👑" : "") + banText + '</div>' +
         '<div class="meta">' + lvl.emoji + ' Ур.' + lvl.level + ' · ' + uRatings.length + ' оценок · средний ' + (avg || "—") + ' · ' + (u.xp || 0) + ' XP</div></div>' +
         '<div class="actions">' +
+          '<button class="btn-secondary" onclick="openUserProfile(\'' + u._id + '\')">👤 Профиль</button>' +
           (isBanned
             ? '<button onclick="unbanUser(\'' + u._id + '\')">Разбанить</button>'
             : (u._id !== ADMIN_UID ? '<button class="btn-danger" onclick="openBanModal(\'' + u._id + '\',\'' + escapeHtml(u.nickname || "").replace(/'/g, "\\'") + '\')">Забанить</button>' : '')) +
