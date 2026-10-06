@@ -4364,7 +4364,7 @@ enableIndexedDbPersistence(db).catch((err) => {
 });
 
 const ADMIN_UID = "raYJInjPDLOvflxoaVvoKrbBsUc2";
-const ITUNES_PROXY = "https://itunes-proxy-taupe.vercel.app/api/proxy";
+const ITUNES_PROXY = "https://album-rating-proxy.vercel.app/api/proxy";
 
 const FINAL_MAX = 360;
 const MAX_TRACKS = 30;
@@ -5471,14 +5471,12 @@ function goHome() { switchNav("main"); reset(); }
 
 // ---------- ИСТОЧНИКИ ----------
 function initSource() {
-  // Источник один — Deezer, всегда
-  currentSource = "deezer";
+  currentSource = "spotify";
   applySourceUI();
 }
 
 function setSource(src) {
-  // Источник один — Deezer. Функция оставлена для совместимости.
-  currentSource = "deezer";
+  currentSource = "spotify";
   applySourceUI();
 }
 function applySourceUI() {
@@ -5506,29 +5504,44 @@ function jsonp(url, timeoutMs) {
 }
 
 // ---------- iTUNES / DEEZER ----------
-async function itunesSearch(term, entity, limit, attribute) {
-  entity = entity || "album"; limit = limit || 15; attribute = attribute || "";
-  let target = "https://itunes.apple.com/search?term=" + encodeURIComponent(term) +
-               "&entity=" + entity + "&limit=" + limit + "&media=music";
-  if (attribute) target += "&attribute=" + attribute;
+// Spotify API через прокси
+async function spotifyFetch(path) {
+  const target = "https://api.spotify.com/v1" + path;
   const res = await fetch(ITUNES_PROXY + "?u=" + encodeURIComponent(target));
-  if (!res.ok) throw new Error("iTunes HTTP " + res.status);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error("Spotify HTTP " + res.status + ": " + text.slice(0, 120));
+  }
   return res.json();
 }
-async function itunesLookup(id, entity, limit) {
-  entity = entity || "song"; limit = limit || 200;
-  const target = "https://itunes.apple.com/lookup?id=" + id +
-                 "&entity=" + entity + "&limit=" + limit;
-  const res = await fetch(ITUNES_PROXY + "?u=" + encodeURIComponent(target));
-  if (!res.ok) throw new Error("iTunes HTTP " + res.status);
-  return res.json();
+
+// Поиск альбомов (включая синглы) по запросу
+async function spotifySearchAlbums(query, limit) {
+  limit = limit || 20;
+  const data = await spotifyFetch(
+    "/search?q=" + encodeURIComponent(query) + "&type=album&limit=" + limit
+  );
+  return (data.albums && data.albums.items) || [];
 }
-function mapItunesAlbum(a) {
+
+// Загрузка альбома с трек-листом
+async function spotifyGetAlbum(id) {
+  return spotifyFetch("/albums/" + id);
+}
+function mapSpotifyAlbum(a) {
+  const artistNames = (a.artists || []).map(x => x.name).join(", ");
+  const cover = (a.images && a.images[0] && a.images[0].url) ||
+                (a.images && a.images[1] && a.images[1].url) || "";
+  const year = (a.release_date || "").slice(0, 4);
   return {
-    id: a.collectionId, title: a.collectionName, artist: a.artistName,
-    cover: (a.artworkUrl100 || a.artworkUrl60 || "").replace("100x100", "300x300"),
-    year: (a.releaseDate || "").slice(0, 4),
-    source: "itunes", trackCount: a.trackCount || 0, isSingle: (a.trackCount === 1)
+    id: a.id,
+    title: a.name,
+    artist: artistNames,
+    cover: cover,
+    year: year,
+    source: "spotify",
+    trackCount: a.total_tracks || 0,
+    isSingle: (a.album_type === "single") || (a.total_tracks === 1)
   };
 }
 
@@ -5553,51 +5566,31 @@ function renderSkeletonSuggestions() {
 }
 async function fetchSuggestions(q) {
   try {
-    const cacheKey = currentSource + "|" + q.toLowerCase();
+    const cacheKey = "spotify|" + q.toLowerCase();
     const cached = cacheGet(LS_SEARCH_CACHE, cacheKey);
-    if (cached && cached.length) { lastSuggestions = cached.slice(0, 12); activeIndex = -1; renderSuggestions(); return; }
-    let items = [];
-    if (currentSource === "itunes") {
-      const data = await itunesSearch(q, "album", 20);
-      items = (data.results || []).map(mapItunesAlbum);
-    } else if (currentSource === "deezer") {
-      const data = await jsonp("https://api.deezer.com/search/album?q=" + encodeURIComponent(q) + "&limit=15&output=jsonp");
-      items = (data.data || []).map(a => ({
-        id: a.id, title: a.title, artist: a.artist ? a.artist.name : "Unknown",
-        cover: a.cover_medium || a.cover || "", source: "deezer"
-      }));
-      if (q.length < 30 && q.split(" ").length <= 3) {
-        try {
-          const artData = await jsonp("https://api.deezer.com/search/artist?q=" + encodeURIComponent(q) + "&limit=1&output=jsonp");
-          if (artData.data && artData.data.length > 0 && artData.data[0].name.toLowerCase().includes(q.toLowerCase())) {
-            const artId = artData.data[0].id;
-            const albums = await jsonp("https://api.deezer.com/artist/" + artId + "/albums?limit=25&output=jsonp");
-            const more = (albums.data || []).map(a => ({
-              id: a.id, title: a.title, artist: artData.data[0].name,
-              cover: a.cover_medium || a.cover || "", source: "deezer"
-            }));
-            const seen = new Set(items.map(x => x.id));
-            items = items.concat(more.filter(x => !seen.has(x.id)));
-          }
-        } catch (e) {}
-      }
+    if (cached && cached.length) {
+      lastSuggestions = cached.slice(0, 20);
+      activeIndex = -1;
+      renderSuggestions();
+      return;
     }
+    const albums = await spotifySearchAlbums(q, 20);
+    const items = albums.map(mapSpotifyAlbum);
     if (items.length === 0) {
       lastSuggestions = [];
       renderStatus("Ничего не найдено");
-      if (currentSource === "itunes") showWarning("🍎 iTunes не нашёл результатов по этому запросу.");
       return;
     }
     cacheSet(LS_SEARCH_CACHE, cacheKey, items);
-    lastSuggestions = items.slice(0, 12);
+    lastSuggestions = items.slice(0, 20);
     activeIndex = -1;
     renderSuggestions();
     hideWarning();
   } catch (e) {
+    console.error("Spotify search error:", e);
     lastSuggestions = [];
     renderStatus("Ошибка поиска");
-    if (currentSource === "itunes") showWarning("🍎 iTunes временно недоступен. Попробуйте ещё раз.");
-    else showWarning("Ошибка: " + e.message);
+    showWarning("🎧 Spotify: " + e.message);
   }
 }
 function renderSuggestions() {
@@ -5661,7 +5654,7 @@ function chooseSuggestion(i) {
   closeSuggestions();
   document.getElementById("searchInput").value = album.title + " — " + album.artist;
   lastSuggestions = []; activeIndex = -1;
-  loadAlbum({ id: album.id, title: album.title, cover: album.cover, source: album.source });
+  loadAlbum({ id: album.id, title: album.title, cover: album.cover, source: "spotify" });
 }
 
 // ---------- ЗАГРУЗКА АЛЬБОМА ----------
@@ -5670,14 +5663,14 @@ async function loadAlbum(album) {
   errorBox.textContent = "Загрузка треков…";
   showFloatingLoader(true);
   try {
-    const cacheKey = album.source + "_" + album.id;
+    const cacheKey = "spotify_" + album.id;
     const cached = cacheGet(LS_RELEASE_CACHE, cacheKey);
     if (cached && cached.songs && cached.songs.length) {
       currentAlbum = cached.album;
       currentTracks = cached.songs;
       trackDetails = {}; overallValue = 7; coverRating = 7; singleValues = {};
-      await prefillUserRatingIfExists(album.source, album.id);
-      await applyOverride(album.source, album.id);
+      await prefillUserRatingIfExists("spotify", album.id);
+      await applyOverride("spotify", album.id);
       errorBox.textContent = "";
       renderAlbum();
       if (currentUser && currentUser.uid === ADMIN_UID) document.getElementById("adminQuickActions").classList.remove("hidden");
@@ -5686,35 +5679,33 @@ async function loadAlbum(album) {
       showFloatingLoader(false);
       return;
     }
-    let title, artist, artwork, songs;
-    if (album.source === "itunes") {
-      const data = await itunesLookup(album.id, "song");
-      const tracks = (data.results || []).filter(r => r.wrapperType === "track" && r.kind === "song");
-      if (tracks.length === 0) throw new Error("нет трек-листа");
-      const first = tracks[0];
-      title = first.collectionName || album.title;
-      artist = first.artistName || "";
-      artwork = (first.artworkUrl100 || "").replace("100x100", "600x600");
-      songs = tracks.sort((a, b) => (a.trackNumber || 0) - (b.trackNumber || 0))
-        .map(t => ({ name: t.trackName, artist: t.artistName || artist })).filter(t => t.name);
-    } else if (album.source === "deezer") {
-      const data = await jsonp("https://api.deezer.com/album/" + album.id + "?output=jsonp");
-      if (data.error) throw new Error(data.error.message || "ошибка Deezer");
-      if (!data.tracks || !data.tracks.data) throw new Error("нет трек-листа");
-      title = data.title || album.title;
-      artist = (data.artist && data.artist.name) || "";
-      artwork = data.cover_big || data.cover_medium || data.cover || album.cover;
-      songs = data.tracks.data.map(t => ({ name: t.title, artist: (t.artist && t.artist.name) || artist })).filter(t => t.name);
-    }
+
+    const data = await spotifyGetAlbum(album.id);
+    if (!data || !data.tracks || !data.tracks.items) throw new Error("нет трек-листа");
+
+    const title = data.name || album.title;
+    const artist = (data.artists || []).map(x => x.name).join(", ") || "";
+    const artwork = (data.images && data.images[0] && data.images[0].url) || album.cover || "";
+    const songs = data.tracks.items
+      .sort((a, b) => (a.track_number || 0) - (b.track_number || 0))
+      .map(t => ({ name: t.name, artist: (t.artists || []).map(x => x.name).join(", ") || artist }))
+      .filter(t => t.name);
+
     if (songs.length === 0) throw new Error("трек-лист пуст");
-    if (songs.length > MAX_TRACKS) { errorBox.textContent = "В релизе " + songs.length + " треков, взяты первые " + MAX_TRACKS + "."; songs.length = MAX_TRACKS; }
-    else errorBox.textContent = "";
-    currentAlbum = { id: album.id, title, artist, artwork, source: album.source };
+    if (songs.length > MAX_TRACKS) {
+      errorBox.textContent = "В релизе " + songs.length + " треков, взяты первые " + MAX_TRACKS + ".";
+      songs.length = MAX_TRACKS;
+    } else {
+      errorBox.textContent = "";
+    }
+
+    currentAlbum = { id: album.id, title, artist, artwork, source: "spotify" };
     currentTracks = songs.map(s => ({ name: s.name, artist: s.artist }));
     trackDetails = {}; overallValue = 7; coverRating = 7; singleValues = {};
+
     cacheSet(LS_RELEASE_CACHE, cacheKey, { album: currentAlbum, songs: currentTracks });
-    await prefillUserRatingIfExists(album.source, album.id);
-    await applyOverride(album.source, album.id);
+    await prefillUserRatingIfExists("spotify", album.id);
+    await applyOverride("spotify", album.id);
     renderAlbum();
     if (currentUser && currentUser.uid === ADMIN_UID) document.getElementById("adminQuickActions").classList.remove("hidden");
     else document.getElementById("adminQuickActions").classList.add("hidden");
@@ -5722,8 +5713,10 @@ async function loadAlbum(album) {
     hideWarning();
   } catch (e) {
     errorBox.textContent = "Не удалось загрузить: " + e.message;
-    if (currentSource === "itunes") showWarning("🍎 iTunes временно недоступен. Попробуйте ещё раз.");
-  } finally { showFloatingLoader(false); }
+    showWarning("🎧 Spotify: " + e.message);
+  } finally {
+    showFloatingLoader(false);
+  }
 }
 async function applyOverride(source, releaseId) {
   try {
@@ -6487,13 +6480,13 @@ async function restoreFromMyRatings(item) {
   currentAlbum = { id: item.album.id, title: item.album.title, artist: item.album.artist, artwork: item.album.artwork, source: item.album.source || item.source };
   currentTracks = (item.scores || []).map((v, i) => ({ name: "Трек " + (i + 1), artist: currentAlbum.artist }));
   try {
-    if (currentAlbum.source === "itunes") {
-      const data = await itunesLookup(currentAlbum.id, "song");
-      const tracks = (data.results || []).filter(r => r.wrapperType === "track" && r.kind === "song");
-      if (tracks.length) currentTracks = tracks.sort((a, b) => (a.trackNumber || 0) - (b.trackNumber || 0)).map(t => ({ name: t.trackName, artist: t.artistName || currentAlbum.artist }));
-    } else if (currentAlbum.source === "deezer") {
-      const data = await jsonp("https://api.deezer.com/album/" + currentAlbum.id + "?output=jsonp");
-      if (data.tracks && data.tracks.data) currentTracks = data.tracks.data.map(t => ({ name: t.title, artist: (t.artist && t.artist.name) || currentAlbum.artist }));
+    if (currentAlbum.source === "spotify") {
+      const data = await spotifyGetAlbum(currentAlbum.id);
+      if (data && data.tracks && data.tracks.items) {
+        currentTracks = data.tracks.items
+          .sort((a, b) => (a.track_number || 0) - (b.track_number || 0))
+          .map(t => ({ name: t.name, artist: (t.artists || []).map(x => x.name).join(", ") || currentAlbum.artist }));
+      }
     }
   } catch (e) {}
   overallValue = item.overall || 7;
@@ -7615,16 +7608,8 @@ function onNowPlayingSearchInput() {
   nowPlayingDebounce = setTimeout(async () => {
     try {
       let items = [];
-      if (currentSource === "deezer") {
-        const data = await jsonp("https://api.deezer.com/search/album?q=" + encodeURIComponent(q) + "&limit=10&output=jsonp");
-        items = (data.data || []).map(a => ({
-          id: a.id, title: a.title, artist: a.artist ? a.artist.name : "",
-          cover: a.cover_medium || "", source: "deezer"
-        }));
-      } else {
-        const data = await itunesSearch(q, "album", 15);
-        items = (data.results || []).map(mapItunesAlbum);
-      }
+      const albums = await spotifySearchAlbums(q, 10);
+      items = albums.map(mapSpotifyAlbum);
       if (items.length === 0) {
         listEl.innerHTML = '<div class="status">Ничего не найдено</div>';
         return;
