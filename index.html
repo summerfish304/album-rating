@@ -5518,8 +5518,7 @@ async function spotifyFetch(path) {
 // Поиск альбомов (включая синглы) по запросу
 async function spotifySearchAlbums(query, limit) {
   limit = limit || 20;
-  // Spotify багует с limit через прокси — не передаём его вообще.
-  // Возьмём всё, что вернёт Spotify, и обрежем на клиенте.
+  // Убираем limit из URL — Spotify багует с ним через прокси.
   const data = await spotifyFetch(
     "/search?q=" + encodeURIComponent(query) + "&type=album"
   );
