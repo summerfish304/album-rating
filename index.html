@@ -5518,10 +5518,13 @@ async function spotifyFetch(path) {
 // Поиск альбомов (включая синглы) по запросу
 async function spotifySearchAlbums(query, limit) {
   limit = limit || 20;
+  // Spotify багует с limit через прокси — не передаём его вообще.
+  // Возьмём всё, что вернёт Spotify, и обрежем на клиенте.
   const data = await spotifyFetch(
-    "/search?q=" + encodeURIComponent(query) + "&type=album&limit=" + limit
+    "/search?q=" + encodeURIComponent(query) + "&type=album"
   );
-  return (data.albums && data.albums.items) || [];
+  const items = (data.albums && data.albums.items) || [];
+  return items.slice(0, Math.max(1, Math.min(50, limit)));
 }
 
 // Загрузка альбома с трек-листом
