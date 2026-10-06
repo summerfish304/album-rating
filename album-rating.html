@@ -1896,6 +1896,238 @@
     flex-shrink: 0;
     padding: 0 4px;
   }
+  /* МИНИ-ЛЕНТА "ЧТО НОВОГО" */
+  .mini-feed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .mini-feed-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    transition: border-color .15s, background .15s;
+    animation: fadeUp .3s ease both;
+  }
+  .mini-feed-item:hover {
+    border-color: var(--accent);
+    background: var(--panel-3);
+  }
+  .mini-feed-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 22px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .mini-feed-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .mini-feed-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .78rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+  .mini-feed-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .75rem;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .mini-feed-avatar .mini-level {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    min-width: 13px;
+    height: 13px;
+    padding: 0 2px;
+    border-radius: 7px;
+    font-size: .5rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 2px var(--panel-2);
+  }
+  .mini-feed-head b {
+    color: var(--text);
+    font-weight: 700;
+    font-size: .82rem;
+  }
+  .mini-feed-time {
+    font-size: .7rem;
+    color: var(--text-dim);
+    margin-left: auto;
+  }
+  .mini-feed-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mini-feed-content img {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--panel-3);
+  }
+  .mini-feed-text {
+    flex: 1;
+    min-width: 0;
+    font-size: .85rem;
+    color: var(--text-mid);
+    line-height: 1.35;
+  }
+  .mini-feed-text b {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .mini-feed-comment {
+    color: var(--text);
+    font-style: italic;
+  }
+  .mini-feed-sub {
+    font-size: .72rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .mini-feed-score {
+    font-size: 1.1rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    padding: 0 4px;
+  }
+  .mini-covers-stack {
+    display: flex;
+    gap: -10px;
+    flex-shrink: 0;
+  }
+  .mini-covers-stack img {
+    width: 32px;
+    height: 32px;
+    border-radius: 5px;
+    margin-right: -10px;
+    border: 2px solid var(--panel-2);
+    object-fit: cover;
+  }
+  .mini-covers-stack img:last-child {
+    margin-right: 0;
+  }
+
+  /* ГОРЯЧЕЕ СЕГОДНЯ */
+  .home-hot-section {
+    margin-top: 22px;
+  }
+  .hot-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 600px) {
+    .hot-grid { grid-template-columns: 1fr; }
+  }
+  .hot-col {
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .hot-col-title {
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 10px;
+  }
+  .hot-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .hot-item:hover {
+    background: var(--panel-3);
+  }
+  .hot-rank {
+    font-size: .78rem;
+    font-weight: 800;
+    color: var(--text-dim);
+    min-width: 16px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .hot-item img {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--panel-3);
+  }
+  .hot-noart {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--panel-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .hot-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .hot-title {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hot-artist {
+    font-size: .7rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+  .hot-score {
+    font-size: .95rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .hot-empty {
+    font-size: .8rem;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 8px;
+    font-style: italic;
+  }
 
   /* СЛУШАЮ СЕЙЧАС */
   .now-playing {
@@ -3549,22 +3781,20 @@
       </div>
     </div>
 
-    <!-- ЛЕНТА АКТИВНОСТИ -->
+    <!-- МИНИ-ЛЕНТА + ГОРЯЧЕЕ СЕГОДНЯ -->
     <div class="home-feed-section">
       <div class="home-feed-title">
-        <h3>📡 Лента активности</h3>
+        <h3>📡 Что нового</h3>
         <button class="btn-secondary btn-sm" onclick="refreshFeed()">↻ Обновить</button>
       </div>
+      <div class="mini-feed-list" id="feedList"></div>
+    </div>
 
-      <div class="feed-tabs" id="feedTabs">
-        <button class="feed-tab active" data-feed="all" onclick="switchFeedTab('all')">Всё</button>
-        <button class="feed-tab" data-feed="rating" onclick="switchFeedTab('rating')">⭐ Оценки</button>
-        <button class="feed-tab" data-feed="comment" onclick="switchFeedTab('comment')">💬 Комменты</button>
-        <button class="feed-tab" data-feed="release" onclick="switchFeedTab('release')">🎵 Релизы</button>
-        <button class="feed-tab" data-feed="achievement" onclick="switchFeedTab('achievement')">🏆 Достижения</button>
+    <div class="home-hot-section">
+      <div class="home-feed-title">
+        <h3>🔥 Горячее сегодня</h3>
       </div>
-
-      <div class="feed-list" id="feedList"></div>
+      <div class="hot-grid" id="hotGrid"></div>
     </div>
   </div>
 
@@ -5058,6 +5288,7 @@ onAuthStateChanged(auth, async (user) => {
     updateUserLevelUI();
     // лента
     subscribeFeed();
+    renderHotToday();
     // стартовые рекомендации
     showAiRecommendation();
   } else {
@@ -6300,16 +6531,114 @@ function subscribeFeed() {
         return { _id: d.id, ...data, _tsSec: data.ts?.seconds || 0 };
       });
       renderFeed();
+      renderHotToday();
     }, (err) => {
       console.warn("Feed subscribe error:", err.message);
       feedData = [];
       renderFeed();
+      renderHotToday();
     });
   } catch (e) {}
 }
 async function refreshFeed() {
   subscribeFeed();
-  showToast("Лента обновлена");
+  renderHotToday();
+  showToast("Обновлено");
+}
+async function renderHotToday() {
+  const gridEl = document.getElementById("hotGrid");
+  if (!gridEl) return;
+  gridEl.innerHTML = '<div class="empty-msg" style="padding:14px;"><span class="spinner"></span></div>';
+  try {
+    const snap = await getDocs(collection(db, "ratings"));
+    const all = snap.docs.map(d => d.data()).filter(r => !r.hidden);
+    const dayAgo = (Date.now() / 1000) - 86400;
+    const recent = all.filter(r => (r.ts?.seconds || 0) >= dayAgo);
+
+    // Группируем по релизам
+    const groups = {};
+    recent.forEach(r => {
+      const key = r.source + "_" + r.releaseId;
+      if (!groups[key]) groups[key] = {
+        album: r.album, source: r.source, releaseId: r.releaseId,
+        ratings: [], comments: 0
+      };
+      groups[key].ratings.push(r.final);
+    });
+
+    // Загружаем количество комментариев за сутки
+    try {
+      const cSnap = await getDocs(collection(db, "comments"));
+      cSnap.docs.forEach(d => {
+        const c = d.data();
+        if ((c.ts?.seconds || 0) < dayAgo) return;
+        const key = c.source + "_" + c.releaseId;
+        if (groups[key]) groups[key].comments++;
+      });
+    } catch (e) {}
+
+    const list = Object.values(groups).map(g => ({
+      ...g,
+      avg: Math.round(g.ratings.reduce((a, b) => a + b, 0) / g.ratings.length),
+      count: g.ratings.length
+    }));
+
+    // Топ-3 по средней
+    const topByScore = [...list].sort((a, b) => b.avg - a.avg || b.count - a.count).slice(0, 3);
+    // Топ-3 по обсуждению
+    const topByComments = [...list].sort((a, b) => b.comments - a.comments || b.count - a.count).slice(0, 3);
+
+    if (list.length === 0) {
+      gridEl.innerHTML = '<div class="empty-msg">Сегодня ещё ничего не оценивали.<br>Будьте первым!</div>';
+      return;
+    }
+
+    const buildCol = (title, items, valueField) => {
+      let html = '<div class="hot-col"><div class="hot-col-title">' + title + '</div>';
+      if (items.length === 0) {
+        html += '<div class="hot-empty">Пусто</div>';
+      } else {
+        items.forEach((it, i) => {
+          const tier = getTier(it.avg || 0);
+          const val = valueField === "comments" ? (it.comments + ' 💬') : it.avg;
+          const color = valueField === "comments" ? "var(--accent-3)" : tier.color;
+          html += '<div class="hot-item" data-source="' + escapeHtml(it.source) + '" data-release-id="' + escapeHtml(String(it.releaseId)) + '">' +
+            '<div class="hot-rank">' + (i + 1) + '</div>' +
+            (it.album && it.album.artwork ? '<img src="' + escapeHtml(it.album.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '<div class="hot-noart">💿</div>') +
+            '<div class="hot-info">' +
+              '<div class="hot-title">' + escapeHtml(it.album.title || "") + '</div>' +
+              '<div class="hot-artist">' + escapeHtml(it.album.artist || "") + '</div>' +
+            '</div>' +
+            '<div class="hot-score" style="color:' + color + '">' + val + '</div>' +
+          '</div>';
+        });
+      }
+      html += '</div>';
+      return html;
+    };
+
+    gridEl.innerHTML =
+      buildCol("🏆 Лучшие по средней", topByScore, "avg") +
+      buildCol("💬 Самые обсуждаемые", topByComments, "comments");
+
+    // Клики
+    gridEl.querySelectorAll(".hot-item").forEach(el => {
+      el.onclick = () => {
+        const src = el.dataset.source;
+        const rid = el.dataset.releaseId;
+        const group = boardData.find(b => b.source === src && b.releaseId === String(rid));
+        if (group) {
+          switchNav("board");
+          setTimeout(() => openBoardModal(group), 250);
+        } else {
+          switchNav("main");
+          loadAlbum({ id: rid, title: "", cover: "", source: src });
+        }
+      };
+    });
+  } catch (e) {
+    gridEl.innerHTML = '<div class="empty-msg" style="color:var(--danger)">Ошибка: ' + escapeHtml(e.message) + '</div>';
+  }
 }
 function switchFeedTab(tab) {
   currentFeedTab = tab;
@@ -6321,19 +6650,65 @@ function switchFeedTab(tab) {
 function renderFeed() {
   const listEl = document.getElementById("feedList");
   if (!listEl) return;
-  let filtered = feedData;
-  if (currentFeedTab !== "all") {
-    filtered = feedData.filter(item => item.type === currentFeedTab);
-  }
-  feedItems = filtered;
-  feedRendered = 0;
-  feedAllLoaded = false;
+
+  // Берём только последние 24 часа
+  const dayAgo = (Date.now() / 1000) - 86400;
+  let recent = feedData.filter(item => (item._tsSec || 0) >= dayAgo);
+
+  // Убираем достижения — они не интересны другим
+  recent = recent.filter(item => item.type !== "achievement");
+
+  // Схлопываем оценки одного юзера, поставленные подряд (в течение 30 минут)
+  const collapsed = collapseRatings(recent);
+
+  // Ограничиваем 8 записями
+  const shown = collapsed.slice(0, 8);
+
   listEl.innerHTML = "";
-  if (feedItems.length === 0) {
+  if (shown.length === 0) {
     listEl.innerHTML = '<div class="empty-msg">Пока ничего не произошло.<br>Будьте первым!</div>';
     return;
   }
-  appendFeedChunk();
+
+  shown.forEach(item => {
+    listEl.appendChild(buildMiniFeedItem(item));
+  });
+}
+
+// Схлопывание: если юзер поставил несколько оценок подряд — объединяем
+function collapseRatings(items) {
+  const result = [];
+  let i = 0;
+  while (i < items.length) {
+    const current = items[i];
+    if (current.type !== "rating") {
+      result.push(current);
+      i++;
+      continue;
+    }
+    // Собираем все оценки этого юзера подряд
+    const group = [current];
+    let j = i + 1;
+    while (j < items.length &&
+           items[j].type === "rating" &&
+           items[j].uid === current.uid &&
+           (current._tsSec - items[j]._tsSec) < 1800) {
+      group.push(items[j]);
+      j++;
+    }
+    if (group.length === 1) {
+      result.push(current);
+    } else {
+      result.push({
+        ...current,
+        _collapsed: true,
+        _count: group.length,
+        _items: group
+      });
+    }
+    i = j;
+  }
+  return result;
 }
 function appendFeedChunk() {
   const listEl = document.getElementById("feedList");
@@ -6372,93 +6747,95 @@ function setupFeedSentinel(sentinel) {
   }, { rootMargin: "200px" });
   _feedObserver.observe(sentinel);
 }
-function buildFeedItem(item) {
+function buildMiniFeedItem(item) {
   const el = document.createElement("div");
-  el.className = "feed-item type-" + (item.type || "rating");
+  el.className = "mini-feed-item type-" + (item.type || "rating");
+
   const isAdmin = item.uid === ADMIN_UID;
   const adminStyle = isAdmin ? 'background:linear-gradient(135deg,var(--gold-1),var(--gold-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;' : '';
   const timeStr = item._tsSec ? formatTime(item._tsSec) : "";
   const lvl = isAdmin ? "👑" : (item.level || 1);
-  // бейдж типа
-  let badge = "";
-  if (item.type === "rating") badge = '<span class="feed-badge">⭐ Оценка</span>';
-  else if (item.type === "comment") badge = '<span class="feed-badge">💬 Комментарий</span>';
-  else if (item.type === "release") badge = '<span class="feed-badge">🎵 Релиз</span>';
-  else if (item.type === "achievement") badge = '<span class="feed-badge">🏆 Достижение</span>';
+
   let content = "";
+  let icon = "⭐";
+
   if (item.type === "rating") {
-    const tier = getTier(item.final || 0);
-    content =
-      '<div class="feed-content">' +
-        (item.releaseArtwork ? '<img src="' + escapeHtml(item.releaseArtwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '') +
-        '<div class="fc-info">' +
-          '<div class="fc-title">' + escapeHtml(item.releaseTitle || "") + '</div>' +
-          '<div class="fc-artist">' + escapeHtml(item.releaseArtist || "") + '</div>' +
-        '</div>' +
-        '<div class="fc-score" style="color:' + tier.color + '">' + (item.final || 0) + '</div>' +
-      '</div>';
+    if (item._collapsed) {
+      // Схлопнутая группа оценок
+      const firstTier = getTier(item.final || 0);
+      const coversHtml = (item._items || []).slice(0, 3).map(it => 
+        it.releaseArtwork ? '<img src="' + escapeHtml(it.releaseArtwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : ''
+      ).join("");
+      content = 
+        '<div class="mini-feed-content">' +
+          '<div class="mini-covers-stack">' + coversHtml + '</div>' +
+          '<div class="mini-feed-text">оценил <b>' + item._count + ' ' + plural(item._count, "релиз", "релиза", "релизов") + '</b></div>' +
+        '</div>';
+      icon = "📚";
+    } else {
+      const tier = getTier(item.final || 0);
+      content =
+        '<div class="mini-feed-content">' +
+          (item.releaseArtwork ? '<img src="' + escapeHtml(item.releaseArtwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '') +
+          '<div class="mini-feed-text">оценил <b>' + escapeHtml(item.releaseTitle || "") + '</b></div>' +
+          '<div class="mini-feed-score" style="color:' + tier.color + '">' + (item.final || 0) + '</div>' +
+        '</div>';
+    }
   } else if (item.type === "comment") {
+    icon = "💬";
     content =
-      (item.releaseArtwork ? '<div class="feed-content">' +
-        '<img src="' + escapeHtml(item.releaseArtwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
-        '<div class="fc-info">' +
-          '<div class="fc-title">' + escapeHtml(item.releaseTitle || "") + '</div>' +
-          '<div class="fc-artist">' + escapeHtml(item.releaseArtist || "") + '</div>' +
-        '</div>' +
-      '</div>' : '') +
-      '<div class="feed-text">' + escapeHtml(item.text || "") + '</div>';
-  } else if (item.type === "release") {
-    content =
-      '<div class="feed-content">' +
+      '<div class="mini-feed-content">' +
         (item.releaseArtwork ? '<img src="' + escapeHtml(item.releaseArtwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '') +
-        '<div class="fc-info">' +
-          '<div class="fc-title">' + escapeHtml(item.releaseTitle || "") + '</div>' +
-          '<div class="fc-artist">' + escapeHtml(item.releaseArtist || "") + '</div>' +
+        '<div class="mini-feed-text">' +
+          '<div class="mini-feed-comment">«' + escapeHtml((item.text || "").slice(0, 80)) + ((item.text || "").length > 80 ? "…" : "") + '»</div>' +
+          '<div class="mini-feed-sub">на ' + escapeHtml(item.releaseTitle || "") + '</div>' +
         '</div>' +
       '</div>';
-  } else if (item.type === "achievement") {
-    content = '<div class="feed-text">' + (item.emoji || "🏆") + " " + escapeHtml(item.text || "") + '</div>';
+  } else if (item.type === "release") {
+    icon = "🎵";
+    content =
+      '<div class="mini-feed-content">' +
+        (item.releaseArtwork ? '<img src="' + escapeHtml(item.releaseArtwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '') +
+        '<div class="mini-feed-text">добавил <b>' + escapeHtml(item.releaseTitle || "") + '</b></div>' +
+      '</div>';
   }
+
   el.innerHTML =
-    '<div class="feed-avatar" style="background:' + colorFromString(item.nickname || "?") + '">' + escapeHtml(item.avatar || "🎵") + '<span class="mini-level' + (isAdmin ? ' admin-mini' : '') + '">' + lvl + '</span></div>' +
-    '<div class="feed-body">' +
-      '<div class="feed-head">' +
+    '<div class="mini-feed-icon">' + icon + '</div>' +
+    '<div class="mini-feed-body">' +
+      '<div class="mini-feed-head">' +
+        '<span class="mini-feed-avatar" style="background:' + colorFromString(item.nickname || "?") + '">' + escapeHtml(item.avatar || "🎵") + '<span class="mini-level' + (isAdmin ? ' admin-mini' : '') + '">' + lvl + '</span></span>' +
         '<b class="' + (isAdmin ? "admin-nick" : "") + '" style="' + adminStyle + '">' + escapeHtml(item.nickname || "—") + '</b>' +
-        '<span class="feed-time">' + timeStr + '</span>' +
+        '<span class="mini-feed-time">' + timeStr + '</span>' +
       '</div>' +
-      badge +
       content +
     '</div>';
-  el.onclick = () => {
-    if (item.releaseId && item.source) {
+
+  // Клик: на релиз — открыть
+  if (item.releaseId && item.source) {
+    el.style.cursor = "pointer";
+    el.onclick = () => {
       const group = boardData.find(b => b.releaseId === String(item.releaseId) && b.source === item.source);
       if (group) {
-        openBoardModal(group);
+        switchNav("board");
+        setTimeout(() => openBoardModal(group), 250);
       } else {
-        const fakeGroup = {
-          album: {
-            id: item.releaseId,
-            title: item.releaseTitle || "",
-            artist: item.releaseArtist || "",
-            artwork: item.releaseArtwork || "",
-            tracks: []
-          },
-          source: item.source,
-          releaseId: String(item.releaseId),
-          ratings: [],
-          avgFinal: 0,
-          userCount: 0,
-          adminRating: null
-        };
         switchNav("main");
         loadAlbum({ id: item.releaseId, title: item.releaseTitle || "", cover: item.releaseArtwork || "", source: item.source });
       }
-    }
-  };
-  if (item.releaseArtwork) {
-    const img = el.querySelector("img");
-    if (img) { img.dataset.cacheable = "1"; img.dataset.src = item.releaseArtwork; }
+    };
+  } else if (item._collapsed && item._items && item._items[0]) {
+    el.style.cursor = "pointer";
+    el.onclick = () => {
+      const first = item._items[0];
+      const group = boardData.find(b => b.releaseId === String(first.releaseId) && b.source === first.source);
+      if (group) {
+        switchNav("board");
+        setTimeout(() => openBoardModal(group), 250);
+      }
+    };
   }
+
   return el;
 }
 
