@@ -4597,7 +4597,6 @@ function computeFinalScore(scores, vibe) {
   const trackAvg = scores.reduce((a, b) => a + b, 0) / n;
 
   // Шаг 2. Бонус за длину (маленький, только в плюс)
-  // log10(n)/4: 3 трека → 0.12, 10 → 0.25, 15 → 0.29, 20+ → 0.5 (кап)
   const lengthBonus = Math.min(0.5, Math.log10(n) / 4);
 
   // Шаг 3. Взвешенная сумма: 60% музыка + 40% вайб + бонус за длину
@@ -4606,7 +4605,20 @@ function computeFinalScore(scores, vibe) {
   const base = trackAvg * trackWeight + vibe * vibeWeight + lengthBonus;
 
   // Шаг 4. Итог
-  const raw = base * 36;
+  let raw = base * 36;
+
+  // ⚠️ 360 — только если все треки идеальны (>= 9.95) И вайб >= 9.95
+  if (raw >= 360) {
+    const allPerfect = scores.every(s => s >= 10);
+    const vibePerfect = vibe >= 10;
+    if (allPerfect && vibePerfect) {
+      raw = 360;
+    } else {
+      // Иначе ограничиваем 359 — не даём случайно получить максимум
+      raw = Math.min(359, raw);
+    }
+  }
+
   return Math.max(1, Math.min(360, Math.round(raw)));
 }
 // ═══════════════════════════════════════════════════════
