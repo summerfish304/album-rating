@@ -5445,6 +5445,9 @@ function showAdminNavIfNeeded() {
 }
 async function addXp(amount, reason) {
   if (!currentUser || !userProfile || amount <= 0) return;
+  // У админа нет уровней и XP
+  if (currentUser.uid === ADMIN_UID) return;
+
   const oldXp = userProfile.xp || 0;
   const newXp = oldXp + amount;
   const oldLvl = getLevelByXp(oldXp);
@@ -5470,6 +5473,8 @@ function showLevelUpToast(lvl) {
 }
 function updateProfileLevelUI() {
   if (!userProfile) return;
+  // У админа нет уровня — выходим
+  if (currentUser && currentUser.uid === ADMIN_UID) return;
   const xp = userProfile.xp || 0;
   const lvl = getLevelByXp(xp);
   const next = getNextLevel(xp);
@@ -7946,6 +7951,8 @@ function renderAchievements() {
 }
 async function checkAchievements() {
   if (!currentUser || !userProfile) return;
+  // У админа нет достижений
+  if (currentUser.uid === ADMIN_UID) return;
   const toUnlock = [];
   const unlocked = userAchievements;
   const totalRatings = myRatings.length;
