@@ -4613,7 +4613,6 @@ function computeFinalScore(scores, vibe) {
 // ═══════════════════════════════════════════════════════
 
 function getTier(finalScore) {
-function getTier(finalScore) {
   const pct = finalScore / FINAL_MAX;
   for (const t of TIERS) if (pct >= t.min && pct < t.max) return t;
   return TIERS[TIERS.length - 1];
