@@ -2580,8 +2580,8 @@
   .modal {
     background: var(--panel);
     border-radius: 20px; padding: 26px;
-    max-width: 580px; width: 100%;
-    max-height: 90vh; overflow-y: auto; overflow-x: hidden;
+    max-width: 620px; width: 100%;
+    max-height: 92vh; overflow-y: auto; overflow-x: hidden;
     box-shadow: 0 40px 100px rgba(0,0,0,.6);
     border: 1px solid var(--border);
     transform: scale(.94) translateY(10px);
@@ -3708,7 +3708,7 @@
             <div class="row"><b>⚡ Индивидуальность / харизма</b> — отличие от других, узнаваемость, личная подача. Можно ли узнать исполнителя с первых секунд.</div>
             <div class="row"><b>🌌 Атмосфера / вайб</b> — настроение и погружение. Работает как <b>множитель</b>: высокий вайб поднимет оценку, низкий — опустит.</div>
             <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
-              <b>Оценка сингла:</b> среднее по 4 критериям × атмосфера. Итог от 1 до 360.
+              <b>Оценка сингла (итог 1–360):</b> среднее по 4 критериям (1–10) → атмосфера влияет ±15%.
             </div>
           </div>
 
@@ -3900,8 +3900,11 @@
         </div>
         <div class="hint" style="margin-bottom: 10px;">Ник должен быть уникальным</div>
 
-        <label>Аватарка (эмодзи)</label>
+        <label id="emojiLabel">Аватарка (эмодзи)</label>
         <div class="emoji-grid" id="emojiGrid"></div>
+        <div id="adminAvatarNote" class="hidden" style="padding:12px 16px; border-radius:12px; background:linear-gradient(135deg, rgba(245,196,81,.12), rgba(224,165,44,.06)); border:1.5px solid var(--gold-lvl); font-size:.85rem; color:var(--text-mid);">
+          💎 У администратора фиксированная аватарка — алмаз.
+        </div>
 
         <label style="margin-top: 14px;">Цветовая схема профиля</label>
         <div class="scheme-grid" id="schemeGrid"></div>
@@ -4006,13 +4009,16 @@
       <div class="row"><b>⚡ Индивидуальность / харизма</b> — отличие от других, узнаваемость, личная подача. Можно ли узнать исполнителя с первых секунд.</div>
       <div class="row"><b>🌌 Атмосфера / вайб</b> — настроение и погружение. Работает как <b>множитель</b>: высокий вайб поднимет оценку, низкий — опустит.</div>
       <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
-        <b>Оценка трека в альбоме:</b> среднее по 4 критериям × атмосфера. Итог от 1 до 10.
+        <b>Оценка трека:</b> среднее по 4 критериям × атмосфера. Итог от 1 до 10.
       </div>
       <div class="row" style="margin-top:6px;">
-        <b>Оценка сингла:</b> среднее по 4 критериям × атмосфера. Итог от 1 до 360.
-      </div>
-      <div class="row" style="margin-top:6px;">
-        <b>Оценка альбома:</b> среднее по всем трекам × общая атмосфера. Итог от 1 до 360.
+        <b>Оценка сингла / альбома (итог 1–360):</b>
+        <ul style="margin: 8px 0 0 18px; padding: 0; line-height: 1.7;">
+          <li>Крайние треки (лучший и худший) весят <b>30%</b>, середина — <b>70%</b>.</li>
+          <li>Короткие релизы «сжимаются» к 7 — <b>чем больше треков, тем весомее оценка</b>.</li>
+          <li>Атмосфера влияет мягко — <b>±15%</b>.</li>
+          <li>Один хит не спасает серый альбом, одна слабина не топит крепкий.</li>
+        </ul>
       </div>
     </div>
 
@@ -4564,7 +4570,49 @@ const ACHIEVEMENTS = [
   { id: "visualist",    emoji: "🖼", name: "Визуалист",         desc: "Средняя по обложкам выше 8 (мин. 10 оценок)" },
   { id: "photographer", emoji: "📸", name: "Фотограф",          desc: "Оценил обложку на 10 у 5 разных релизов" }
 ];
+// ═══════════════════════════════════════════════════════
+// НОВАЯ ФОРМУЛА ОЦЕНИВАНИЯ
+// ═══════════════════════════════════════════════════════
+// Логика:
+// 1. Взвешенная средняя: крайние треки (лучший+худший) весят 30%, середина — 70%.
+//    Один хит не спасает серый альбом, одна слабина не топит крепкий.
+// 2. Поправка на длину: короткие релизы «сжимаются» к 7 (мало данных — мало доверия).
+//    Формула: n/(n+5). Для 3 треков — 0.375, для 15 — 0.75.
+// 3. Вайб: ±15% — мягко поднимает/опускает итог.
+// 4. Итог от 1 до 360.
+function computeFinalScore(scores, vibe) {
+  if (!scores || scores.length === 0) return 1;
 
+  const n = scores.length;
+
+  // Шаг 1. Взвешенная средняя с приоритетом середины
+  let weightedAvg;
+  if (n >= 3) {
+    const sorted = [...scores].sort((a, b) => a - b);
+    const best = sorted[n - 1];
+    const worst = sorted[0];
+    const middle = sorted.slice(1, n - 1);
+    const middleAvg = middle.reduce((a, b) => a + b, 0) / middle.length;
+    const extremesAvg = (best + worst) / 2;
+    weightedAvg = extremesAvg * 0.3 + middleAvg * 0.7;
+  } else {
+    weightedAvg = scores.reduce((a, b) => a + b, 0) / n;
+  }
+
+  // Шаг 2. Поправка на длину («сжатие» к 7)
+  const reliability = n / (n + 5);
+  const adjusted = weightedAvg * reliability + 7 * (1 - reliability);
+
+  // Шаг 3. Вайб (±15%)
+  const vibeModifier = ((vibe - 5.5) / 4.5) * 0.15;
+
+  // Шаг 4. Итог
+  const raw = adjusted * 36 * (1 + vibeModifier);
+  return Math.max(1, Math.min(360, Math.round(raw)));
+}
+// ═══════════════════════════════════════════════════════
+
+function getTier(finalScore) {
 function getTier(finalScore) {
   const pct = finalScore / FINAL_MAX;
   for (const t of TIERS) if (pct >= t.min && pct < t.max) return t;
@@ -5329,12 +5377,24 @@ function updateUserChip() {
   const nick = userProfile ? userProfile.nickname : "—";
   const isAdmin = currentUser && currentUser.uid === ADMIN_UID;
   let avatar = userProfile && userProfile.avatar ? userProfile.avatar : "🎵";
-  // У обычного юзера не может быть короны — принудительно меняем на стандартную
-  if (avatar === "👑" && !isAdmin) avatar = "🎵";
+
+  if (isAdmin) {
+    // Админ — всегда 💎
+    avatar = "💎";
+    if (userProfile && userProfile.avatar !== "💎") {
+      // Синхронизируем в Firestore, чтобы нигде не осталась старая
+      try { updateDoc(doc(db, "users", currentUser.uid), { avatar: "💎" }); } catch (e) {}
+      userProfile.avatar = "💎";
+    }
+  } else {
+    // У обычного юзера не может быть короны или алмаза
+    if (avatar === "👑" || avatar === "💎") avatar = "🎵";
+  }
+
   document.getElementById("userNick").textContent = nick;
   document.getElementById("userAvatar").textContent = avatar;
   document.getElementById("userAvatar").style.background = colorFromString(nick);
-  document.getElementById("userNick").classList.toggle("admin-nick", currentUser && currentUser.uid === ADMIN_UID);
+  document.getElementById("userNick").classList.toggle("admin-nick", isAdmin);
 }
 function updateUserRatingCount() {
   const el = document.getElementById("userRatingCount");
@@ -6058,8 +6118,10 @@ function updateScore() {
     MAIN_CRITERIA.forEach(c => { sum += singleValues[c.key] || 7; });
     const avgMain = sum / MAIN_CRITERIA.length;
     const vibe = singleValues[VIBE_KEY] || 7;
-    final = Math.max(1, Math.min(360, Math.round(avgMain * vibe / 10 * 36)));
-    avg = avgMain; overall = vibe; scores = [Math.round(avgMain)];
+    // Для сингла: оценка = среднее по критериям (1–10), потом по новой формуле
+    const singleScore = Math.max(1, Math.min(10, Math.round(avgMain)));
+    final = computeFinalScore([singleScore], vibe);
+    avg = avgMain; overall = vibe; scores = [singleScore];
   } else {
     const rows = document.querySelectorAll("#tracksList .track-row");
     if (rows.length === 0) return;
@@ -6068,8 +6130,7 @@ function updateScore() {
     const sum = scores.reduce((a, b) => a + b, 0);
     avg = sum / scores.length;
     overall = overallValue;
-    final = Math.round(avg * overall / 10 * 36);
-    final = Math.max(1, Math.min(360, final));
+    final = computeFinalScore(scores, overall);
   }
   const tier = getTier(final);
   const resultBox = document.getElementById("resultBox");
@@ -6096,9 +6157,20 @@ function updateScore() {
       '<div class="bar"><div class="fill" style="width:' + pct + '%"></div></div>';
   } else progEl.innerHTML = "🌟 Максимум достигнут";
   if (currentTracks.length === 1) {
-    document.getElementById("details").innerHTML = 'Сингл · среднее по 4 критериям: <b>' + avg.toFixed(2) + '</b> / 10<br>Атмосфера / вайб: <b>' + overall + '</b> / 10';
+    document.getElementById("details").innerHTML =
+      'Сингл · среднее по 4 критериям: <b>' + avg.toFixed(2) + '</b> / 10<br>' +
+      'Атмосфера / вайб: <b>' + overall + '</b> / 10 <span style="opacity:.6">(влияет ±15%)</span>';
   } else {
-    document.getElementById("details").innerHTML = 'Средняя оценка треков: <b>' + avg.toFixed(2) + '</b> / 10<br>Атмосфера / вайб альбома: <b>' + overall + '</b> / 10';
+    const n = scores.length;
+    let extremeInfo = "";
+    if (n >= 3) {
+      const sorted = [...scores].sort((a, b) => a - b);
+      extremeInfo = '<br><span style="opacity:.7">Лучший: <b>' + sorted[n-1] + '</b> · Худший: <b>' + sorted[0] + '</b> · Середина: <b>' + (scores.reduce((a,b)=>a+b,0)/n).toFixed(2) + '</b></span>';
+    }
+    document.getElementById("details").innerHTML =
+      'Средняя оценка треков: <b>' + avg.toFixed(2) + '</b> / 10<br>' +
+      'Атмосфера / вайб альбома: <b>' + overall + '</b> / 10 <span style="opacity:.6">(±15%)</span>' +
+      extremeInfo;
   }
   const ring = document.getElementById("ringFg");
   const C = 2 * Math.PI * 50;
@@ -6331,8 +6403,9 @@ async function submitRating() {
     MAIN_CRITERIA.forEach(c => { sum += singleValues[c.key] || 7; });
     const avgMain = sum / MAIN_CRITERIA.length;
     const vibe = singleValues[VIBE_KEY] || 7;
-    final = Math.max(1, Math.min(360, Math.round(avgMain * vibe / 10 * 36)));
-    avg = avgMain; overall = vibe; scores = [Math.round(avgMain)];
+    const singleScore = Math.max(1, Math.min(10, Math.round(avgMain)));
+    final = computeFinalScore([singleScore], vibe);
+    avg = avgMain; overall = vibe; scores = [singleScore];
     trackDetails[0] = { ...singleValues };
   } else {
     const rows = document.querySelectorAll("#tracksList .track-row");
@@ -6342,8 +6415,7 @@ async function submitRating() {
     const sum = scores.reduce((a, b) => a + b, 0);
     avg = sum / scores.length;
     overall = overallValue;
-    final = Math.round(avg * overall / 10 * 36);
-    final = Math.max(1, Math.min(360, final));
+    final = computeFinalScore(scores, overall);
   }
   const btn = document.getElementById("rateBtn");
   btn.disabled = true;
@@ -7540,13 +7612,22 @@ function renderProfile() {
     if (adminBadgeBox) adminBadgeBox.classList.add("hidden");
   }
 
-  document.getElementById("profileAvatarBig").textContent = userProfile.avatar || "🎵";
+  const avatarToShow = isAdmin ? "💎" : (userProfile.avatar || "🎵");
+  document.getElementById("profileAvatarBig").textContent = avatarToShow;
   document.getElementById("profileNickInput").value = userProfile.nickname || "";
   const grid = document.getElementById("emojiGrid");
   grid.innerHTML = "";
-  // Админские аватарки — скрыты от обычных юзеров
+
+  // У админа скрываем сетку выбора и показываем пояснение
+  const emojiLabel = document.getElementById("emojiLabel");
+  const adminAvatarNote = document.getElementById("adminAvatarNote");
+  if (emojiLabel) emojiLabel.style.display = isAdmin ? "none" : "";
+  if (grid) grid.style.display = isAdmin ? "none" : "";
+  if (adminAvatarNote) adminAvatarNote.classList.toggle("hidden", !isAdmin);
+
+  // Обычным юзерам показываем сетку — без админских эмодзи
   const ADMIN_AVATARS = ["👑", "💎", "🪄", "🎩"];
-  const availableEmojis = EMOJI_AVATARS.filter(e => !ADMIN_AVATARS.includes(e) || isAdmin);
+  const availableEmojis = EMOJI_AVATARS.filter(e => !ADMIN_AVATARS.includes(e));
   availableEmojis.forEach(e => {
     const btn = document.createElement("button");
     btn.className = "emoji-cell" + (e === (userProfile.avatar || "🎵") ? " active" : "");
