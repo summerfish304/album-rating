@@ -3708,7 +3708,7 @@
             <div class="row"><b>⚡ Индивидуальность / харизма</b> — отличие от других, узнаваемость, личная подача. Можно ли узнать исполнителя с первых секунд.</div>
             <div class="row"><b>🌌 Атмосфера / вайб</b> — настроение и погружение. Работает как <b>множитель</b>: высокий вайб поднимет оценку, низкий — опустит.</div>
             <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
-              <b>Оценка сингла (итог 1–360):</b> среднее по 4 критериям (1–10) → атмосфера влияет ±15%.
+              <b>Оценка сингла (итог 1–360):</b> 60% — качество (среднее по 4 критериям), 40% — атмосфера / вайб + бонус за длину.
             </div>
           </div>
 
@@ -4014,10 +4014,11 @@
       <div class="row" style="margin-top:6px;">
         <b>Оценка сингла / альбома (итог 1–360):</b>
         <ul style="margin: 8px 0 0 18px; padding: 0; line-height: 1.7;">
-          <li>Крайние треки (лучший и худший) весят <b>30%</b>, середина — <b>70%</b>.</li>
-          <li>Короткие релизы «сжимаются» к 7 — <b>чем больше треков, тем весомее оценка</b>.</li>
-          <li>Атмосфера влияет мягко — <b>±15%</b>.</li>
-          <li>Один хит не спасает серый альбом, одна слабина не топит крепкий.</li>
+          <li><b>60%</b> — качество треков (средняя).</li>
+          <li><b>40%</b> — атмосфера / вайб (личное впечатление).</li>
+          <li><b>+ небольшой бонус</b> за длину релиза.</li>
+          <li>360 достижимо только при <b>всех 10 и вайбе 10</b>.</li>
+          <li>Хорошая музыка с плохим настроением не топит — а плохая музыка с хорошим не спасает.</li>
         </ul>
       </div>
     </div>
@@ -4580,36 +4581,35 @@ const ACHIEVEMENTS = [
 //    Формула: n/(n+5). Для 3 треков — 0.375, для 15 — 0.75.
 // 3. Вайб: ±15% — мягко поднимает/опускает итог.
 // 4. Итог от 1 до 360.
+// ═══════════════════════════════════════════════════════
+// НОВАЯ ФОРМУЛА ОЦЕНИВАНИЯ (60% музыка / 40% вайб + бонус за длину)
+// ═══════════════════════════════════════════════════════
+// 1. Базовая оценка = средняя по трекам (1–10).
+// 2. Вайб = атмосфера / личное впечатление (1–10).
+// 3. Бонус за длину: log10(n)/4, максимум +0.5 балла.
+// 4. Итог = (треки × 0.6 + вайб × 0.4 + lengthBonus) × 36, от 1 до 360.
 function computeFinalScore(scores, vibe) {
   if (!scores || scores.length === 0) return 1;
 
   const n = scores.length;
 
-  // Шаг 1. Взвешенная средняя с приоритетом середины
-  let weightedAvg;
-  if (n >= 3) {
-    const sorted = [...scores].sort((a, b) => a - b);
-    const best = sorted[n - 1];
-    const worst = sorted[0];
-    const middle = sorted.slice(1, n - 1);
-    const middleAvg = middle.reduce((a, b) => a + b, 0) / middle.length;
-    const extremesAvg = (best + worst) / 2;
-    weightedAvg = extremesAvg * 0.3 + middleAvg * 0.7;
-  } else {
-    weightedAvg = scores.reduce((a, b) => a + b, 0) / n;
-  }
+  // Шаг 1. Средняя по трекам
+  const trackAvg = scores.reduce((a, b) => a + b, 0) / n;
 
-  // Шаг 2. Поправка на длину («сжатие» к 7)
-  const reliability = n / (n + 5);
-  const adjusted = weightedAvg * reliability + 7 * (1 - reliability);
+  // Шаг 2. Бонус за длину (маленький, только в плюс)
+  // log10(n)/4: 3 трека → 0.12, 10 → 0.25, 15 → 0.29, 20+ → 0.5 (кап)
+  const lengthBonus = Math.min(0.5, Math.log10(n) / 4);
 
-  // Шаг 3. Вайб (±15%)
-  const vibeModifier = ((vibe - 5.5) / 4.5) * 0.15;
+  // Шаг 3. Взвешенная сумма: 60% музыка + 40% вайб + бонус за длину
+  const trackWeight = 0.6;
+  const vibeWeight = 0.4;
+  const base = trackAvg * trackWeight + vibe * vibeWeight + lengthBonus;
 
   // Шаг 4. Итог
-  const raw = adjusted * 36 * (1 + vibeModifier);
+  const raw = base * 36;
   return Math.max(1, Math.min(360, Math.round(raw)));
 }
+// ═══════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════
 
 function getTier(finalScore) {
@@ -6156,20 +6156,20 @@ function updateScore() {
       '<div class="bar"><div class="fill" style="width:' + pct + '%"></div></div>';
   } else progEl.innerHTML = "🌟 Максимум достигнут";
   if (currentTracks.length === 1) {
+    const weightedScore = avg * 0.6 + overall * 0.4;
     document.getElementById("details").innerHTML =
-      'Сингл · среднее по 4 критериям: <b>' + avg.toFixed(2) + '</b> / 10<br>' +
-      'Атмосфера / вайб: <b>' + overall + '</b> / 10 <span style="opacity:.6">(влияет ±15%)</span>';
+      'Сингл · среднее по 4 критериям: <b>' + avg.toFixed(2) + '</b> / 10 <span style="opacity:.6">(вес 60%)</span><br>' +
+      'Атмосфера / вайб: <b>' + overall + '</b> / 10 <span style="opacity:.6">(вес 40%)</span><br>' +
+      'Итог: <b>' + weightedScore.toFixed(2) + '</b> × 36 = <b>' + final + '</b>';
   } else {
     const n = scores.length;
-    let extremeInfo = "";
-    if (n >= 3) {
-      const sorted = [...scores].sort((a, b) => a - b);
-      extremeInfo = '<br><span style="opacity:.7">Лучший: <b>' + sorted[n-1] + '</b> · Худший: <b>' + sorted[0] + '</b> · Середина: <b>' + (scores.reduce((a,b)=>a+b,0)/n).toFixed(2) + '</b></span>';
-    }
+    const lengthBonus = Math.min(0.5, Math.log10(n) / 4);
+    const weightedScore = avg * 0.6 + overall * 0.4;
     document.getElementById("details").innerHTML =
-      'Средняя оценка треков: <b>' + avg.toFixed(2) + '</b> / 10<br>' +
-      'Атмосфера / вайб альбома: <b>' + overall + '</b> / 10 <span style="opacity:.6">(±15%)</span>' +
-      extremeInfo;
+      'Средняя оценка треков: <b>' + avg.toFixed(2) + '</b> / 10 <span style="opacity:.6">(вес 60%)</span><br>' +
+      'Атмосфера / вайб: <b>' + overall + '</b> / 10 <span style="opacity:.6">(вес 40%)</span><br>' +
+      'Взвешенная оценка: <b>' + weightedScore.toFixed(2) + '</b> · Бонус за длину: <b>+' + lengthBonus.toFixed(2) + '</b>' +
+      '<br><span style="opacity:.7">(' + weightedScore.toFixed(2) + ' + ' + lengthBonus.toFixed(2) + ') × 36 = <b>' + final + '</b></span>';
   }
   const ring = document.getElementById("ringFg");
   const C = 2 * Math.PI * 50;
