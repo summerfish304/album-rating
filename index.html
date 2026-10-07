@@ -5532,8 +5532,11 @@ async function spotifyGetAlbum(id) {
 }
 function mapSpotifyAlbum(a) {
   const artistNames = (a.artists || []).map(x => x.name).join(", ");
-  const cover = (a.images && a.images[0] && a.images[0].url) ||
-                (a.images && a.images[1] && a.images[1].url) || "";
+  const rawCover = (a.images && a.images[0] && a.images[0].url) ||
+                   (a.images && a.images[1] && a.images[1].url) || "";
+  const cover = rawCover
+    ? ITUNES_PROXY + "?u=" + encodeURIComponent(rawCover)
+    : "";
   const year = (a.release_date || "").slice(0, 4);
   return {
     id: a.id,
@@ -5687,7 +5690,10 @@ async function loadAlbum(album) {
 
     const title = data.name || album.title;
     const artist = (data.artists || []).map(x => x.name).join(", ") || "";
-    const artwork = (data.images && data.images[0] && data.images[0].url) || album.cover || "";
+    const rawArtwork = (data.images && data.images[0] && data.images[0].url) || "";
+    const artwork = rawArtwork
+      ? ITUNES_PROXY + "?u=" + encodeURIComponent(rawArtwork)
+      : (album.cover || "");
     const songs = data.tracks.items
       .sort((a, b) => (a.track_number || 0) - (b.track_number || 0))
       .map(t => ({ name: t.name, artist: (t.artists || []).map(x => x.name).join(", ") || artist }))
