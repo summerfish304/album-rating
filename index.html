@@ -7082,7 +7082,7 @@ async function refreshBoard() {
       const key = r.source + "_" + r.releaseId;
       if (!groups[key]) groups[key] = { key, album: r.album, source: r.source, releaseId: r.releaseId, ratings: [], adminRating: null, authorRating: null, authorTs: Infinity, lastTs: 0 };
       const g = groups[key];
-      g.ratings.push({ uid: r.uid, nickname: r.nickname, avatar: r.avatar, level: r.level || 1, final: r.final, ts: r.ts?.seconds || 0 });
+      g.ratings.push({ uid: r.uid, nickname: r.nickname, avatar: r.avatar, level: r.level || 1, final: r.final, ts: r.ts?.seconds || 0, history: r.history || [] });
       if (r.uid === ADMIN_UID) g.adminRating = r.final;
       if ((r.ts?.seconds || 0) < g.authorTs) { g.authorTs = r.ts?.seconds || 0; g.authorRating = r.final; }
       if ((r.ts?.seconds || 0) > g.lastTs) g.lastTs = r.ts?.seconds || 0;
@@ -7139,11 +7139,25 @@ function appendBoardChunk() {
       const singleNote = g.album.isSingleFromAlbum && g.album.parentAlbum
         ? ' <span style="font-size:.68rem; color:var(--vibe-1); background:rgba(126,224,212,.15); padding:2px 6px; border-radius:8px; font-weight:600;">🎯 из «' + escapeHtml(g.album.parentAlbum.title) + '»</span>'
         : '';
+      // Находим оценку текущего пользователя (если есть)
+      const myRating = currentUser ? g.ratings.find(r => r.uid === currentUser.uid) : null;
+      let myChangeHtml = "";
+      if (myRating && myRating.history && myRating.history.length > 0) {
+        const lastChange = myRating.history[myRating.history.length - 1];
+        myChangeHtml = '<div style="display:flex; align-items:center; gap:6px; font-size:.85rem; padding:2px 8px; background:rgba(0,0,0,.15); border-radius:8px;">' +
+          '<span style="color:var(--text-dim); text-decoration:line-through; opacity:.7;">' + lastChange.oldFinal + '</span>' +
+          '<span style="color:var(--text-dim);">→</span>' +
+          '<span style="color:' + tier.color + '; font-weight:800;">' + myRating.final + '</span>' +
+        '</div>';
+      }
       el.innerHTML = '<img src="' + escapeHtml(g.album.artwork || "") + '" alt="" data-cacheable="1" data-src="' + escapeHtml(g.album.artwork || "") + '" onerror="this.style.visibility=\'hidden\'">' +
         '<div class="info"><div class="title">' + escapeHtml(g.album.title) + tierBadgeHtml(tier) + singleNote + '</div>' +
         '<div class="artist">' + escapeHtml(g.album.artist) + '</div></div>' +
-        '<div class="numbers"><div class="num-block avg"><div class="num-label">Средняя (' + g.userCount + ')</div><div class="num-value">' + g.avgFinal + '</div></div>' +
-        '<div class="num-block admin ' + (hasAdmin ? "" : "none") + '"><div class="num-label">👑 Админ</div><div class="num-value">' + (hasAdmin ? g.adminRating : "—") + '</div></div></div>';
+        '<div class="numbers">' +
+          (myChangeHtml ? '<div class="num-block" style="min-width:auto;">' + myChangeHtml + '</div>' : '') +
+          '<div class="num-block avg"><div class="num-label">Средняя (' + g.userCount + ')</div><div class="num-value">' + g.avgFinal + '</div></div>' +
+          '<div class="num-block admin ' + (hasAdmin ? "" : "none") + '"><div class="num-label">👑 Админ</div><div class="num-value">' + (hasAdmin ? g.adminRating : "—") + '</div></div>' +
+        '</div>';
     el.onclick = () => openBoardModal(g);
     fragment.appendChild(el);
     if (g.album.artwork) urlsToCache.push(g.album.artwork);
@@ -7217,8 +7231,15 @@ function renderBoardModalUsers(group) {
     const row = document.createElement("div");
     row.className = "board-modal-user-row";
     const adminStyle = isAdmin ? 'background:linear-gradient(135deg,var(--gold-1),var(--gold-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;' : '';
+    let changeBadge = "";
+    if (r.history && r.history.length > 0) {
+      const last = r.history[r.history.length - 1];
+      changeBadge = '<span style="font-size:.72rem; color:var(--text-dim); margin-right:6px;" title="Оценка изменена">' +
+        '<span style="text-decoration:line-through; opacity:.6;">' + last.oldFinal + '</span> →</span>';
+    }
     row.innerHTML = '<div class="avatar-sm clickable-avatar" style="background:' + colorFromString(r.nickname || "?") + '" data-uid="' + r.uid + '" title="Открыть профиль">' + escapeHtml(avatar) + '<span class="mini-level' + (isAdmin ? ' admin-mini' : '') + '">' + lvlNum + '</span></div>' +
       '<div class="name"><span class="clickable-name" style="' + adminStyle + '" data-uid="' + r.uid + '" title="Открыть профиль">' + escapeHtml(r.nickname || "Без имени") + (isAdmin ? ' <span style="color:var(--gold-lvl);">👑</span>' : "") + (isMe ? ' <span style="color:var(--accent-3);font-size:.75rem;">(вы)</span>' : "") + '</span></div>' +
+      changeBadge +
       '<div class="num">' + r.final + '</div>' +
       (isMe ? '<button class="del-sm" title="Удалить мою оценку">×</button>' : "");
     row.onclick = (ev) => {
@@ -8439,11 +8460,18 @@ async function renderAdminUsers() {
           banText = ' 🚫 навсегда';
         }
       }
+      const isThisAdmin = u._id === ADMIN_UID;
+      const metaLine = isThisAdmin
+        ? '👑 Администратор · ' + uRatings.length + ' оценок · средний ' + (avg || "—")
+        : lvl.emoji + ' Ур.' + lvl.level + ' · ' + uRatings.length + ' оценок · средний ' + (avg || "—") + ' · ' + (u.xp || 0) + ' XP';
       row.innerHTML = '<div class="avatar-sm" style="background:' + colorFromString(u.nickname || "?") + '">' + escapeHtml(u.avatar || "🎵") + '</div>' +
-        '<div class="info"><div class="nick">' + escapeHtml(u.nickname || "—") + ' ' + (u._id === ADMIN_UID ? "👑" : "") + banText + '</div>' +
-        '<div class="meta">' + lvl.emoji + ' Ур.' + lvl.level + ' · ' + uRatings.length + ' оценок · средний ' + (avg || "—") + ' · ' + (u.xp || 0) + ' XP</div></div>' +
+        '<div class="info"><div class="nick">' + escapeHtml(u.nickname || "—") + ' ' + (isThisAdmin ? "👑" : "") + banText + '</div>' +
+        '<div class="meta">' + metaLine + '</div></div>' +
         '<div class="actions">' +
           '<button class="btn-secondary" onclick="openUserProfile(\'' + u._id + '\')">👤 Профиль</button>' +
+          (u._id !== ADMIN_UID
+            ? '<button class="btn-secondary" onclick="resetUserProgress(\'' + u._id + '\',\'' + escapeHtml(u.nickname || "").replace(/'/g, "\\'") + '\')">↺ Сбросить прогресс</button>'
+            : '') +
           (isBanned
             ? '<button onclick="unbanUser(\'' + u._id + '\')">Разбанить</button>'
             : (u._id !== ADMIN_UID ? '<button class="btn-danger" onclick="openBanModal(\'' + u._id + '\',\'' + escapeHtml(u.nickname || "").replace(/'/g, "\\'") + '\')">Забанить</button>' : '')) +
@@ -8613,6 +8641,35 @@ async function confirmBanUser() {
     // Обновить доску
     if (boardData.length) refreshBoard();
   } catch (e) { showToast("Ошибка: " + e.message); }
+}
+// Сбросить уровень и ачивки пользователя (только админ)
+async function resetUserProgress(uid, nickname) {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) {
+    showToast("Только админ может сбрасывать прогресс");
+    return;
+  }
+  if (uid === ADMIN_UID) {
+    showToast("Нельзя сбросить прогресс админа");
+    return;
+  }
+  const ok = await showConfirm({
+    icon: "↺",
+    title: "Сбросить прогресс?",
+    text: "У пользователя «" + (nickname || uid) + "» будут обнулены: уровень, XP и все достижения. Оценки останутся на месте.",
+    okText: "Сбросить",
+    okClass: "btn-danger"
+  });
+  if (!ok) return;
+  try {
+    await updateDoc(doc(db, "users", uid), {
+      xp: 0,
+      achievements: []
+    });
+    showToast("Прогресс сброшен", { success: true });
+    renderAdminUsers();
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+  }
 }
 async function unbanUser(uid) {
   try {
@@ -9163,6 +9220,7 @@ window.closeBanModal = closeBanModal;
 window.selectBanDuration = selectBanDuration;
 window.confirmBanUser = confirmBanUser;
 window.unbanUser = unbanUser;
+window.resetUserProgress = resetUserProgress;
 window.approveSuggestion = approveSuggestion;
 window.rejectSuggestion = rejectSuggestion;
 window.deleteSuggestion = deleteSuggestion;
