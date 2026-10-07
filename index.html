@@ -4026,6 +4026,13 @@
       </div>
       <button onclick="applyModalRating()">✓ Применить</button>
     </div>
+
+    <div style="margin-top:12px; padding:12px; border-radius:12px; background:linear-gradient(135deg, rgba(126,224,212,.10), rgba(130,200,255,.08)); border:1.5px solid rgba(126,224,212,.4);">
+      <div style="font-size:.82rem; color:var(--text-mid); margin-bottom:8px;">
+        🎯 Хотите оценить этот трек отдельно, как полноценный сингл? Он появится на доске как самостоятельный релиз.
+      </div>
+      <button class="btn-vibe" onclick="rateTrackAsSingle()" style="width:100%;">⭐ Оценить как отдельный сингл</button>
+    </div>
   </div>
 </div>
 
@@ -5667,6 +5674,20 @@ async function loadAlbum(album) {
   const errorBox = document.getElementById("errorBox");
   errorBox.textContent = "Загрузка треков…";
   showFloatingLoader(true);
+      // Проверяем, синтетический ли это релиз (оценка трека как сингла)
+    if (album.id && String(album.id).startsWith("single_")) {
+      // Синтетический сингл — данные уже в объекте album
+      currentAlbum = album;
+      currentTracks = [{ name: album.title, artist: album.artist }];
+      trackDetails = {}; overallValue = 7; coverRating = 7; singleValues = {};
+      errorBox.textContent = "";
+      renderAlbum();
+      if (currentUser && currentUser.uid === ADMIN_UID) document.getElementById("adminQuickActions").classList.remove("hidden");
+      else document.getElementById("adminQuickActions").classList.add("hidden");
+      saveDraft();
+      showFloatingLoader(false);
+      return;
+    }
   try {
     const cacheKey = "spotify_" + album.id;
     const cached = cacheGet(LS_RELEASE_CACHE, cacheKey);
@@ -5761,10 +5782,13 @@ async function prefillUserRatingIfExists(source, releaseId) {
 
 // ---------- РЕНДЕР АЛЬБОМА ----------
 function renderAlbum() {
+  const parentNote = currentAlbum.isSingleFromAlbum && currentAlbum.parentAlbum
+    ? '<div style="font-size:.75rem; color:var(--vibe-1); margin-top:4px;">🎯 Сингл из альбома «' + escapeHtml(currentAlbum.parentAlbum.title) + '»</div>'
+    : '';
   document.getElementById("albumCard").innerHTML =
     '<div class="bg-blur" style="background-image:url(\'' + escapeHtml(currentAlbum.artwork) + '\')"></div>' +
     '<img class="cover" src="' + escapeHtml(currentAlbum.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
-    '<div class="info"><div class="title">' + escapeHtml(currentAlbum.title) + '</div><div class="artist">' + escapeHtml(currentAlbum.artist) + '</div></div>';
+    '<div class="info"><div class="title">' + escapeHtml(currentAlbum.title) + '</div><div class="artist">' + escapeHtml(currentAlbum.artist) + '</div>' + parentNote + '</div>';
   const isSingle = currentTracks.length === 1;
   const tracksSection = document.getElementById("tracksSection");
   const singleSection = document.getElementById("singleSection");
@@ -6221,6 +6245,53 @@ function updateModalTotal() {
   const verdict = VERDICTS_TRACK[tier.name] || "";
   hintEl.innerHTML = "из 10 · <b>" + verdict + "</b><br><span style=\"opacity:.7\">(среднее " + avg.toFixed(2) + " × " + vibe + "/10)</span>";
 }
+// Оценить трек как отдельный сингл
+function rateTrackAsSingle() {
+  const idx = modalTrackIndex;
+  if (idx < 0 || !currentAlbum) return;
+  const track = currentTracks[idx];
+  if (!track) return;
+
+  // Создаём синтетический релиз с одним треком
+  const syntheticId = "single_" + currentAlbum.source + "_" + currentAlbum.id + "_" + idx;
+  const syntheticAlbum = {
+    id: syntheticId,
+    title: track.name,
+    artist: track.artist || currentAlbum.artist,
+    artwork: currentAlbum.artwork,
+    source: currentAlbum.source,
+    parentAlbum: {
+      id: currentAlbum.id,
+      title: currentAlbum.title,
+      artist: currentAlbum.artist
+    },
+    isSingleFromAlbum: true,
+    trackIndex: idx
+  };
+  const syntheticTracks = [{ name: track.name, artist: track.artist || currentAlbum.artist }];
+
+  // Закрываем модалку трека
+  closeModal();
+
+  // Загружаем синтетический релиз (минуя API — данные уже есть)
+  currentAlbum = syntheticAlbum;
+  currentTracks = syntheticTracks;
+  trackDetails = {};
+  singleValues = {};
+  overallValue = 7;
+  coverRating = 7;
+
+  // Обновляем UI
+  document.getElementById("step1").classList.add("hidden");
+  document.getElementById("step2").classList.remove("hidden");
+  renderAlbum();
+  if (currentUser && currentUser.uid === ADMIN_UID) document.getElementById("adminQuickActions").classList.remove("hidden");
+  else document.getElementById("adminQuickActions").classList.add("hidden");
+  saveDraft();
+
+  showToast("Сингл загружен — оцените его по 4 критериям + вайб", { gold: true });
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 function applyModalRating() {
   const idx = modalTrackIndex;
   if (idx < 0) return;
@@ -6304,6 +6375,8 @@ async function submitRating() {
         id: currentAlbum.id, title: currentAlbum.title,
         artist: currentAlbum.artist, artwork: currentAlbum.artwork,
         source: currentAlbum.source,
+        parentAlbum: currentAlbum.parentAlbum || null,
+        isSingleFromAlbum: currentAlbum.isSingleFromAlbum || false,
         tracks: currentTracks.map(t => ({ name: t.name, artist: t.artist }))
       },
       scores, overall, coverRating,
@@ -6992,8 +7065,11 @@ function appendBoardChunk() {
     const el = document.createElement("div");
     el.className = "board-item " + tier.cssClass;
     const hasAdmin = g.adminRating != null;
+      const singleNote = g.album.isSingleFromAlbum && g.album.parentAlbum
+        ? ' <span style="font-size:.68rem; color:var(--vibe-1); background:rgba(126,224,212,.15); padding:2px 6px; border-radius:8px; font-weight:600;">🎯 из «' + escapeHtml(g.album.parentAlbum.title) + '»</span>'
+        : '';
       el.innerHTML = '<img src="' + escapeHtml(g.album.artwork || "") + '" alt="" data-cacheable="1" data-src="' + escapeHtml(g.album.artwork || "") + '" onerror="this.style.visibility=\'hidden\'">' +
-        '<div class="info"><div class="title">' + escapeHtml(g.album.title) + tierBadgeHtml(tier) + '</div>' +
+        '<div class="info"><div class="title">' + escapeHtml(g.album.title) + tierBadgeHtml(tier) + singleNote + '</div>' +
         '<div class="artist">' + escapeHtml(g.album.artist) + '</div></div>' +
         '<div class="numbers"><div class="num-block avg"><div class="num-label">Средняя (' + g.userCount + ')</div><div class="num-value">' + g.avgFinal + '</div></div>' +
         '<div class="num-block admin ' + (hasAdmin ? "" : "none") + '"><div class="num-label">👑 Админ</div><div class="num-value">' + (hasAdmin ? g.adminRating : "—") + '</div></div></div>';
@@ -7468,7 +7544,9 @@ function renderProfile() {
   document.getElementById("profileNickInput").value = userProfile.nickname || "";
   const grid = document.getElementById("emojiGrid");
   grid.innerHTML = "";
-  const availableEmojis = EMOJI_AVATARS.filter(e => e !== "👑" || isAdmin);
+  // Админские аватарки — скрыты от обычных юзеров
+  const ADMIN_AVATARS = ["👑", "💎", "🪄", "🎩"];
+  const availableEmojis = EMOJI_AVATARS.filter(e => !ADMIN_AVATARS.includes(e) || isAdmin);
   availableEmojis.forEach(e => {
     const btn = document.createElement("button");
     btn.className = "emoji-cell" + (e === (userProfile.avatar || "🎵") ? " active" : "");
@@ -7529,7 +7607,8 @@ function getFavoriteArtist() {
 async function selectAvatar(emoji) {
   if (!currentUser) return;
   const isAdmin = currentUser.uid === ADMIN_UID;
-  if (emoji === "👑" && !isAdmin) {
+  const ADMIN_AVATARS = ["👑", "💎", "🪄", "🎩"];
+  if (ADMIN_AVATARS.includes(emoji) && !isAdmin) {
     showToast("Эта аватарка только для админа");
     return;
   }
@@ -9012,6 +9091,7 @@ window.closeModal = closeModal;
 window.toggleHelp = toggleHelp;
 window.toggleHelpSingle = toggleHelpSingle;
 window.applyModalRating = applyModalRating;
+window.rateTrackAsSingle = rateTrackAsSingle;
 window.submitRating = submitRating;
 window.reset = reset;
 window.toggleHistogram = toggleHistogram;
