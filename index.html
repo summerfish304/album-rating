@@ -930,6 +930,58 @@
     color: var(--accent-3); font-size: .95rem;
     font-variant-numeric: tabular-nums;
   }
+    /* КНОПКА "СКИТ" */
+  .track-row .skit-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--panel-2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: none;
+    transition: border-color .15s, background .15s, color .15s, transform .15s;
+    margin-left: 4px;
+  }
+  .track-row .skit-btn:hover {
+    color: var(--accent-3);
+    border-color: var(--accent);
+    transform: scale(1.08);
+    background: var(--panel-3);
+  }
+  .track-row .skit-btn.active {
+    background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
+    color: #2a1a00;
+    border-color: transparent;
+    box-shadow: 0 4px 12px var(--gold-glow);
+  }
+  /* Трек помечен как скит — приглушаем */
+  .track-row.is-skit {
+    opacity: 0.5;
+    background: var(--panel-2);
+  }
+  .track-row.is-skit .track-name {
+    text-decoration: line-through;
+    text-decoration-color: var(--text-dim);
+  }
+  /* Бейдж "скит" */
+  .track-row .skit-badge {
+    font-size: .65rem;
+    padding: 2px 7px;
+    border-radius: 8px;
+    background: rgba(245,196,81,.2);
+    color: var(--gold-1);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    flex-shrink: 0;
+  }
 
   input[type="range"] {
     -webkit-appearance: none; appearance: none;
@@ -3708,7 +3760,7 @@
             <div class="row"><b>⚡ Индивидуальность / харизма</b> — отличие от других, узнаваемость, личная подача. Можно ли узнать исполнителя с первых секунд.</div>
             <div class="row"><b>🌌 Атмосфера / вайб</b> — настроение и погружение. Работает как <b>множитель</b>: высокий вайб поднимет оценку, низкий — опустит.</div>
             <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
-              <b>Оценка сингла (итог 1–360):</b> 60% — качество (среднее по 4 критериям), 40% — атмосфера / вайб + бонус за длину.
+              <b>Оценка сингла (итог 1–360):</b> 60% — качество (среднее по 4 критериям), 40% — атмосфера / вайб + бонус за длину. Плохие оценки дополнительно сжимаются вниз.
             </div>
           </div>
 
@@ -4014,11 +4066,11 @@
       <div class="row" style="margin-top:6px;">
         <b>Оценка сингла / альбома (итог 1–360):</b>
         <ul style="margin: 8px 0 0 18px; padding: 0; line-height: 1.7;">
-          <li><b>60%</b> — качество треков (средняя).</li>
-          <li><b>40%</b> — атмосфера / вайб (личное впечатление).</li>
-          <li><b>+ небольшой бонус</b> за длину релиза.</li>
+          <li><b>60%</b> — среднее по трекам (скиты не учитываются).</li>
+          <li><b>40%</b> — атмосфера / вайб.</li>
+          <li><b>+ бонус</b> за длину релиза.</li>
+          <li>Плохие оценки <b>дополнительно сжимаются вниз</b> — плохой альбом не получит Серебро.</li>
           <li>360 достижимо только при <b>всех 10 и вайбе 10</b>.</li>
-          <li>Хорошая музыка с плохим настроением не топит — а плохая музыка с хорошим не спасает.</li>
         </ul>
       </div>
     </div>
@@ -4571,52 +4623,32 @@ const ACHIEVEMENTS = [
   { id: "visualist",    emoji: "🖼", name: "Визуалист",         desc: "Средняя по обложкам выше 8 (мин. 10 оценок)" },
   { id: "photographer", emoji: "📸", name: "Фотограф",          desc: "Оценил обложку на 10 у 5 разных релизов" }
 ];
-// ═══════════════════════════════════════════════════════
-// НОВАЯ ФОРМУЛА ОЦЕНИВАНИЯ
-// ═══════════════════════════════════════════════════════
-// Логика:
-// 1. Взвешенная средняя: крайние треки (лучший+худший) весят 30%, середина — 70%.
-//    Один хит не спасает серый альбом, одна слабина не топит крепкий.
-// 2. Поправка на длину: короткие релизы «сжимаются» к 7 (мало данных — мало доверия).
-//    Формула: n/(n+5). Для 3 треков — 0.375, для 15 — 0.75.
-// 3. Вайб: ±15% — мягко поднимает/опускает итог.
-// 4. Итог от 1 до 360.
-// ═══════════════════════════════════════════════════════
-// НОВАЯ ФОРМУЛА ОЦЕНИВАНИЯ (60% музыка / 40% вайб + бонус за длину)
-// ═══════════════════════════════════════════════════════
-// 1. Базовая оценка = средняя по трекам (1–10).
-// 2. Вайб = атмосфера / личное впечатление (1–10).
-// 3. Бонус за длину: log10(n)/4, максимум +0.5 балла.
-// 4. Итог = (треки × 0.6 + вайб × 0.4 + lengthBonus) × 36, от 1 до 360.
+
 function computeFinalScore(scores, vibe) {
   if (!scores || scores.length === 0) return 1;
 
   const n = scores.length;
 
-  // Шаг 1. Средняя по трекам
+  // Шаг 1. Средняя по трекам (без скитов)
   const trackAvg = scores.reduce((a, b) => a + b, 0) / n;
 
-  // Шаг 2. Бонус за длину (маленький, только в плюс)
+  // Шаг 2. Бонус за длину
   const lengthBonus = Math.min(0.5, Math.log10(n) / 4);
 
   // Шаг 3. Взвешенная сумма: 60% музыка + 40% вайб + бонус за длину
-  const trackWeight = 0.6;
-  const vibeWeight = 0.4;
-  const base = trackAvg * trackWeight + vibe * vibeWeight + lengthBonus;
+  const weighted = trackAvg * 0.6 + vibe * 0.4 + lengthBonus;
 
-  // Шаг 4. Итог
-  let raw = base * 36;
+  // Шаг 4. Множитель низа: сжимаем плохие оценки вниз
+  const lowMultiplier = Math.min(1, weighted / 7);
 
-  // ⚠️ 360 — только если все треки идеальны (>= 9.95) И вайб >= 9.95
+  // Шаг 5. Итог
+  let raw = weighted * lowMultiplier * 36;
+
+  // 360 — только при полном идеале
   if (raw >= 360) {
     const allPerfect = scores.every(s => s >= 10);
     const vibePerfect = vibe >= 10;
-    if (allPerfect && vibePerfect) {
-      raw = 360;
-    } else {
-      // Иначе ограничиваем 359 — не даём случайно получить максимум
-      raw = Math.min(359, raw);
-    }
+    raw = (allPerfect && vibePerfect) ? 360 : Math.min(359, raw);
   }
 
   return Math.max(1, Math.min(360, Math.round(raw)));
@@ -5754,7 +5786,7 @@ async function loadAlbum(album) {
     if (album.id && String(album.id).startsWith("single_")) {
       // Синтетический сингл — данные уже в объекте album
       currentAlbum = album;
-      currentTracks = [{ name: album.title, artist: album.artist }];
+      currentTracks = [{ name: album.title, artist: album.artist, isSkit: false }];
       trackDetails = {}; overallValue = 7; coverRating = 7; singleValues = {};
       errorBox.textContent = "";
       renderAlbum();
@@ -5793,7 +5825,7 @@ async function loadAlbum(album) {
       : (album.cover || "");
     const songs = data.tracks.items
       .sort((a, b) => (a.track_number || 0) - (b.track_number || 0))
-      .map(t => ({ name: t.name, artist: (t.artists || []).map(x => x.name).join(", ") || artist }))
+      .map(t => ({ name: t.name, artist: (t.artists || []).map(x => x.name).join(", ") || artist, isSkit: false }))
       .filter(t => t.name);
 
     if (songs.length === 0) throw new Error("трек-лист пуст");
@@ -5849,6 +5881,12 @@ async function prefillUserRatingIfExists(source, releaseId) {
       overallValue = data.overall || 7;
       coverRating = data.coverRating || 7;
       trackDetails = data.details || {};
+      // Восстанавливаем isSkit
+      if (data.skitIndexes && Array.isArray(data.skitIndexes)) {
+        data.skitIndexes.forEach(i => {
+          if (currentTracks[i]) currentTracks[i].isSkit = true;
+        });
+      }
       if (currentTracks.length === 1 && data.details && data.details[0]) singleValues = { ...data.details[0] };
       else if (currentTracks.length > 1) currentAlbum._prefillScores = data.scores || null;
       showToast("Загружена ваша предыдущая оценка");
@@ -5950,7 +5988,7 @@ function renderTracks(values) {
   list.innerHTML = "";
   currentTracks.forEach((t, i) => {
     const row = document.createElement("div");
-    row.className = "track-row";
+    row.className = "track-row" + (t.isSkit ? " is-skit" : "");
     row.dataset.index = i;
     row.dataset.value = values[i] != null ? values[i] : 7;
     const nameBtn = document.createElement("button");
@@ -5958,7 +5996,8 @@ function renderTracks(values) {
     nameBtn.className = "track-name";
     nameBtn.title = "Открыть подробную оценку";
     const detailBadge = trackDetails[i] ? '<span class="detail-badge">детально</span>' : "";
-    nameBtn.innerHTML = '<span class="track-num">' + (i + 1) + '.</span><span>' + escapeHtml(t.name) + '</span>' + detailBadge;
+    const skitBadge = t.isSkit ? '<span class="skit-badge">🎙 скит</span>' : "";
+    nameBtn.innerHTML = '<span class="track-num">' + (i + 1) + '.</span><span>' + escapeHtml(t.name) + '</span>' + detailBadge + skitBadge;
     nameBtn.onclick = () => openModal(i);
     row.appendChild(nameBtn);
     const control = document.createElement("div");
@@ -5970,8 +6009,50 @@ function renderTracks(values) {
     if (ratingMode === "stars") control.appendChild(buildStars(row, parseInt(row.dataset.value)));
     else control.appendChild(buildSlider(row, parseInt(row.dataset.value)));
     val.textContent = row.dataset.value;
+    // Кнопка "скит"
+    const skitBtn = document.createElement("button");
+    skitBtn.type = "button";
+    skitBtn.className = "skit-btn" + (t.isSkit ? " active" : "");
+    skitBtn.title = t.isSkit ? "Убрать из скитов" : "Пометить как скит (не учитывается в итоге)";
+    skitBtn.innerHTML = "🎙";
+    skitBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      toggleSkit(i);
+    };
+    row.appendChild(skitBtn);
     list.appendChild(row);
   });
+}
+// Переключить трек в режим "скит"
+function toggleSkit(index) {
+  const track = currentTracks[index];
+  if (!track) return;
+  track.isSkit = !track.isSkit;
+  // Обновляем визуально конкретную строку
+  const row = document.querySelector('#tracksList .track-row[data-index="' + index + '"]');
+  if (row) {
+    row.classList.toggle("is-skit", track.isSkit);
+    const btn = row.querySelector(".skit-btn");
+    if (btn) {
+      btn.classList.toggle("active", track.isSkit);
+      btn.title = track.isSkit ? "Убрать из скитов" : "Пометить как скит (не учитывается в итоге)";
+    }
+    // Бейдж
+    const nameBtn = row.querySelector(".track-name");
+    if (nameBtn) {
+      const existingBadge = nameBtn.querySelector(".skit-badge");
+      if (track.isSkit && !existingBadge) {
+        const badge = document.createElement("span");
+        badge.className = "skit-badge";
+        badge.textContent = "🎙 скит";
+        nameBtn.appendChild(badge);
+      } else if (!track.isSkit && existingBadge) {
+        existingBadge.remove();
+      }
+    }
+  }
+  updateScore();
+  saveDraft();
 }
 function buildSlider(row, value) {
   const slider = document.createElement("input");
@@ -6134,20 +6215,37 @@ function updateScore() {
     MAIN_CRITERIA.forEach(c => { sum += singleValues[c.key] || 7; });
     const avgMain = sum / MAIN_CRITERIA.length;
     const vibe = singleValues[VIBE_KEY] || 7;
-    // Для сингла: оценка = среднее по критериям (1–10), потом по новой формуле
     const singleScore = Math.max(1, Math.min(10, Math.round(avgMain)));
     final = computeFinalScore([singleScore], vibe);
     avg = avgMain; overall = vibe; scores = [singleScore];
   } else {
     const rows = document.querySelectorAll("#tracksList .track-row");
     if (rows.length === 0) return;
-    scores = [];
-    rows.forEach(r => scores.push(getRowValue(r)));
-    const sum = scores.reduce((a, b) => a + b, 0);
-    avg = sum / scores.length;
+    // Все оценки (включая скиты)
+    const allScores = [];
+    rows.forEach(r => allScores.push(getRowValue(r)));
+    // Только не-скиты — идут в расчёт
+    const nonSkitScores = [];
+    currentTracks.forEach((t, i) => {
+      if (!t.isSkit) nonSkitScores.push(allScores[i]);
+    });
+    if (nonSkitScores.length === 0) {
+      // Все треки — скиты: возвращаем "недоступно"
+      document.getElementById("finalScore").textContent = "—";
+      document.getElementById("verdict").textContent = "Отметьте хотя бы один трек, который не скит";
+      const rateBtn = document.getElementById("rateBtn");
+      if (rateBtn) rateBtn.disabled = true;
+      return;
+    }
+    const sum = nonSkitScores.reduce((a, b) => a + b, 0);
+    avg = sum / nonSkitScores.length;
     overall = overallValue;
-    final = computeFinalScore(scores, overall);
+    final = computeFinalScore(nonSkitScores, overall);
+    scores = nonSkitScores;
   }
+  // Разблокируем кнопку, если треки есть
+  const rateBtn2 = document.getElementById("rateBtn");
+  if (rateBtn2) rateBtn2.disabled = false;
   const tier = getTier(final);
   const resultBox = document.getElementById("resultBox");
   TIERS.forEach(t => resultBox.classList.remove(t.cssClass));
@@ -6181,12 +6279,18 @@ function updateScore() {
   } else {
     const n = scores.length;
     const lengthBonus = Math.min(0.5, Math.log10(n) / 4);
-    const weightedScore = avg * 0.6 + overall * 0.4;
-    document.getElementById("details").innerHTML =
-      'Средняя оценка треков: <b>' + avg.toFixed(2) + '</b> / 10 <span style="opacity:.6">(вес 60%)</span><br>' +
+    const weightedScore = avg * 0.6 + overall * 0.4 + lengthBonus;
+    const lowMult = Math.min(1, weightedScore / 7);
+    const skitCount = currentTracks.filter(t => t.isSkit).length;
+    let detailsHtml =
+      'Средняя по трекам (без скитов): <b>' + avg.toFixed(2) + '</b> / 10 <span style="opacity:.6">(вес 60%)</span><br>' +
       'Атмосфера / вайб: <b>' + overall + '</b> / 10 <span style="opacity:.6">(вес 40%)</span><br>' +
-      'Взвешенная оценка: <b>' + weightedScore.toFixed(2) + '</b> · Бонус за длину: <b>+' + lengthBonus.toFixed(2) + '</b>' +
-      '<br><span style="opacity:.7">(' + weightedScore.toFixed(2) + ' + ' + lengthBonus.toFixed(2) + ') × 36 = <b>' + final + '</b></span>';
+      'Взвешенная + бонус за длину: <b>' + weightedScore.toFixed(2) + '</b>';
+    if (lowMult < 1) {
+      detailsHtml += ' · Множитель низа: <b>' + lowMult.toFixed(3) + '</b>';
+    }
+    detailsHtml += '<br><span style="opacity:.7">' + weightedScore.toFixed(2) + ' × ' + lowMult.toFixed(3) + ' × 36 = <b>' + final + '</b></span>';
+    document.getElementById("details").innerHTML = detailsHtml;
   }
   const ring = document.getElementById("ringFg");
   const C = 2 * Math.PI * 50;
@@ -6356,7 +6460,7 @@ function rateTrackAsSingle() {
     isSingleFromAlbum: true,
     trackIndex: idx
   };
-  const syntheticTracks = [{ name: track.name, artist: track.artist || currentAlbum.artist }];
+  const syntheticTracks = [{ name: track.name, artist: track.artist || currentAlbum.artist, isSkit: false }];
 
   // Закрываем модалку трека
   closeModal();
@@ -6426,12 +6530,21 @@ async function submitRating() {
   } else {
     const rows = document.querySelectorAll("#tracksList .track-row");
     if (!rows.length) return;
-    scores = [];
+    scores = [];    // ← сюда ВСЕ оценки
     rows.forEach(r => scores.push(getRowValue(r)));
-    const sum = scores.reduce((a, b) => a + b, 0);
-    avg = sum / scores.length;
+    // Для расчёта — только не-скиты
+    const nonSkitScores = [];
+    currentTracks.forEach((t, i) => {
+      if (!t.isSkit) nonSkitScores.push(scores[i]);
+    });
+    if (nonSkitScores.length === 0) {
+      showToast("Отметьте хотя бы один трек, который не скит");
+      return;
+    }
+    const sum = nonSkitScores.reduce((a, b) => a + b, 0);
+    avg = sum / nonSkitScores.length;
     overall = overallValue;
-    final = computeFinalScore(scores, overall);
+    final = computeFinalScore(nonSkitScores, overall);
   }
   const btn = document.getElementById("rateBtn");
   btn.disabled = true;
@@ -6452,6 +6565,8 @@ async function submitRating() {
         if (history.length > 20) history.shift();
       }
     }
+    const skitIndexes = [];
+    currentTracks.forEach((t, i) => { if (t.isSkit) skitIndexes.push(i); });
     await setDoc(doc(db, "ratings", docId), {
       uid: currentUser.uid,
       nickname: userProfile.nickname,
@@ -6465,9 +6580,10 @@ async function submitRating() {
         source: currentAlbum.source,
         parentAlbum: currentAlbum.parentAlbum || null,
         isSingleFromAlbum: currentAlbum.isSingleFromAlbum || false,
-        tracks: currentTracks.map(t => ({ name: t.name, artist: t.artist }))
+        tracks: currentTracks.map(t => ({ name: t.name, artist: t.artist, isSkit: !!t.isSkit }))
       },
       scores, overall, coverRating,
+      skitIndexes,
       details: trackDetails,
       avg: +avg.toFixed(2),
       final, isSingle,
@@ -6654,7 +6770,7 @@ async function restoreFromMyRatings(item) {
       if (data && data.tracks && data.tracks.items) {
         currentTracks = data.tracks.items
           .sort((a, b) => (a.track_number || 0) - (b.track_number || 0))
-          .map(t => ({ name: t.name, artist: (t.artists || []).map(x => x.name).join(", ") || currentAlbum.artist }));
+          .map(t => ({ name: t.name, artist: (t.artists || []).map(x => x.name).join(", ") || currentAlbum.artist, isSkit: false }));
       }
     }
   } catch (e) {}
@@ -6662,6 +6778,12 @@ async function restoreFromMyRatings(item) {
   coverRating = item.coverRating || 7;
   trackDetails = item.details || {};
   currentAlbum._prefillScores = item.scores || null;
+  // Восстанавливаем скиты
+  if (item.skitIndexes && Array.isArray(item.skitIndexes)) {
+    item.skitIndexes.forEach(i => {
+      if (currentTracks[i]) currentTracks[i].isSkit = true;
+    });
+  }
   singleValues = {};
   if (currentTracks.length === 1 && item.details && item.details[0]) singleValues = { ...item.details[0] };
   document.getElementById("step1").classList.add("hidden");
