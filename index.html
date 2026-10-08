@@ -3760,7 +3760,7 @@
             <div class="row"><b>⚡ Индивидуальность / харизма</b> — отличие от других, узнаваемость, личная подача. Можно ли узнать исполнителя с первых секунд.</div>
             <div class="row"><b>🌌 Атмосфера / вайб</b> — настроение и погружение. Работает как <b>множитель</b>: высокий вайб поднимет оценку, низкий — опустит.</div>
             <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
-              <b>Оценка сингла (итог 1–360):</b> 60% — качество (среднее по 4 критериям), 40% — атмосфера / вайб + бонус за длину. Плохие оценки дополнительно сжимаются вниз.
+              <b>Оценка сингла (итог 1–360):</b> среднее по 4 критериям × 36 × множитель вайба (0.55–1.0). 360 — только при всех 10 и вайбе 10.
             </div>
           </div>
 
@@ -4066,11 +4066,10 @@
       <div class="row" style="margin-top:6px;">
         <b>Оценка сингла / альбома (итог 1–360):</b>
         <ul style="margin: 8px 0 0 18px; padding: 0; line-height: 1.7;">
-          <li><b>60%</b> — среднее по трекам (скиты не учитываются).</li>
-          <li><b>40%</b> — атмосфера / вайб.</li>
-          <li><b>+ бонус</b> за длину релиза.</li>
-          <li>Плохие оценки <b>дополнительно сжимаются вниз</b> — плохой альбом не получит Серебро.</li>
-          <li>360 достижимо только при <b>всех 10 и вайбе 10</b>.</li>
+          <li><b>База</b> = среднее по трекам (скиты не учитываются). Шкала: 5 → 180, 10 → 360.</li>
+          <li><b>Атмосфера / вайб</b> — множитель <b>от 0.55 до 1.0</b>.</li>
+          <li><b>360</b> — только если все треки = 10 и вайб = 10.</li>
+          <li>Любое отклонение — итог <b>строго меньше 360</b>.</li>
         </ul>
       </div>
     </div>
@@ -4624,31 +4623,35 @@ const ACHIEVEMENTS = [
   { id: "photographer", emoji: "📸", name: "Фотограф",          desc: "Оценил обложку на 10 у 5 разных релизов" }
 ];
 
+// ═══════════════════════════════════════════════════════
+// ФИНАЛЬНАЯ ФОРМУЛА ОЦЕНИВАНИЯ
+// ═══════════════════════════════════════════════════════
+// 1. База = средняя по трекам (без скитов), 1–10.
+// 2. База × 36 = пропорциональная шкала (5 → 180, 10 → 360).
+// 3. Вайб — множитель 0.55..1.0 (сильно, но не убивает).
+// 4. 360 — только если ВСЕ треки = 10 И вайб = 10.
+//    Любое отклонение — максимум 359.
 function computeFinalScore(scores, vibe) {
   if (!scores || scores.length === 0) return 1;
 
   const n = scores.length;
 
-  // Шаг 1. Средняя по трекам (без скитов)
-  const trackAvg = scores.reduce((a, b) => a + b, 0) / n;
+  // Шаг 1. База — средняя по трекам
+  const base = scores.reduce((a, b) => a + b, 0) / n;
 
-  // Шаг 2. Бонус за длину
-  const lengthBonus = Math.min(0.5, Math.log10(n) / 4);
+  // Шаг 2. Вайб — множитель 0.55 (вайб 1) .. 1.0 (вайб 10)
+  const vibeFactor = 0.5 + (vibe / 10) * 0.5;
 
-  // Шаг 3. Взвешенная сумма: 60% музыка + 40% вайб + бонус за длину
-  const weighted = trackAvg * 0.6 + vibe * 0.4 + lengthBonus;
+  // Шаг 3. Сырой итог
+  let raw = base * 36 * vibeFactor;
 
-  // Шаг 4. Множитель низа: сжимаем плохие оценки вниз
-  const lowMultiplier = Math.min(1, weighted / 7);
-
-  // Шаг 5. Итог
-  let raw = weighted * lowMultiplier * 36;
-
-  // 360 — только при полном идеале
-  if (raw >= 360) {
-    const allPerfect = scores.every(s => s >= 10);
-    const vibePerfect = vibe >= 10;
-    raw = (allPerfect && vibePerfect) ? 360 : Math.min(359, raw);
+  // Шаг 4. 360 — только при полном идеале
+  const allPerfect = scores.every(s => s >= 10);
+  const vibePerfect = vibe >= 10;
+  if (allPerfect && vibePerfect) {
+    return 360;
+  } else {
+    raw = Math.min(359, raw);
   }
 
   return Math.max(1, Math.min(360, Math.round(raw)));
@@ -6271,26 +6274,17 @@ function updateScore() {
       '<div class="bar"><div class="fill" style="width:' + pct + '%"></div></div>';
   } else progEl.innerHTML = "🌟 Максимум достигнут";
   if (currentTracks.length === 1) {
-    const weightedScore = avg * 0.6 + overall * 0.4;
+    const vibeFactor = 0.5 + (overall / 10) * 0.5;
     document.getElementById("details").innerHTML =
-      'Сингл · среднее по 4 критериям: <b>' + avg.toFixed(2) + '</b> / 10 <span style="opacity:.6">(вес 60%)</span><br>' +
-      'Атмосфера / вайб: <b>' + overall + '</b> / 10 <span style="opacity:.6">(вес 40%)</span><br>' +
-      'Итог: <b>' + weightedScore.toFixed(2) + '</b> × 36 = <b>' + final + '</b>';
+      'Сингл · среднее по 4 критериям: <b>' + avg.toFixed(2) + '</b> / 10<br>' +
+      'Атмосфера / вайб: <b>' + overall + '</b> / 10 · Множитель: <b>×' + vibeFactor.toFixed(2) + '</b><br>' +
+      '<span style="opacity:.7">' + avg.toFixed(2) + ' × 36 × ' + vibeFactor.toFixed(2) + ' = <b>' + final + '</b></span>';
   } else {
-    const n = scores.length;
-    const lengthBonus = Math.min(0.5, Math.log10(n) / 4);
-    const weightedScore = avg * 0.6 + overall * 0.4 + lengthBonus;
-    const lowMult = Math.min(1, weightedScore / 7);
-    const skitCount = currentTracks.filter(t => t.isSkit).length;
-    let detailsHtml =
-      'Средняя по трекам (без скитов): <b>' + avg.toFixed(2) + '</b> / 10 <span style="opacity:.6">(вес 60%)</span><br>' +
-      'Атмосфера / вайб: <b>' + overall + '</b> / 10 <span style="opacity:.6">(вес 40%)</span><br>' +
-      'Взвешенная + бонус за длину: <b>' + weightedScore.toFixed(2) + '</b>';
-    if (lowMult < 1) {
-      detailsHtml += ' · Множитель низа: <b>' + lowMult.toFixed(3) + '</b>';
-    }
-    detailsHtml += '<br><span style="opacity:.7">' + weightedScore.toFixed(2) + ' × ' + lowMult.toFixed(3) + ' × 36 = <b>' + final + '</b></span>';
-    document.getElementById("details").innerHTML = detailsHtml;
+    const vibeFactor = 0.5 + (overall / 10) * 0.5;
+    document.getElementById("details").innerHTML =
+      'Средняя по трекам (без скитов): <b>' + avg.toFixed(2) + '</b> / 10<br>' +
+      'Атмосфера / вайб: <b>' + overall + '</b> / 10 · Множитель: <b>×' + vibeFactor.toFixed(2) + '</b><br>' +
+      '<span style="opacity:.7">' + avg.toFixed(2) + ' × 36 × ' + vibeFactor.toFixed(2) + ' = <b>' + final + '</b></span>';
   }
   const ring = document.getElementById("ringFg");
   const C = 2 * Math.PI * 50;
