@@ -4656,24 +4656,23 @@ function computeFinalScore(scores, vibe) {
 
   return Math.max(1, Math.min(360, Math.round(raw)));
 }
-// ═══════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════
-// Расчёт итоговой оценки сингла (1–10) по 4 критериям + вайб.
-// 10 — только если ВСЕ 4 критерия = 10 (вайб учитывается отдельно в computeFinalScore).
+// Расчёт итоговой оценки сингла (1–10, дробное) по 4 критериям.
+// 10 — только если ВСЕ 4 критерия = 10. Каждый балл каждого критерия даёт вклад.
+// Вайб учитывается отдельно в computeFinalScore.
 function computeSingleScore(values) {
   let sum = 0;
   MAIN_CRITERIA.forEach(c => { sum += values[c.key] || 7; });
   const avgMain = sum / MAIN_CRITERIA.length;
 
-  // Проверяем, все ли 4 основных критерия = 10
   const allMainPerfect = MAIN_CRITERIA.every(c => (values[c.key] || 7) === 10);
 
   let singleScore;
   if (allMainPerfect) {
     singleScore = 10;
   } else {
-    // Округляем вниз, но не даём получить 10
-    singleScore = Math.max(1, Math.min(9, Math.floor(avgMain)));
+    // Округляем вниз до 0.25 — сохраняем вклад каждого балла,
+    // но не даём достичь 10 при неидеальных критериях.
+    singleScore = Math.max(1, Math.min(9.75, Math.floor(avgMain * 4) / 4));
   }
 
   return { avgMain, singleScore };
@@ -6313,7 +6312,7 @@ function renderHistogram(scores) {
   const barsEl = document.getElementById("histBars");
   const summaryEl = document.getElementById("histSummary");
   const counts = Array(11).fill(0);
-  scores.forEach(v => { if (v >= 1 && v <= 10) counts[Math.round(v)]++; });
+  scores.forEach(v => { if (v >= 1 && v <= 10) counts[Math.min(10, Math.max(1, Math.round(v)))]++; });
   const maxCount = Math.max(...counts.slice(1), 1);
   barsEl.innerHTML = "";
   for (let i = 1; i <= 10; i++) {
