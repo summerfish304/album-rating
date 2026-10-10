@@ -4658,7 +4658,26 @@ function computeFinalScore(scores, vibe) {
 }
 // ═══════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════
+// Расчёт итоговой оценки сингла (1–10) по 4 критериям + вайб.
+// 10 — только если ВСЕ 4 критерия = 10 (вайб учитывается отдельно в computeFinalScore).
+function computeSingleScore(values) {
+  let sum = 0;
+  MAIN_CRITERIA.forEach(c => { sum += values[c.key] || 7; });
+  const avgMain = sum / MAIN_CRITERIA.length;
 
+  // Проверяем, все ли 4 основных критерия = 10
+  const allMainPerfect = MAIN_CRITERIA.every(c => (values[c.key] || 7) === 10);
+
+  let singleScore;
+  if (allMainPerfect) {
+    singleScore = 10;
+  } else {
+    // Округляем вниз, но не даём получить 10
+    singleScore = Math.max(1, Math.min(9, Math.floor(avgMain)));
+  }
+
+  return { avgMain, singleScore };
+}
 function getTier(finalScore) {
   const pct = finalScore / FINAL_MAX;
   for (const t of TIERS) if (pct >= t.min && pct < t.max) return t;
@@ -6214,11 +6233,8 @@ function updateCoverBadge() {
 function updateScore() {
   let final, avg, overall, scores;
   if (currentTracks.length === 1) {
-    let sum = 0;
-    MAIN_CRITERIA.forEach(c => { sum += singleValues[c.key] || 7; });
-    const avgMain = sum / MAIN_CRITERIA.length;
     const vibe = singleValues[VIBE_KEY] || 7;
-    const singleScore = Math.max(1, Math.min(10, Math.round(avgMain)));
+    const { avgMain, singleScore } = computeSingleScore(singleValues);
     final = computeFinalScore([singleScore], vibe);
     avg = avgMain; overall = vibe; scores = [singleScore];
   } else {
@@ -6513,11 +6529,8 @@ async function submitRating() {
   const isSingle = currentTracks.length === 1;
   let scores, avg, overall, final;
   if (isSingle) {
-    let sum = 0;
-    MAIN_CRITERIA.forEach(c => { sum += singleValues[c.key] || 7; });
-    const avgMain = sum / MAIN_CRITERIA.length;
     const vibe = singleValues[VIBE_KEY] || 7;
-    const singleScore = Math.max(1, Math.min(10, Math.round(avgMain)));
+    const { avgMain, singleScore } = computeSingleScore(singleValues);
     final = computeFinalScore([singleScore], vibe);
     avg = avgMain; overall = vibe; scores = [singleScore];
     trackDetails[0] = { ...singleValues };
