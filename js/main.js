@@ -54,6 +54,12 @@ import {
   scheduleCoverCaching, hydrateImagesFromCache
 } from './cache.js';
 
+import {
+  loadWishlist, updateWishlistBadge,
+  addToWishlist, removeFromWishlistIfExists,
+  renderWishlist, getRandomWishlistItem
+} from './wishlist.js';
+
 
 // ---------- ГЛОБАЛЬНОЕ СОСТОЯНИЕ ----------
 let currentUser = null;
@@ -2773,87 +2779,20 @@ async function renderTops() {
   }
 }
 
-// ---------- WISHLIST ----------
-async function loadWishlist() {
-  if (!currentUser) return;
-  try {
-    const q = query(collection(db, "wishlist"), where("uid", "==", currentUser.uid));
-    const snap = await getDocs(q);
-    wishlistItems = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
-    wishlistItems.sort((a, b) => (b.ts?.seconds || 0) - (a.ts?.seconds || 0));
-  } catch (e) { wishlistItems = []; }
-}
-function updateWishlistBadge() {
-  const n = wishlistItems.length;
-  const badge = document.getElementById("wishlistBadge");
-  const mbadge = document.getElementById("mnavWishlistBadge");
-  if (n > 0) {
-    if (badge) { badge.textContent = n; badge.classList.remove("hidden"); }
-    if (mbadge) { mbadge.textContent = n; mbadge.classList.remove("hidden"); }
-  } else {
-    if (badge) badge.classList.add("hidden");
-    if (mbadge) mbadge.classList.add("hidden");
-  }
-}
-async function addToWishlist() {
-  if (!currentUser) { showToast("Нужно войти"); return; }
-  if (!currentAlbum) return;
-  try {
-    const docId = currentUser.uid + "_" + currentAlbum.source + "_" + currentAlbum.id;
-    const snap = await getDoc(doc(db, "wishlist", docId));
-    if (snap.exists()) { showToast("Уже в списке «Оценю позже»"); return; }
-    await setDoc(doc(db, "wishlist", docId), {
-      uid: currentUser.uid, releaseId: String(currentAlbum.id), source: currentAlbum.source,
-      album: { id: currentAlbum.id, title: currentAlbum.title, artist: currentAlbum.artist, artwork: currentAlbum.artwork, source: currentAlbum.source },
-      ts: serverTimestamp()
-    });
-    await loadWishlist();
-    updateWishlistBadge();
-    showToast("Добавлено в «Оценю позже»", { success: true });
-  } catch (e) { showToast("Ошибка: " + e.message); }
-}
-async function removeFromWishlistIfExists(source, releaseId) {
-  if (!currentUser) return;
-  try {
-    const docId = currentUser.uid + "_" + source + "_" + releaseId;
-    const snap = await getDoc(doc(db, "wishlist", docId));
-    if (snap.exists()) {
-      await deleteDoc(doc(db, "wishlist", docId));
-      await loadWishlist();
-      updateWishlistBadge();
-    }
-  } catch (e) {}
-}
-async function removeFromWishlist(id) {
-  try {
-    await deleteDoc(doc(db, "wishlist", id));
-    await loadWishlist();
-    updateWishlistBadge();
-    renderWishlist();
-  } catch (e) {}
-}
-function renderWishlist() {
-  const listEl = document.getElementById("wishlistList");
-  if (wishlistItems.length === 0) { listEl.innerHTML = '<div class="empty-msg">Список пуст.<br>Добавляйте релизы кнопкой «Оценю позже» при открытии.</div>'; return; }
-  listEl.innerHTML = "";
-  wishlistItems.forEach(item => {
-    const el = document.createElement("div");
-    el.className = "wishlist-item";
-    el.innerHTML = '<img src="' + escapeHtml(item.album.artwork || "") + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
-      '<div class="info"><div class="title">' + escapeHtml(item.album.title) + '</div><div class="artist">' + escapeHtml(item.album.artist) + '</div></div>' +
-      '<div class="actions"><button onclick="rateFromWishlist(\'' + item.source + '\', \'' + item.album.id + '\')">Оценить</button>' +
-      '<button class="btn-secondary" onclick="removeFromWishlist(\'' + item._id + '\')">Удалить</button></div>';
-    listEl.appendChild(el);
-  });
-}
+// ---------- WISHLIST (обёртки в main) ----------
 async function rateFromWishlist(source, id) {
   switchNav("main");
   await loadAlbum({ id, title: "", cover: "", source });
 }
+
 function openRandomWishlist() {
-  if (wishlistItems.length === 0) { showToast("Список пуст"); return; }
-  const r = wishlistItems[Math.floor(Math.random() * wishlistItems.length)];
+  const r = getRandomWishlistItem();
+  if (!r) { showToast("Список пуст"); return; }
   rateFromWishlist(r.source, r.album.id);
+}
+
+function renderWishlistScreen() {
+  renderWishlist(rateFromWishlist);
 }
 
 // ---------- ПРОФИЛЬ ----------
