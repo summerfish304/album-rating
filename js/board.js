@@ -1,10 +1,10 @@
 import { db, collection, doc, getDoc, getDocs, addDoc, query, where, deleteDoc, serverTimestamp, onSnapshot, orderBy, fbLimit } from './firebase.js';
 import {
   ADMIN_UID, FINAL_MAX, BOARD_PAGE_SIZE, FEED_PAGE_SIZE, FEED_MAX_ITEMS,
-  LS_REPORTS
+  LS_REPORTS, MAIN_CRITERIA
 } from './config.js';
 import {
-  getTier, plural, escapeHtml, colorFromString, formatTime,
+  getTier, getLevelByXp, plural, escapeHtml, colorFromString, formatTime,
   tierBadgeHtml
 } from './utils.js';
 import { cacheGet, scheduleCoverCaching, hydrateImagesFromCache } from './cache.js';
@@ -395,21 +395,22 @@ function buildCommentItem(c, source, releaseId, callbacks) {
   const isAdmin = c.uid === ADMIN_UID;
   const isMe = currentUser && c.uid === currentUser.uid;
   const isReported = myReportedComments.has(c._id);
-  const isReply = /^@[^,]+,/.test(c.text || "");
+  const cText = c.text || "";
+  const isReply = /^@[^,]+,/.test(cText);
   el.className = "comment-item" + (isAdmin ? " admin-comment" : "") + (isReply ? " reply-mention" : "");
   const time = c.ts?.seconds ? formatTime(c.ts.seconds) : "";
   const lvl = isAdmin ? "👑" : (c.level || 1);
   let textHtml;
   if (isReply) {
-    const m = c.text.match(/^(@[^,]+),?\s*/);
+    const m = cText.match(/^(@[^,]+),?\s*/);
     if (m) {
-      const rest = c.text.slice(m[0].length);
+      const rest = cText.slice(m[0].length);
       textHtml = '<span class="comment-mention">' + escapeHtml(m[1]) + '</span> ' + escapeHtml(rest);
     } else {
-      textHtml = escapeHtml(c.text);
+      textHtml = escapeHtml(cText);
     }
   } else {
-    textHtml = escapeHtml(c.text);
+    textHtml = escapeHtml(cText);
   }
   el.innerHTML = '<div class="comment-avatar" style="background:' + colorFromString(c.nickname || "?") + '">' + escapeHtml(c.avatar || "🎵") + '<span class="mini-level' + (isAdmin ? ' admin-mini' : '') + '">' + lvl + '</span></div>' +
     '<div class="comment-body">' +
@@ -488,7 +489,7 @@ export async function submitComment(callbacks) {
       uid: currentUser.uid,
       nickname: userProfile.nickname,
       avatar: userProfile.avatar || "🎵",
-      level: 1,
+      level: getLevelByXp(userProfile.xp || 0).level,
       text,
       releaseKey: boardModalRelease.source + "_" + boardModalRelease.releaseId,
       source: boardModalRelease.source,

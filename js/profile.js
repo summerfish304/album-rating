@@ -1,34 +1,34 @@
 import { db, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, serverTimestamp } from './firebase.js';
 import {
   ADMIN_UID, EMOJI_AVATARS, SCHEMES, ACHIEVEMENTS,
-  XP_REWARDS, NOW_PLAYING_TTL, SCHEME_KEY, LS_MODE,
-  TIERS, FINAL_MAX, VERDICTS_ALBUM, VERDICTS_SINGLE
+  XP_REWARDS, NOW_PLAYING_TTL
 } from './config.js';
 import {
-  getLevelByXp, getNextLevel, getTier, escapeHtml, colorFromString, plural, formatTime,
-  tierBadgeHtml
+  getLevelByXp, getTier, escapeHtml, colorFromString, plural
 } from './utils.js';
-import { scheduleCoverCaching, hydrateImagesFromCache } from './cache.js';
-import { showToast, renderSkeletonCards } from './ui.js';
-import { showConfirm } from './confirm.js';
+import { showToast } from './ui.js';
 import { applyScheme, saveSchemeLocally } from './theme.js';
 import { spotifySearchAlbums, mapSpotifyAlbum } from './search.js';
 
+// ============================================================
+// Контекст (устанавливается из main.js)
+// ============================================================
 let currentUser = null;
 let userProfile = null;
 let myRatings = [];
 let userAchievements = new Set();
 let compareSelection = [];
 let nowPlayingSuggestions = [];
-let nowPlayingActiveIndex = -1;
 let nowPlayingDebounce = null;
 let _userProfileViewUid = null;
+let callbacks = {};
 
 export function setProfileContext(opts) {
   if (opts.currentUser !== undefined) currentUser = opts.currentUser;
   if (opts.userProfile !== undefined) userProfile = opts.userProfile;
   if (opts.myRatings !== undefined) myRatings = opts.myRatings;
   if (opts.userAchievements !== undefined) userAchievements = opts.userAchievements;
+  if (opts.callbacks !== undefined) callbacks = opts.callbacks || {};
 }
 export function getUserAchievements() { return userAchievements; }
 
@@ -77,6 +77,7 @@ export function renderProfile() {
     btn.onclick = () => selectAvatar(e);
     grid.appendChild(btn);
   });
+
   const schemeGrid = document.getElementById("schemeGrid");
   schemeGrid.innerHTML = "";
   SCHEMES.forEach(s => {
@@ -86,14 +87,16 @@ export function renderProfile() {
     btn.onclick = () => selectScheme(s.id);
     schemeGrid.appendChild(btn);
   });
+
   const stats = document.getElementById("profileStats");
   if (!myRatings.length) {
-    renderSkeletonCards(stats, 5);
+    stats.innerHTML = "";
     setTimeout(renderProfileStatsInner, 150);
   } else {
     renderProfileStatsInner();
   }
-  if (window._updateProfileLevelUI) window._updateProfileLevelUI();
+
+  if (callbacks.onUpdateLevelUI) callbacks.onUpdateLevelUI();
   renderNowPlayingSection();
   renderTopArtists();
   renderTop10();
@@ -106,8 +109,9 @@ function renderProfileStatsInner() {
   const avgFinal = myRatings.length ? Math.round(myRatings.reduce((a, r) => a + r.final, 0) / myRatings.length) : 0;
   const tier = avgFinal ? getTier(avgFinal) : null;
   const favArtist = getFavoriteArtist();
-  const avgCover = myRatings.filter(r => r.coverRating).length
-    ? (myRatings.filter(r => r.coverRating).reduce((a, r) => a + r.coverRating, 0) / myRatings.filter(r => r.coverRating).length).toFixed(1)
+  const ratingsWithCover = myRatings.filter(r => r.coverRating);
+  const avgCover = ratingsWithCover.length
+    ? (ratingsWithCover.reduce((a, r) => a + r.coverRating, 0) / ratingsWithCover.length).toFixed(1)
     : "—";
   stats.innerHTML =
     '<div class="profile-stat"><div class="num">' + myRatings.length + '</div>Оценок</div>' +
@@ -121,7 +125,7 @@ export function getFavoriteArtist() {
   if (myRatings.length === 0) return null;
   const byArtist = {};
   myRatings.forEach(r => {
-    const a = r.album.artist || "";
+    const a = r.album && r.album.artist;
     if (!a) return;
     byArtist[a] = (byArtist[a] || 0) + 1;
   });
@@ -142,7 +146,7 @@ async function selectAvatar(emoji) {
     userProfile.avatar = emoji;
     document.getElementById("profileAvatarBig").textContent = emoji;
     document.querySelectorAll(".emoji-cell").forEach(el => el.classList.toggle("active", el.textContent === emoji));
-    if (window._updateUserChip) window._updateUserChip();
+    if (callbacks.onUpdateUserChip) callbacks.onUpdateUserChip();
     showToast("Аватар обновлён", { success: true });
   } catch (e) { showToast("Ошибка: " + e.message); }
 }
@@ -168,18 +172,20 @@ export async function saveNickname() {
     const newRef = doc(db, "nicknames", newNick.toLowerCase());
     const snap = await getDoc(newRef);
     if (snap.exists() && snap.data().uid !== currentUser.uid) { showToast("Ник уже занят"); return; }
-    if (userProfile.nicknameLower) { try { await deleteDoc(doc(db, "nicknames", userProfile.nicknameLower)); } catch (e) {} }
+    if (userProfile.nicknameLower) {
+      try { await deleteDoc(doc(db, "nicknames", userProfile.nicknameLower)); } catch (e) {}
+    }
     await setDoc(newRef, { uid: currentUser.uid });
     await updateDoc(doc(db, "users", currentUser.uid), { nickname: newNick, nicknameLower: newNick.toLowerCase() });
     userProfile.nickname = newNick;
     userProfile.nicknameLower = newNick.toLowerCase();
-    if (window._updateUserChip) window._updateUserChip();
+    if (callbacks.onUpdateUserChip) callbacks.onUpdateUserChip();
     showToast("Ник обновлён", { success: true });
   } catch (e) { showToast("Ошибка: " + e.message); }
 }
 
 // ============================================================
-// Now playing
+// Слушаю сейчас
 // ============================================================
 export function renderNowPlayingSection() {
   const el = document.getElementById("nowPlayingSection");
@@ -233,7 +239,6 @@ export function onNowPlayingSearchInput() {
         return;
       }
       nowPlayingSuggestions = items.slice(0, 10);
-      nowPlayingActiveIndex = -1;
       listEl.innerHTML = "";
       nowPlayingSuggestions.forEach((album, i) => {
         const el = document.createElement("div");
@@ -269,7 +274,6 @@ async function chooseNowPlaying(i) {
         ts: serverTimestamp()
       }
     });
-    if (!userProfile.nowPlaying) userProfile.nowPlaying = {};
     userProfile.nowPlaying = {
       id: album.id, title: album.title, artist: album.artist,
       artwork: album.cover, source: album.source,
@@ -299,7 +303,7 @@ function renderTopArtists() {
   if (!myRatings.length) { el.innerHTML = '<div class="empty-msg" style="padding:20px;">Пока нет оценок</div>'; return; }
   const byArtist = {};
   myRatings.forEach(r => {
-    const a = r.album.artist || "";
+    const a = r.album && r.album.artist;
     if (!a) return;
     if (!byArtist[a]) byArtist[a] = { count: 0, sum: 0 };
     byArtist[a].count++;
@@ -374,12 +378,14 @@ export function renderAchievements() {
   });
 }
 
-export async function checkAchievements(callbacks) {
+export async function checkAchievements(cb) {
+  cb = cb || {};
   if (!currentUser || !userProfile) return;
   if (currentUser.uid === ADMIN_UID) return;
   const toUnlock = [];
   const unlocked = userAchievements;
   const totalRatings = myRatings.length;
+
   if (totalRatings >= 1 && !unlocked.has("first_step")) toUnlock.push("first_step");
   if (totalRatings >= 5 && !unlocked.has("listener")) toUnlock.push("listener");
   if (totalRatings >= 15 && !unlocked.has("melomaniac")) toUnlock.push("melomaniac");
@@ -390,9 +396,10 @@ export async function checkAchievements(callbacks) {
   if (myRatings.some(r => getTier(r.final).name === "Алмаз") && !unlocked.has("lvl_diamond")) toUnlock.push("lvl_diamond");
   if (myRatings.some(r => r.final >= 360) && !unlocked.has("lvl_brill")) toUnlock.push("lvl_brill");
   if (myRatings.some(r => getTier(r.final).name === "Уголь") && !unlocked.has("lvl_coal")) toUnlock.push("lvl_coal");
+
   const artistCounts = {};
   myRatings.forEach(r => {
-    const a = r.album.artist;
+    const a = r.album && r.album.artist;
     if (a) artistCounts[a] = (artistCounts[a] || 0) + 1;
   });
   const uniqueArtists = Object.keys(artistCounts).length;
@@ -400,11 +407,14 @@ export async function checkAchievements(callbacks) {
   if (Object.values(artistCounts).some(n => n >= 10) && !unlocked.has("superfan")) toUnlock.push("superfan");
   if (uniqueArtists >= 10 && !unlocked.has("traveler")) toUnlock.push("traveler");
   if (uniqueArtists >= 50 && !unlocked.has("cartographer")) toUnlock.push("cartographer");
+
   const hasAlbum = myRatings.some(r => !r.isSingle && r.scores && r.scores.length > 1);
   const hasSingle = myRatings.some(r => r.isSingle);
   if (hasAlbum && hasSingle && !unlocked.has("diverse")) toUnlock.push("diverse");
+
   const hasDetailed = myRatings.filter(r => r.details && Object.keys(r.details).length > 0).length;
   if (hasDetailed >= 10 && !unlocked.has("statistician")) toUnlock.push("statistician");
+
   const dayCounts = {};
   myRatings.forEach(r => {
     const day = r.ts?.seconds ? new Date(r.ts.seconds * 1000).toISOString().slice(0, 10) : null;
@@ -414,9 +424,11 @@ export async function checkAchievements(callbacks) {
   if (myRatings.filter(r => r.final < 100).length >= 10 && !unlocked.has("critic")) toUnlock.push("critic");
   if (myRatings.filter(r => r.final > 300).length >= 10 && !unlocked.has("generous")) toUnlock.push("generous");
   if (myRatings.some(r => !r.details || Object.keys(r.details).length === 0) && totalRatings >= 3 && !unlocked.has("lazy")) toUnlock.push("lazy");
+
   let totalTens = 0;
   myRatings.forEach(r => { if (r.scores) r.scores.forEach(s => { if (s === 10) totalTens++; }); });
   if (totalTens >= 10 && !unlocked.has("perfectionist")) toUnlock.push("perfectionist");
+
   const tiersSeen = new Set(myRatings.map(r => getTier(r.final).name));
   if (tiersSeen.size >= 8 && !unlocked.has("all_colors")) toUnlock.push("all_colors");
   if (myRatings.some(r => r.final >= 360) && !unlocked.has("cosmos")) toUnlock.push("cosmos");
@@ -424,11 +436,13 @@ export async function checkAchievements(callbacks) {
   if (myRatings.filter(r => r.final >= 360).length >= 10 && !unlocked.has("brill_hunter")) toUnlock.push("brill_hunter");
   if (totalRatings >= 5 && myRatings.every(r => r.final > 162) && !unlocked.has("perfect_taste")) toUnlock.push("perfect_taste");
   if (totalRatings >= 5 && myRatings.every(r => r.final >= 100 && r.final <= 250) && !unlocked.has("fair")) toUnlock.push("fair");
+
   const hourNow = new Date().getHours();
   if (hourNow >= 0 && hourNow < 6 && !unlocked.has("night")) toUnlock.push("night");
   if (hourNow >= 6 && hourNow < 9 && !unlocked.has("early")) toUnlock.push("early");
   if (hourNow >= 5 && hourNow < 7 && !unlocked.has("dawn")) toUnlock.push("dawn");
   if (hourNow >= 20 && hourNow < 23 && !unlocked.has("evening")) toUnlock.push("evening");
+
   const loginDays = userProfile.loginDays || [];
   if (loginDays.length >= 7 && !unlocked.has("regular")) {
     const last7 = loginDays.slice(-7).sort();
@@ -440,8 +454,10 @@ export async function checkAchievements(callbacks) {
     });
     if (consecutive) toUnlock.push("regular");
   }
+
   if (myRatings.some(r => r.final === 200 || r.final === 300) && !unlocked.has("round")) toUnlock.push("round");
   if (totalRatings === 100 && !unlocked.has("century")) toUnlock.push("century");
+
   const ratingsWithCover = myRatings.filter(r => r.coverRating);
   if (ratingsWithCover.filter(r => r.coverRating === 10).length >= 10 && !unlocked.has("aesthete")) toUnlock.push("aesthete");
   if (ratingsWithCover.length >= 10) {
@@ -459,24 +475,21 @@ export async function checkAchievements(callbacks) {
     const t = (r.album.title || "").toLowerCase();
     return /pizza|пицц|burger|бургер|sushi|суши|coffee|кофе|food|еда|taco|тако/.test(t);
   }) && !unlocked.has("pizza")) toUnlock.push("pizza");
+
   if (toUnlock.length > 0) {
     toUnlock.forEach(id => {
       unlocked.add(id);
       const ach = ACHIEVEMENTS.find(a => a.id === id);
       if (ach) {
         showAchievementToast(ach);
-        if (callbacks && callbacks.onAchievementPush) {
-          callbacks.onAchievementPush(ach);
-        }
+        if (cb.onAchievementPush) cb.onAchievementPush(ach);
       }
     });
     try {
       await updateDoc(doc(db, "users", currentUser.uid), { achievements: Array.from(unlocked) });
       userProfile.achievements = Array.from(unlocked);
     } catch (e) {}
-    if (callbacks && callbacks.onAddXp) {
-      await callbacks.onAddXp(toUnlock.length * XP_REWARDS.achievement, "Достижения");
-    }
+    if (cb.onAddXp) await cb.onAddXp(toUnlock.length * XP_REWARDS.achievement, "Достижения");
     renderAchievements();
   }
 }
@@ -533,7 +546,8 @@ function toggleCompareItem(el, id) {
   document.getElementById("compareGoBtn").disabled = compareSelection.length !== 2;
 }
 
-export function compareGo(callbacks) {
+export function compareGo(cb) {
+  cb = cb || {};
   if (compareSelection.length !== 2) return;
   const a = myRatings.find(r => r._id === compareSelection[0]);
   const b = myRatings.find(r => r._id === compareSelection[1]);
@@ -549,7 +563,7 @@ export function compareGo(callbacks) {
       '<div class="artist">' + escapeHtml(a.album.artist) + '</div>' +
       '<div class="score-big" style="color:' + tierA.color + '">' + a.final + '</div>' +
       '<span class="tier-tag">' + tierA.emoji + ' ' + tierA.name + '</span></div>' +
-    '<div class="compare-col ' + (b.final >= a.final ? "win" : "") + '">' +
+    '<div class="compare-col ' + (a.final >= b.final ? "win" : "") + '">' +
       '<img src="' + escapeHtml(b.album.artwork || "") + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
       '<div class="title">' + escapeHtml(b.album.title) + '</div>' +
       '<div class="artist">' + escapeHtml(b.album.artist) + '</div>' +
@@ -576,7 +590,7 @@ export function compareGo(callbacks) {
     updateDoc(doc(db, "users", currentUser.uid), { achievements: Array.from(userAchievements) }).catch(() => {});
     const ach = ACHIEVEMENTS.find(a => a.id === "comparer");
     if (ach) showAchievementToast(ach);
-    if (callbacks && callbacks.onAddXp) callbacks.onAddXp(XP_REWARDS.achievement, "Достижение");
+    if (cb.onAddXp) cb.onAddXp(XP_REWARDS.achievement, "Достижение");
   }
 }
 
@@ -593,7 +607,8 @@ export function closeCompareModal() {
 // ============================================================
 // Профиль другого юзера
 // ============================================================
-export async function openUserProfile(uid, callbacks) {
+export async function openUserProfile(uid, cb) {
+  cb = cb || {};
   if (!uid) return;
   _userProfileViewUid = uid;
   const modal = document.getElementById("userProfileBackdrop");
@@ -749,7 +764,7 @@ export async function openUserProfile(uid, callbacks) {
         const src = el.dataset.source;
         const rid = el.dataset.releaseId;
         closeUserProfile();
-        if (callbacks && callbacks.onOpenRelease) callbacks.onOpenRelease(src, rid);
+        if (cb.onOpenRelease) cb.onOpenRelease(src, rid);
       };
     });
   } catch (e) {
