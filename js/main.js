@@ -3897,7 +3897,6 @@ function reset() {
   document.getElementById("errorBox").textContent = "";
   document.getElementById("searchInput").value = "";
   closeSuggestions();
-  lastSuggestions = []; activeIndex = -1;
   currentAlbum = null; currentTracks = [];
   trackDetails = {}; overallValue = 7; coverRating = 7;
   singleValues = {};
@@ -3906,6 +3905,7 @@ function reset() {
   if (cl) cl.classList.add("hidden");
   const cb = document.getElementById("coverBadge");
   if (cb) cb.classList.add("hidden");
+  resetSearchState();
 }
 
 // ---------- KEYDOWN ----------
