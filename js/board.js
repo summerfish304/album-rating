@@ -8,7 +8,8 @@ import {
   tierBadgeHtml
 } from './utils.js';
 import { cacheGet, scheduleCoverCaching, hydrateImagesFromCache } from './cache.js';
-import { showToast, showFloatingLoader, showConfirm, renderSkeletonList } from './ui.js';
+import { showToast, showFloatingLoader, renderSkeletonList } from './ui.js';
+import { showConfirm } from './confirm.js';
 
 let currentUser = null;
 let userProfile = null;
