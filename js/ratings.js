@@ -11,7 +11,8 @@ import {
   formatTime
 } from './utils.js';
 import { cacheGet, cacheSet, scheduleCoverCaching, hydrateImagesFromCache } from './cache.js';
-import { showToast, showFloatingLoader, showConfirm } from './ui.js';
+import { showToast, showFloatingLoader } from './ui.js';
+import { showConfirm } from './confirm.js';
 import { spotifyGetAlbum } from './search.js';
 
 // ============================================================
