@@ -261,7 +261,8 @@ export function isReleaseInCurrentSeason(releaseDateStr) {
 
   return releaseMs >= startMs && releaseMs <= endMs;
   // Экспорт для отладки через F12 → Console
+
+}
 if (typeof window !== "undefined") {
   window.__debugSetSeason = __debugSetSeason;
-}
 }
