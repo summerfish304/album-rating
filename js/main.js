@@ -97,6 +97,13 @@ import {
   adminJumpToComment, adminDeleteReportedComment, clearCommentReports
 } from './admin.js';
 
+import {
+  setSeasonContext,
+  loadSeasonOnce, subscribeSeason,
+  getCurrentSeason, getSeasonHistory,
+  applySeasonTheme, renderSeasonBanner
+} from './season.js';
+
 // ============================================================
 // Состояние main.js
 // ============================================================
@@ -286,6 +293,9 @@ onAuthStateChanged(auth, async (user) => {
     subscribeSiteSettings(user);
     startMaintenancePolling(user);
     applyScheme(userProfile.scheme || loadSchemeLocally());
+    applySeasonTheme();
+    await loadSeasonOnce();
+    subscribeSeason();
     document.getElementById("authContainer").classList.add("hidden");
     document.getElementById("mainContainer").classList.remove("hidden");
     applyMaintenanceState(user);
@@ -908,6 +918,14 @@ setAdminContext({
   currentUser, userProfile,
   siteSettings: getSiteSettings(),
   callbacks: getAdminCallbacks()
+});
+setSeasonContext({
+  callbacks: {
+    onSeasonChanged: () => {
+      applySeasonTheme();
+      renderSeasonBanner();
+    }
+  }
 });
 
 // Debug

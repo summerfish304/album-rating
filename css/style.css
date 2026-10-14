@@ -3517,3 +3517,171 @@
   }
   .section { animation: fadeUp .35s ease; }
   .tracks-card, .single-card { animation: fadeUp .3s ease; }
+  /* ============================================================
+   СЕЗОННЫЙ БАННЕР
+   ============================================================ */
+.season-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  font-size: .9rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 6px 20px var(--accent-glow);
+  animation: fadeUp .35s ease;
+  flex-wrap: wrap;
+  text-align: center;
+}
+.season-banner-emoji { font-size: 1.15rem; }
+.season-banner-title { font-weight: 700; letter-spacing: -.01em; }
+.season-banner-sep { opacity: .6; }
+.season-banner-countdown { opacity: .95; font-weight: 600; }
+
+/* ============================================================
+   СЕЗОННЫЕ ТЕМЫ
+   (переопределяют --accent, --bg-*, и т.д. поверх схемы юзера)
+   ============================================================ */
+
+/* 🍂 ОСЕНЬ */
+body.season-autumn {
+  --bg-1: #1a120b;
+  --bg-2: #231812;
+  --panel: #241a13;
+  --panel-2: #1c130d;
+  --panel-3: #2e2116;
+  --border: #3d2a1c;
+  --border-soft: #2e1e13;
+  --text: #f5ead9;
+  --text-dim: #a89680;
+  --text-mid: #d6c5a8;
+  --accent: #d97a3f;
+  --accent-2: #b85c1f;
+  --accent-3: #ffa76b;
+  --accent-glow: rgba(217,122,63,.45);
+}
+body.light.season-autumn {
+  --bg-1: #fdf6ee;
+  --bg-2: #f5e6d3;
+  --panel: #ffffff;
+  --panel-2: #fbf1e3;
+  --panel-3: #f2dfc7;
+  --border: #e6cfb3;
+  --border-soft: #f0e0cc;
+  --text: #3a2612;
+  --text-dim: #8a6a48;
+  --text-mid: #5a4026;
+  --accent: #c96a2f;
+  --accent-2: #a85018;
+  --accent-3: #e78f4e;
+  --accent-glow: rgba(201,106,47,.3);
+}
+
+/* ❄️ ЗИМА */
+body.season-winter {
+  --bg-1: #0a1520;
+  --bg-2: #0f1d2c;
+  --panel: #10202f;
+  --panel-2: #0b1824;
+  --panel-3: #172a3d;
+  --border: #1e3a52;
+  --border-soft: #15293c;
+  --text: #e6f0f8;
+  --text-dim: #7a94aa;
+  --text-mid: #b3c8d8;
+  --accent: #5fa8d3;
+  --accent-2: #3d7fa8;
+  --accent-3: #8ecae6;
+  --accent-glow: rgba(95,168,211,.45);
+}
+body.light.season-winter {
+  --bg-1: #f0f7fc;
+  --bg-2: #e2eff7;
+  --panel: #ffffff;
+  --panel-2: #f2f8fc;
+  --panel-3: #e2eef7;
+  --border: #c8dce8;
+  --border-soft: #dceaf3;
+  --text: #0f2a3d;
+  --text-dim: #5a7a92;
+  --text-mid: #2f5570;
+  --accent: #3d8fbf;
+  --accent-2: #2a6d99;
+  --accent-3: #5fb0d8;
+  --accent-glow: rgba(61,143,191,.3);
+}
+
+/* 🌸 ВЕСНА */
+body.season-spring {
+  --bg-1: #0f1a12;
+  --bg-2: #142019;
+  --panel: #15231a;
+  --panel-2: #101b14;
+  --panel-3: #1d2f22;
+  --border: #27412f;
+  --border-soft: #1b3022;
+  --text: #e8f4ea;
+  --text-dim: #84a08b;
+  --text-mid: #bcd2bf;
+  --accent: #7bbf7f;
+  --accent-2: #57945b;
+  --accent-3: #a8d9a8;
+  --accent-glow: rgba(123,191,127,.45);
+}
+body.light.season-spring {
+  --bg-1: #f2fbf3;
+  --bg-2: #e3f3e5;
+  --panel: #ffffff;
+  --panel-2: #f4fbf5;
+  --panel-3: #e5f2e8;
+  --border: #cbe2cf;
+  --border-soft: #ddeee1;
+  --text: #173a1d;
+  --text-dim: #5e8068;
+  --text-mid: #345a3c;
+  --accent: #5a9d5f;
+  --accent-2: #457a49;
+  --accent-3: #7bbf7f;
+  --accent-glow: rgba(90,157,95,.3);
+}
+
+/* ☀️ ЛЕТО */
+body.season-summer {
+  --bg-1: #1a1408;
+  --bg-2: #221b0d;
+  --panel: #241d10;
+  --panel-2: #1a150a;
+  --panel-3: #2f2716;
+  --border: #40341a;
+  --border-soft: #2e2512;
+  --text: #f8f2df;
+  --text-dim: #b0a07c;
+  --text-mid: #d8c89e;
+  --accent: #ffb347;
+  --accent-2: #e08f28;
+  --accent-3: #ffd27a;
+  --accent-glow: rgba(255,179,71,.45);
+}
+body.light.season-summer {
+  --bg-1: #fffbf0;
+  --bg-2: #fff3d9;
+  --panel: #ffffff;
+  --panel-2: #fff9e8;
+  --panel-3: #fdf0d0;
+  --border: #ecd9a8;
+  --border-soft: #f5e7c5;
+  --text: #3d2f08;
+  --text-dim: #8a7340;
+  --text-mid: #5a4a1c;
+  --accent: #d98f20;
+  --accent-2: #b06f10;
+  --accent-3: #ffb347;
+  --accent-glow: rgba(217,143,32,.3);
+}
+
+/* Сезон доминирует над схемой пользователя:
+   сезонные классы идут после .scheme-* в CSS → выигрывают по каскаду. */
