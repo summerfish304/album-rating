@@ -13,16 +13,7 @@ import {
   getBoardData, getBoardModalRelease, closeBoardModal,
   refreshBoard, renderBoard, renderBoardDynamicStats
 } from './board.js';
-import {
-  setAdminContext,
-  renderAdmin, switchAdminTab,
-  // ... всё что было ...
-  adminOpenStartSeasonModal, adminCloseStartSeasonModal,
-  adminSelectSeasonType, adminUpdateSeasonYear,
-  adminConfirmStartSeason, adminFinishSeason,
-  adminDeleteSeasonFromHistory, renderAdminSeasons,
-  adminRecountAwards           // ← новое
-} from './admin.js';
+
 
 // ============================================================
 // Контекст (устанавливается из main.js)
