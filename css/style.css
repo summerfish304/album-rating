@@ -4213,5 +4213,355 @@ body.theme-season-active .scheme-grid:hover {
 .arc-global-artist .agi-title { flex: 0 0 auto; min-width: 90px; }
 .arc-global-artist .agi-name { flex: 1; }
 
+/* ============================================================
+   БАННЕР «СЕЗОН ЗАВЕРШЁН» НА ГЛАВНОЙ
+   ============================================================ */
+.season-finished-banner {
+  margin-bottom: 18px;
+  padding: 18px 20px 20px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(245,196,81,.08), rgba(124,108,240,.06));
+  border: 1.5px solid var(--gold-lvl);
+  box-shadow: 0 0 30px rgba(245,196,81,.15), inset 0 0 0 1px rgba(255,255,255,.03);
+  animation: fadeUp .4s ease;
+  position: relative;
+  overflow: hidden;
+}
+.season-finished-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255,244,209,.08) 50%, transparent 60%);
+  transform: skewX(-20deg);
+  animation: shine 6s ease-in-out infinite;
+  pointer-events: none;
+}
+.sfb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
+}
+.sfb-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -.01em;
+  flex: 1;
+  min-width: 0;
+}
+.sfb-emoji {
+  font-size: 1.5rem;
+  -webkit-text-fill-color: initial;
+}
+.sfb-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--panel-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.sfb-close:hover { color: var(--danger); border-color: var(--danger); }
+.sfb-subtitle {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+.sfb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+.sfb-award {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  transition: border-color .15s, transform .15s;
+}
+.sfb-award:hover { border-color: var(--gold-lvl); transform: translateY(-2px); }
+.sfb-award-label {
+  font-size: .68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--gold-1);
+}
+.sfb-award-cover {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--panel-3);
+}
+.sfb-noart {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+}
+.sfb-award-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: var(--panel-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+.sfb-award-name {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.sfb-award-artist {
+  font-size: .72rem;
+  color: var(--text-dim);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sfb-award-score {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+/* ============================================================
+   ПОДТАБЫ «РЕЙТИНГИ»: ТОПЫ / СЕЗОНЫ
+   ============================================================ */
+.ratings-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  background: var(--panel-2);
+  padding: 5px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+}
+.ratings-tab {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  cursor: pointer;
+  font-size: .85rem;
+  font-weight: 700;
+  box-shadow: none;
+  transition: background .2s, color .2s;
+  font-family: inherit;
+}
+.ratings-tab:hover { color: var(--text-mid); background: transparent; }
+.ratings-tab.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  box-shadow: 0 6px 14px var(--accent-glow);
+}
+
+/* ============================================================
+   СЕЗОН В АРХИВЕ: КАРТОЧКА ТЕКУЩЕГО
+   ============================================================ */
+.season-current-card {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--panel-2), var(--panel-3));
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+  margin-bottom: 18px;
+}
+.scc-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.scc-emoji { font-size: 2rem; }
+.scc-info { flex: 1; min-width: 0; }
+.scc-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.scc-sub {
+  font-size: .82rem;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+.scc-bar {
+  height: 6px;
+  background: rgba(0,0,0,.25);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.scc-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-3));
+  border-radius: 3px;
+  transition: width .5s;
+}
+
+/* ============================================================
+   ИСТОРИЯ СЕЗОНОВ
+   ============================================================ */
+.seasons-history-header {
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin: 8px 0 12px;
+}
+.season-archive-card {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  margin-bottom: 12px;
+  animation: fadeUp .3s ease;
+}
+.sac-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--border-soft);
+}
+.sac-emoji { font-size: 1.8rem; }
+.sac-header-info { flex: 1; min-width: 0; }
+.sac-header-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.sac-header-sub {
+  font-size: .78rem;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+.sac-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.sac-card {
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.sac-card-label {
+  font-size: .68rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 8px;
+}
+.sac-card-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sac-card-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: var(--panel-3);
+  flex-shrink: 0;
+}
+.sac-card-noart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+.sac-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 7px;
+  background: var(--panel-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.sac-card-info { flex: 1; min-width: 0; }
+.sac-card-name {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sac-card-artist {
+  font-size: .72rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.sac-card-score {
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.sac-no-awards {
+  font-size: .85rem;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 14px;
+  font-style: italic;
+}
+
+@media (max-width: 700px) {
+  .sac-grid { grid-template-columns: 1fr; }
+}
 /* Сезон доминирует над схемой пользователя:
    сезонные классы идут после .scheme-* в CSS → выигрывают по каскаду. */

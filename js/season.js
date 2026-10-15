@@ -3,7 +3,7 @@
 // ============================================================
 
 import { db, doc, getDoc, onSnapshot } from './firebase.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, getTier } from './utils.js';
 import { startSeasonParticles, stopSeasonParticles, isParticlesOff } from './season-particles.js';
 
 // ============================================================
@@ -179,6 +179,65 @@ export function renderSeasonBanner() {
   _countdownTimer = setInterval(updateSeasonCountdown, 60000);
 }
 
+// ============================================================
+// Рендер баннера «Сезон завершён» на главной
+// ============================================================
+export function renderFinishedSeasonBanner() {
+  const el = document.getElementById("seasonFinishedBanner");
+  if (!el) return;
+
+  const result = getRecentlyFinishedSeason();
+  if (!result) {
+    el.classList.add("hidden");
+    el.innerHTML = "";
+    return;
+  }
+
+  const { season } = result;
+  const awards = season.awards || {};
+
+  const renderAward = (label, item, isArtist) => {
+    if (!item) return "";
+    const tier = getTier(item.avg || 0);
+    if (isArtist) {
+      return '<div class="sfb-award sfb-award-artist">' +
+        '<div class="sfb-award-label">' + label + '</div>' +
+        '<div class="sfb-award-icon">🎤</div>' +
+        '<div class="sfb-award-name">' + escapeHtml(item.name || "—") + '</div>' +
+        '<div class="sfb-award-score" style="color:' + tier.color + '">' + (item.avg || 0) + '</div>' +
+      '</div>';
+    }
+    return '<div class="sfb-award">' +
+      '<div class="sfb-award-label">' + label + '</div>' +
+      (item.album?.artwork
+        ? '<img class="sfb-award-cover" src="' + escapeHtml(item.album.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+        : '<div class="sfb-award-cover sfb-noart">💿</div>') +
+      '<div class="sfb-award-name">' + escapeHtml(item.album?.title || "—") + '</div>' +
+      '<div class="sfb-award-artist">' + escapeHtml(item.album?.artist || "") + '</div>' +
+      '<div class="sfb-award-score" style="color:' + tier.color + '">' + (item.avg || 0) + '</div>' +
+    '</div>';
+  };
+
+  el.innerHTML =
+    '<div class="sfb-header">' +
+      '<div class="sfb-title">' +
+        '<span class="sfb-emoji">' + (season.emoji || "🎵") + '</span>' +
+        '<span>Сезон «' + escapeHtml(season.name || "") + ' ' + escapeHtml(String(season.year || "")) + '» завершён</span>' +
+      '</div>' +
+      '<button class="sfb-close" onclick="closeFinishedBanner(\'' + escapeHtml(season.id || "") + '\')" title="Скрыть">✕</button>' +
+    '</div>' +
+    '<div class="sfb-subtitle">🏆 Победители сезона</div>' +
+    '<div class="sfb-grid">' +
+      renderAward("🏆 Альбом сезона", awards.albumOfSeason, false) +
+      renderAward("💿 Сингл сезона", awards.singleOfSeason, false) +
+      renderAward("🎤 Артист сезона", awards.artistOfSeason, true) +
+      renderAward("⭐ Выбор критиков", awards.criticsChoice, false) +
+      renderAward("🌍 Выбор сообщества", awards.communityChoice, false) +
+    '</div>';
+
+  el.classList.remove("hidden");
+}
+
 function updateSeasonCountdown() {
   const el = document.getElementById("seasonCountdown");
   if (!el || !currentSeason || !currentSeason.endsAt) return;
@@ -311,7 +370,175 @@ if (typeof window !== "undefined") {
   window.__debugSetSeason = __debugSetSeason;
 }
 
-// Экспорт для отладки через F12 → Console
+// ============================================================
+// Недавно завершённый сезон (для баннера на главной)
+// ============================================================
+const FINISHED_BANNER_DAYS = 7;
+const FINISHED_BANNER_HIDE_KEY = "albumRating_hiddenFinishedBanner_v1";
+
+export function getRecentlyFinishedSeason() {
+  if (!seasonHistory || !seasonHistory.length) return null;
+  const now = Date.now();
+  // Ищем самый свежий завершённый сезон
+  const sorted = [...seasonHistory].sort((a, b) => {
+    const ta = a.finishedAt?.seconds ? a.finishedAt.seconds * 1000 : new Date(a.finishedAt || 0).getTime();
+    const tb = b.finishedAt?.seconds ? b.finishedAt.seconds * 1000 : new Date(b.finishedAt || 0).getTime();
+    return tb - ta;
+  });
+  const latest = sorted[0];
+  if (!latest || !latest.finishedAt) return null;
+
+  const finishedMs = latest.finishedAt?.seconds
+    ? latest.finishedAt.seconds * 1000
+    : new Date(latest.finishedAt).getTime();
+  const daysSince = (now - finishedMs) / 86400000;
+  if (daysSince > FINISHED_BANNER_DAYS) return null;
+
+  // Проверяем, не скрыл ли юзер
+  try {
+    const hidden = localStorage.getItem(FINISHED_BANNER_HIDE_KEY);
+    if (hidden === latest.id) return null;
+  } catch (e) {}
+
+  return { season: latest, daysSince: Math.floor(daysSince) };
+}
+
+export function hideFinishedBanner(seasonId) {
+  try { localStorage.setItem(FINISHED_BANNER_HIDE_KEY, seasonId || "1"); } catch (e) {}
+}
+// ============================================================
+// Рендер архива сезонов (вкладка «Рейтинги → Сезоны»)
+// ============================================================
+export function switchRatingsTab(tab) {
+  document.querySelectorAll(".ratings-tab").forEach(t => {
+    t.classList.toggle("active", t.dataset.rtab === tab);
+  });
+  document.querySelectorAll(".ratings-section").forEach(s => {
+    s.classList.toggle("hidden", s.dataset.rsection !== tab);
+  });
+  if (tab === "seasons") renderSeasonsArchive();
+}
+
+export function renderSeasonsArchive() {
+  const el = document.getElementById("seasonsArchive");
+  if (!el) return;
+
+  let html = '';
+
+  // --- ТЕКУЩИЙ СЕЗОН ---
+  if (currentSeason) {
+    const startMs = currentSeason.startedAt?.seconds
+      ? currentSeason.startedAt.seconds * 1000
+      : new Date(currentSeason.startedAt).getTime();
+    const endMs = currentSeason.endsAt?.seconds
+      ? currentSeason.endsAt.seconds * 1000
+      : new Date(currentSeason.endsAt).getTime();
+    const now = Date.now();
+    const daysLeft = Math.max(0, Math.ceil((endMs - now) / 86400000));
+    const totalDays = Math.ceil((endMs - startMs) / 86400000);
+    const passedDays = totalDays - daysLeft;
+    const pct = totalDays > 0 ? Math.min(100, Math.max(0, (passedDays / totalDays) * 100)) : 0;
+
+    html += '<div class="season-current-card">' +
+      '<div class="scc-header">' +
+        '<span class="scc-emoji">' + (currentSeason.emoji || "🎵") + '</span>' +
+        '<div class="scc-info">' +
+          '<div class="scc-title">' + escapeHtml(currentSeason.name || "Сезон") + ' ' + escapeHtml(String(currentSeason.year || "")) + '</div>' +
+          '<div class="scc-sub">Идёт сейчас · осталось ' + daysLeft + ' ' + plural(daysLeft, "день", "дня", "дней") + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="scc-bar"><div class="scc-bar-fill" style="width:' + pct.toFixed(1) + '%"></div></div>' +
+    '</div>';
+  }
+
+  // --- ИСТОРИЯ СЕЗОНОВ ---
+  const history = (seasonHistory || []).slice().reverse();
+
+  if (history.length === 0) {
+    html += '<div class="empty-msg">' +
+      (currentSeason
+        ? 'Прошедших сезонов пока нет. Первый сезон ещё идёт!'
+        : 'Пока ни один сезон не завершён.') +
+    '</div>';
+  } else {
+    html += '<div class="seasons-history-header">📜 История сезонов</div>';
+    history.forEach(season => {
+      html += renderSeasonArchiveCard(season);
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+function renderSeasonArchiveCard(season) {
+  const awards = season.awards || {};
+  const finishedMs = season.finishedAt?.seconds
+    ? season.finishedAt.seconds * 1000
+    : new Date(season.finishedAt || 0).getTime();
+  const finishedStr = finishedMs
+    ? new Date(finishedMs).toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" })
+    : "";
+
+  const renderAward = (label, item, isArtist) => {
+    if (!item) return "";
+    const tier = getTier(item.avg || 0);
+    if (isArtist) {
+      return '<div class="sac-card">' +
+        '<div class="sac-card-label">' + label + '</div>' +
+        '<div class="sac-card-body">' +
+          '<div class="sac-card-icon">🎤</div>' +
+          '<div class="sac-card-info">' +
+            '<div class="sac-card-name">' + escapeHtml(item.name || "—") + '</div>' +
+          '</div>' +
+          '<div class="sac-card-score" style="color:' + tier.color + '">' + (item.avg || 0) + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+    return '<div class="sac-card">' +
+      '<div class="sac-card-label">' + label + '</div>' +
+      '<div class="sac-card-body">' +
+        (item.album?.artwork
+          ? '<img class="sac-card-cover" src="' + escapeHtml(item.album.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+          : '<div class="sac-card-cover sac-card-noart">💿</div>') +
+        '<div class="sac-card-info">' +
+          '<div class="sac-card-name">' + escapeHtml(item.album?.title || "—") + '</div>' +
+          '<div class="sac-card-artist">' + escapeHtml(item.album?.artist || "") + '</div>' +
+        '</div>' +
+        '<div class="sac-card-score" style="color:' + tier.color + '">' + (item.avg || 0) + '</div>' +
+      '</div>' +
+    '</div>';
+  };
+
+  const hasAwards = awards && (awards.albumOfSeason || awards.singleOfSeason || awards.artistOfSeason || awards.criticsChoice || awards.communityChoice);
+
+  return '<div class="season-archive-card">' +
+    '<div class="sac-header">' +
+      '<span class="sac-emoji">' + (season.emoji || "🎵") + '</span>' +
+      '<div class="sac-header-info">' +
+        '<div class="sac-header-title">' + escapeHtml(season.name || "Сезон") + ' ' + escapeHtml(String(season.year || "")) + '</div>' +
+        '<div class="sac-header-sub">Завершён ' + escapeHtml(finishedStr) + '</div>' +
+      '</div>' +
+    '</div>' +
+    (hasAwards
+      ? '<div class="sac-grid">' +
+          renderAward("🏆 Альбом сезона", awards.albumOfSeason, false) +
+          renderAward("💿 Сингл сезона", awards.singleOfSeason, false) +
+          renderAward("🎤 Артист сезона", awards.artistOfSeason, true) +
+          renderAward("⭐ Выбор критиков", awards.criticsChoice, false) +
+          renderAward("🌍 Выбор сообщества", awards.communityChoice, false) +
+        '</div>'
+      : '<div class="sac-no-awards">Награды ещё не подсчитаны</div>') +
+  '</div>';
+}
+
+// Локальный plural (если в utils нет — можно удалить, если есть импорт)
+function plural(n, one, few, many) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+  return many;
+}
+
 if (typeof window !== "undefined") {
   window.__debugSetSeason = __debugSetSeason;
   window.__seasonTheme = {
@@ -320,4 +547,10 @@ if (typeof window !== "undefined") {
     setUserScheme,
     apply: applySeasonTheme
   };
+  window.__hideFinishedBanner = hideFinishedBanner;
+  window.closeFinishedBanner = (seasonId) => {
+    hideFinishedBanner(seasonId);
+    renderFinishedSeasonBanner();
+  };
+  window.switchRatingsTab = switchRatingsTab;
 }

@@ -108,9 +108,10 @@ import {
   setSeasonContext,
   loadSeasonOnce, subscribeSeason,
   getCurrentSeason, getSeasonHistory,
-  applySeasonTheme, renderSeasonBanner,
+  applySeasonTheme, renderSeasonBanner, renderFinishedSeasonBanner,
   setUserScheme, setThemePreference, loadThemePreferenceFromLocal,
-  getThemePreference
+  getThemePreference,
+  switchRatingsTab, renderSeasonsArchive
 } from './season.js';
 
 import { isParticlesOff, setParticlesOff } from './season-particles.js';
@@ -312,6 +313,7 @@ onAuthStateChanged(auth, async (user) => {
     applySeasonTheme();
     await loadSeasonOnce();
     subscribeSeason();
+    renderFinishedSeasonBanner();
     document.getElementById("authContainer").classList.add("hidden");
     document.getElementById("mainContainer").classList.remove("hidden");
     applyMaintenanceState(user);
@@ -559,7 +561,11 @@ function switchNav(nav) {
     }
   });
   if (nav === "board") refreshBoard();
-  if (nav === "tops") renderTops();
+  if (nav === "tops") {
+    renderTops();
+    // Сбрасываем на подтаб «Топы» при входе
+    switchRatingsTab("tops");
+  }
   if (nav === "history") renderHistory();
   if (nav === "wishlist") renderWishlistScreen();
   if (nav === "profile") renderProfile();
@@ -967,6 +973,11 @@ setSeasonContext({
     onSeasonChanged: () => {
       applySeasonTheme();
       renderSeasonBanner();
+      renderFinishedSeasonBanner();
+      // Если вкладка «Рейтинги» открыта — обновляем архив сезонов
+      if (!document.getElementById("navTops").classList.contains("hidden")) {
+        renderSeasonsArchive();
+      }
     }
   }
 });

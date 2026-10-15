@@ -184,6 +184,9 @@
 
     <div class="ai-recommendation hidden" id="aiReco"></div>
 
+    <!-- БАННЕР: СЕЗОН ЗАВЕРШЁН -->
+    <div class="season-finished-banner hidden" id="seasonFinishedBanner"></div>
+
     <!-- ШАГ 1: ПОИСК -->
     <div id="step1">
       <div class="source-block" style="padding: 12px 16px;">
@@ -372,19 +375,32 @@
     <div class="board-list" id="boardList"></div>
   </div>
 
-  <!-- ТОПЫ -->
+  <!-- РЕЙТИНГИ -->
   <div class="section hidden" id="navTops">
     <div class="history-header">
-      <h2>🏆 Топы</h2>
+      <h2>🏆 Рейтинги</h2>
     </div>
 
-    <div class="top-tabs">
-      <button class="top-tab active" data-top="all" onclick="switchTopTab('all')">За всё время</button>
-      <button class="top-tab" data-top="month" onclick="switchTopTab('month')">За месяц</button>
-      <button class="top-tab" data-top="week" onclick="switchTopTab('week')">За неделю</button>
+    <!-- Подтабы: Топы / Сезоны -->
+    <div class="ratings-tabs">
+      <button class="ratings-tab active" data-rtab="tops" onclick="switchRatingsTab('tops')">🏆 Топы</button>
+      <button class="ratings-tab" data-rtab="seasons" onclick="switchRatingsTab('seasons')">🍂 Сезоны</button>
     </div>
 
-    <div class="board-list" id="topsList"></div>
+    <!-- Секция: ТОПЫ -->
+    <div class="ratings-section" data-rsection="tops">
+      <div class="top-tabs">
+        <button class="top-tab active" data-top="all" onclick="switchTopTab('all')">За всё время</button>
+        <button class="top-tab" data-top="month" onclick="switchTopTab('month')">За месяц</button>
+        <button class="top-tab" data-top="week" onclick="switchTopTab('week')">За неделю</button>
+      </div>
+      <div class="board-list" id="topsList"></div>
+    </div>
+
+    <!-- Секция: СЕЗОНЫ -->
+    <div class="ratings-section hidden" data-rsection="seasons">
+      <div id="seasonsArchive"></div>
+    </div>
   </div>
 
   <!-- МОИ ОЦЕНКИ -->
