@@ -2989,15 +2989,32 @@
     background: var(--panel-2); padding: 5px; border-radius: 12px;
     border: 1px solid var(--border-soft);
     overflow-x: auto;
-    scrollbar-width: none;
+    /* Тонкий, но видимый скроллбар */
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
-  .admin-tabs::-webkit-scrollbar { display: none; }
+  .admin-tabs::-webkit-scrollbar {
+    height: 6px;
+  }
+  .admin-tabs::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0 8px;
+  }
+  .admin-tabs::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+  .admin-tabs::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+  }
   .admin-tab {
-    flex: 1; padding: 10px 12px; border-radius: 9px;
+    flex: 0 0 auto; padding: 9px 12px; border-radius: 9px;
     background: transparent; color: var(--text-dim);
-    border: none; cursor: pointer; font-size: .85rem; font-weight: 600;
+    border: none; cursor: pointer; font-size: .8rem; font-weight: 600;
     box-shadow: none; transition: background .2s, color .2s;
-    white-space: nowrap; min-width: fit-content;
+    white-space: nowrap;
   }
   .admin-tab:hover { color: var(--text-mid); background: transparent; }
   .admin-tab.active { background: linear-gradient(135deg, var(--gold-1), var(--gold-2)); color: #1a1a1a; }

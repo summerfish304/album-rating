@@ -46,6 +46,12 @@ export function switchAdminTab(tab) {
   currentAdminTab = tab;
   if (callbacks.onAdminTabChange) callbacks.onAdminTabChange(tab);
   document.querySelectorAll(".admin-tab").forEach(t => t.classList.toggle("active", t.dataset.admin === tab));
+
+  // Скроллим активную вкладку в поле зрения (для мобильных и узких экранов)
+  const activeTab = document.querySelector('.admin-tab.active');
+  if (activeTab && activeTab.scrollIntoView) {
+    activeTab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }
   const map = {
     dashboard: "adminDashboard",
     users: "adminUsers",
