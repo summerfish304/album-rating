@@ -94,6 +94,8 @@ export async function loadAlbum(album) {
     const artwork = rawArtwork
       ? ITUNES_PROXY + "?u=" + encodeURIComponent(rawArtwork)
       : (album.cover || "");
+    // Spotify отдаёт release_date в формате "YYYY-MM-DD" или "YYYY" или "YYYY-MM"
+    const releaseDate = data.release_date || "";
     const songs = data.tracks.items
       .sort((a, b) => (a.track_number || 0) - (b.track_number || 0))
       .map(t => ({ name: t.name, artist: (t.artists || []).map(x => x.name).join(", ") || artist, isSkit: false }))
@@ -107,7 +109,7 @@ export async function loadAlbum(album) {
       errorBox.textContent = "";
     }
 
-    currentAlbum = { id: album.id, title, artist, artwork, source: "spotify" };
+    currentAlbum = { id: album.id, title, artist, artwork, source: "spotify", releaseDate };
     currentTracks = songs.map(s => ({ name: s.name, artist: s.artist }));
     trackDetails = {}; overallValue = 7; coverRating = 7; singleValues = {};
 
@@ -136,6 +138,7 @@ export async function applyOverride(source, releaseId) {
       if (o.artist) currentAlbum.artist = o.artist;
       if (o.artwork) currentAlbum.artwork = o.artwork;
       if (o.tracks && o.tracks.length) currentTracks = o.tracks.map(n => ({ name: n, artist: currentAlbum.artist }));
+      if (o.releaseDate) currentAlbum.releaseDate = o.releaseDate;
     }
   } catch (e) {}
 }
@@ -150,6 +153,7 @@ export async function prefillUserRatingIfExists(source, releaseId) {
       currentAlbum.title = data.album.title || currentAlbum.title;
       currentAlbum.artist = data.album.artist || currentAlbum.artist;
       currentAlbum.artwork = data.album.artwork || currentAlbum.artwork;
+      currentAlbum.releaseDate = data.album.releaseDate || currentAlbum.releaseDate;
       overallValue = data.overall || 7;
       coverRating = data.coverRating || 7;
       trackDetails = data.details || {};
@@ -828,6 +832,7 @@ export async function submitRating(onAfterSave) {
         id: currentAlbum.id, title: currentAlbum.title,
         artist: currentAlbum.artist, artwork: currentAlbum.artwork,
         source: currentAlbum.source,
+        releaseDate: currentAlbum.releaseDate || "",
         parentAlbum: currentAlbum.parentAlbum || null,
         isSingleFromAlbum: currentAlbum.isSingleFromAlbum || false,
         tracks: currentTracks.map(t => ({ name: t.name, artist: t.artist, isSkit: !!t.isSkit }))
@@ -979,7 +984,11 @@ function renderPearls() {
 }
 
 export async function restoreFromMyRatings(item) {
-  currentAlbum = { id: item.album.id, title: item.album.title, artist: item.album.artist, artwork: item.album.artwork, source: item.album.source || item.source };
+  currentAlbum = {
+    id: item.album.id, title: item.album.title, artist: item.album.artist,
+    artwork: item.album.artwork, source: item.album.source || item.source,
+    releaseDate: item.album.releaseDate || ""
+  };
   currentTracks = (item.scores || []).map((v, i) => ({ name: "Трек " + (i + 1), artist: currentAlbum.artist }));
   try {
     if (currentAlbum.source === "spotify") {

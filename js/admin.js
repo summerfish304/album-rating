@@ -13,6 +13,16 @@ import {
   getBoardData, getBoardModalRelease, closeBoardModal,
   refreshBoard, renderBoard, renderBoardDynamicStats
 } from './board.js';
+import {
+  setAdminContext,
+  renderAdmin, switchAdminTab,
+  // ... всё что было ...
+  adminOpenStartSeasonModal, adminCloseStartSeasonModal,
+  adminSelectSeasonType, adminUpdateSeasonYear,
+  adminConfirmStartSeason, adminFinishSeason,
+  adminDeleteSeasonFromHistory, renderAdminSeasons,
+  adminRecountAwards           // ← новое
+} from './admin.js';
 
 // ============================================================
 // Контекст (устанавливается из main.js)
@@ -796,6 +806,7 @@ export function renderAdminSeasons() {
             '<div class="meta">' + escapeHtml(startStr) + ' — ' + escapeHtml(endStr) + '</div>' +
           '</div>' +
           '<div class="actions">' +
+            '<button class="btn-secondary" onclick="adminRecountAwards(\'' + escapeHtml(h.id || "") + '\')">🔄 Пересчитать</button>' +
             '<button class="btn-danger" onclick="adminDeleteSeasonFromHistory(\'' + escapeHtml(h.id || "") + '\')">🗑 Удалить</button>' +
           '</div>' +
         '</div>';
@@ -946,24 +957,40 @@ export async function adminFinishSeason() {
   const ok = await showConfirm({
     icon: "🏁",
     title: "Завершить сезон?",
-    text: "Сезон «" + (season.name || "") + " " + (season.year || "") + "» будет перемещён в историю. Сайт вернётся к схеме юзера.",
-    okText: "Завершить",
+    text: "Сезон «" + (season.name || "") + " " + (season.year || "") + "» будет перемещён в историю. Сайт вернётся к схеме юзера. Награды будут подсчитаны.",
+    okText: "Завершить и подсчитать",
     okClass: "btn-danger"
   });
   if (!ok) return;
 
+  showFloatingLoader(true);
+
   try {
     const { doc, setDoc, getDoc, serverTimestamp } = await import('./firebase.js');
     const { db: _db } = await import('./firebase.js');
+
+    // Считаем награды
+    let awards = null;
+    try {
+      if (callbacks.computeSeasonAwards) {
+        awards = await callbacks.computeSeasonAwards(season);
+      }
+    } catch (e) {
+      console.warn("Ошибка подсчёта наград:", e);
+      showToast("Ошибка подсчёта наград: " + e.message);
+    }
 
     const seasonRef = doc(_db, "settings", "seasons");
     const snap = await getDoc(seasonRef);
     const existing = snap.exists() ? snap.data() : { history: [] };
 
     const history = existing.history || [];
-    // Не дублируем, если уже там
     if (!history.some(h => h.id === season.id)) {
-      history.push({ ...season, finishedAt: new Date() });
+      history.push({
+        ...season,
+        finishedAt: new Date(),
+        awards: awards || null
+      });
     }
 
     await setDoc(seasonRef, {
@@ -972,11 +999,13 @@ export async function adminFinishSeason() {
       updatedAt: serverTimestamp()
     });
 
-    showToast("Сезон завершён", { success: true });
+    showToast("Сезон завершён. Награды подсчитаны.", { success: true, gold: true });
     renderAdminSeasons();
     if (callbacks.onSeasonChanged) callbacks.onSeasonChanged();
   } catch (e) {
     showToast("Ошибка: " + e.message);
+  } finally {
+    showFloatingLoader(false);
   }
 }
 
@@ -1016,5 +1045,54 @@ export async function adminDeleteSeasonFromHistory(seasonId) {
     renderAdminSeasons();
   } catch (e) {
     showToast("Ошибка: " + e.message);
+  }
+}
+// ============================================================
+// Пересчёт наград для завершённого сезона (для будущего)
+// ============================================================
+export async function adminRecountAwards(seasonId) {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) return;
+  const history = callbacks.getSeasonHistory ? callbacks.getSeasonHistory() : [];
+  const season = history.find(h => h.id === seasonId);
+  if (!season) { showToast("Сезон не найден в истории"); return; }
+
+  const ok = await showConfirm({
+    icon: "🔄",
+    title: "Пересчитать награды?",
+    text: "Все награды сезона «" + (season.name || "") + " " + (season.year || "") + "» будут пересчитаны заново.",
+    okText: "Пересчитать",
+    okClass: "btn-secondary"
+  });
+  if (!ok) return;
+
+  showFloatingLoader(true);
+  try {
+    const awards = callbacks.computeSeasonAwards
+      ? await callbacks.computeSeasonAwards(season)
+      : null;
+
+    const { doc, setDoc, getDoc, serverTimestamp } = await import('./firebase.js');
+    const { db: _db } = await import('./firebase.js');
+
+    const seasonRef = doc(_db, "settings", "seasons");
+    const snap = await getDoc(seasonRef);
+    const existing = snap.exists() ? snap.data() : { history: [] };
+    const newHistory = (existing.history || []).map(h => {
+      if (h.id === seasonId) return { ...h, awards: awards || null };
+      return h;
+    });
+
+    await setDoc(seasonRef, {
+      current: existing.current || null,
+      history: newHistory,
+      updatedAt: serverTimestamp()
+    });
+
+    showToast("Награды пересчитаны", { success: true });
+    renderAdminSeasons();
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+  } finally {
+    showFloatingLoader(false);
   }
 }

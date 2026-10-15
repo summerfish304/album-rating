@@ -113,6 +113,7 @@ import {
 
 import { isParticlesOff, setParticlesOff } from './season-particles.js';
 
+import { computeSeasonAwards } from './season-awards.js';
 
 // ============================================================
 // Состояние main.js
@@ -765,6 +766,7 @@ function getAdminCallbacks() {
     getCurrentTracks: () => getCurrentTracks(),
     getCurrentSeason: () => getCurrentSeason(),
     getSeasonHistory: () => getSeasonHistory(),
+    computeSeasonAwards: (season) => computeSeasonAwards(season),
     onSeasonChanged: () => {
       // Перечитать сезон из Firestore и перерисовать всё
       loadSeasonOnce().then(() => {
@@ -888,6 +890,8 @@ window.adminDeleteReleaseFromBoard = adminDeleteReleaseFromBoard;
 window.openSuggest = openSuggest;
 window.closeSuggest = closeSuggest;
 window.submitSuggestion = submitSuggestion;
+
+window.adminRecountAwards = adminRecountAwards;
 
 window.showConfirm = showConfirm;
 window.closeConfirm = closeConfirm;
