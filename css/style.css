@@ -3683,5 +3683,34 @@ body.light.season-summer {
   --accent-glow: rgba(217,143,32,.3);
 }
 
+/* ============================================================
+   АНИМИРОВАННЫЙ СЕЗОННЫЙ ФОН
+   ============================================================ */
+.season-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;                /* за контентом */
+  pointer-events: none;      /* клики проходят сквозь */
+  opacity: 0.85;
+}
+
+/* Убеждаемся, что основной контейнер выше canvas */
+body > .container {
+  position: relative;
+  z-index: 1;
+}
+
+/* Мобильный — чуть меньше прозрачности, чтобы не мешало */
+@media (max-width: 700px) {
+  .season-canvas { opacity: 0.65; }
+}
+
+/* Если юзер отключил анимацию через prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .season-canvas { display: none !important; }
+}
+
 /* Сезон доминирует над схемой пользователя:
    сезонные классы идут после .scheme-* в CSS → выигрывают по каскаду. */

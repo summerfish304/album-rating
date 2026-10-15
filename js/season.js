@@ -4,6 +4,7 @@
 
 import { db, doc, getDoc, onSnapshot } from './firebase.js';
 import { escapeHtml } from './utils.js';
+import { startSeasonParticles, stopSeasonParticles, isParticlesOff } from './season-particles.js';
 
 // ============================================================
 // Состояние модуля
@@ -98,9 +99,22 @@ export function applySeasonTheme() {
   const body = document.body;
   // Убираем все сезонные классы
   body.classList.remove("season-autumn", "season-winter", "season-spring", "season-summer");
-  if (!currentSeason || !currentSeason.type) return;
+
+  // Управляем анимированным фоном
+  if (!currentSeason || !currentSeason.type || !SEASON_TYPES[currentSeason.type]) {
+    stopSeasonParticles();
+    return;
+  }
+
   const cls = "season-" + currentSeason.type;
-  if (SEASON_TYPES[currentSeason.type]) body.classList.add(cls);
+  body.classList.add(cls);
+
+  // Запускаем частицы (если не отключены)
+  if (!isParticlesOff()) {
+    startSeasonParticles(currentSeason.type);
+  } else {
+    stopSeasonParticles();
+  }
 }
 
 // ============================================================
