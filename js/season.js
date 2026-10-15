@@ -531,13 +531,7 @@ function renderSeasonArchiveCard(season) {
   '</div>';
 }
 
-// Локальный plural (если в utils нет — можно удалить, если есть импорт)
-function plural(n, one, few, many) {
-  const mod10 = n % 10, mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
-  return many;
-}
+
 
 if (typeof window !== "undefined") {
   window.__debugSetSeason = __debugSetSeason;
