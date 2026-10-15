@@ -847,3 +847,344 @@ async function selectThemeMode(mode) {
 export function openCompareWithUser(uid) {
   openCompareSelector();
 }
+
+// ============================================================
+// ЛИЧНЫЕ ИТОГИ СЕЗОНА
+// ============================================================
+
+// Переключение вкладок профиля
+export function switchProfileTab(tab) {
+  document.querySelectorAll(".profile-tab").forEach(t => {
+    t.classList.toggle("active", t.dataset.tab === tab);
+  });
+  document.querySelectorAll(".profile-section").forEach(s => {
+    s.classList.toggle("hidden", s.dataset.section !== tab);
+  });
+  if (tab === "stats") renderProfileStatsTab();
+  if (tab === "achievements") renderAchievements();
+  if (tab === "summary") renderProfileSummaryTab();
+}
+
+// ============================================================
+// Вкладка СТАТИСТИКА — используем существующие блоки
+// ============================================================
+function renderProfileStatsTab() {
+  renderTopArtists();
+  renderTop10();
+  renderNowPlayingSection();
+}
+
+// ============================================================
+// Вкладка ИТОГИ — сезонные
+// ============================================================
+export async function renderProfileSummaryTab() {
+  const el = document.getElementById("profileSummary");
+  if (!el) return;
+
+  el.innerHTML = '<div class="empty-msg"><span class="spinner"></span> Загрузка…</div>';
+
+  const currentSeason = callbacks.getCurrentSeason ? callbacks.getCurrentSeason() : null;
+  const history = callbacks.getSeasonHistory ? callbacks.getSeasonHistory() : [];
+
+  let html = '';
+
+  // --- ТЕКУЩИЙ СЕЗОН ---
+  if (currentSeason) {
+    html += '<div class="summary-season-header">' +
+      '<span class="summary-season-emoji">' + (currentSeason.emoji || "🎵") + '</span>' +
+      '<span class="summary-season-title">' + escapeHtml(currentSeason.name || "Сезон") + ' ' + escapeHtml(String(currentSeason.year || "")) + '</span>' +
+      '<span class="summary-season-badge">идёт</span>' +
+    '</div>';
+
+    const mySummary = await computeMySeasonSummary(currentSeason);
+    html += renderMySeasonSummary(mySummary, currentSeason);
+  } else {
+    html += '<div class="empty-msg" style="padding:24px 14px;">' +
+      '<div style="font-size:2rem; margin-bottom:8px; opacity:.6;">🎵</div>' +
+      'Сезон ещё не запущен.<br>' +
+      '<span style="font-size:.8rem; color:var(--text-dim);">Когда админ запустит сезон, здесь появятся ваши личные итоги.</span>' +
+    '</div>';
+  }
+
+  // --- АРХИВ ---
+  if (history.length > 0) {
+    html += '<div class="summary-archive-header">📜 Архив сезонов</div>';
+    for (const season of history.slice().reverse()) {
+      html += await renderArchiveSeason(season);
+    }
+  }
+
+  el.innerHTML = html;
+}
+
+// ============================================================
+// Подсчёт личной статистики юзера за сезон
+// ============================================================
+async function computeMySeasonSummary(season) {
+  // myRatings — уже в контексте, приходит через setProfileContext
+  if (!myRatings.length) return null;
+  if (!season || !season.startedAt || !season.endsAt) return null;
+
+  const startMs = season.startedAt?.seconds ? season.startedAt.seconds * 1000 : new Date(season.startedAt).getTime();
+  const endMs = season.endsAt?.seconds ? season.endsAt.seconds * 1000 : new Date(season.endsAt).getTime();
+
+  // Фильтруем мои оценки, сделанные в период сезона
+  const myRatingsInSeason = myRatings.filter(r => {
+    const ts = (r.ts?.seconds || 0) * 1000;
+    return ts >= startMs && ts <= endMs;
+  });
+
+  if (!myRatingsInSeason.length) return null;
+
+  // Фильтруем релизы, вышедшие в сезоне
+  const isReleaseInSeason = (r) => {
+    const releaseDate = r.album?.releaseDate;
+    if (!releaseDate) return false;
+    const parts = releaseDate.split("-");
+    const year = parseInt(parts[0]);
+    const month = parts[1] ? parseInt(parts[1]) - 1 : 0;
+    const day = parts[2] ? parseInt(parts[2]) : 1;
+    const releaseMs = new Date(year, month, day).getTime();
+    if (isNaN(releaseMs)) return false;
+    return releaseMs >= startMs && releaseMs <= endMs;
+  };
+
+  const myReleasesInSeason = myRatingsInSeason.filter(isReleaseInSeason);
+
+  // 🏆 Мой альбом сезона
+  const myAlbums = myReleasesInSeason.filter(r => !r.isSingle);
+  myAlbums.sort((a, b) => b.final - a.final);
+  const myAlbumOfSeason = myAlbums[0] || null;
+
+  // 💿 Мой сингл сезона
+  const mySingles = myReleasesInSeason.filter(r => r.isSingle);
+  mySingles.sort((a, b) => b.final - a.final);
+  const mySingleOfSeason = mySingles[0] || null;
+
+  // 🎤 Мой артист сезона
+  const byArtist = {};
+  myReleasesInSeason.forEach(r => {
+    const a = r.album && r.album.artist;
+    if (!a) return;
+    if (!byArtist[a]) byArtist[a] = { name: a, sum: 0, count: 0, bestRelease: null };
+    byArtist[a].sum += r.final;
+    byArtist[a].count++;
+    if (!byArtist[a].bestRelease || r.final > byArtist[a].bestRelease.final) {
+      byArtist[a].bestRelease = r;
+    }
+  });
+  const myArtistList = Object.values(byArtist)
+    .map(a => ({ name: a.name, avg: Math.round(a.sum / a.count), count: a.count, bestRelease: a.bestRelease }))
+    .sort((a, b) => b.avg - a.avg || b.count - a.count);
+  const myArtistOfSeason = myArtistList[0] || null;
+
+  // 🔥 Моё открытие сезона — артист, которого я впервые оценил в этом сезоне
+  // "Впервые" — значит до начала сезона у меня не было оценок его релизов
+  const myAllRatingsBeforeSeason = myRatings.filter(r => {
+    const ts = (r.ts?.seconds || 0) * 1000;
+    return ts < startMs;
+  });
+  const artistsBeforeSeason = new Set();
+  myAllRatingsBeforeSeason.forEach(r => {
+    const a = r.album && r.album.artist;
+    if (a) artistsBeforeSeason.add(a);
+  });
+
+  const newArtistsInSeason = myArtistList.filter(a => !artistsBeforeSeason.has(a.name));
+  const myDiscovery = newArtistsInSeason[0] || null;
+
+  // 📈 Мои цифры
+  const ratingsCount = myRatingsInSeason.length;
+  const avgFinal = Math.round(myRatingsInSeason.reduce((s, r) => s + r.final, 0) / myRatingsInSeason.length);
+
+  return {
+    myAlbumOfSeason,
+    mySingleOfSeason,
+    myArtistOfSeason,
+    myDiscovery,
+    ratingsCount,
+    avgFinal,
+    season
+  };
+}
+
+// ============================================================
+// Рендер личных итогов
+// ============================================================
+function renderMySeasonSummary(summary, season) {
+  if (!summary) {
+    return '<div class="empty-msg" style="padding:20px 14px; font-size:.85rem;">' +
+      'В этом сезоне вы пока не оценили ни одного релиза.' +
+    '</div>';
+  }
+
+  const blocks = [];
+
+  if (summary.myAlbumOfSeason) {
+    blocks.push(renderAwardCard("🏆 Мой альбом сезона", summary.myAlbumOfSeason, "album"));
+  }
+  if (summary.mySingleOfSeason) {
+    blocks.push(renderAwardCard("💿 Мой сингл сезона", summary.mySingleOfSeason, "single"));
+  }
+  if (summary.myArtistOfSeason) {
+    blocks.push(renderArtistCard("🎤 Мой артист сезона", summary.myArtistOfSeason));
+  }
+  if (summary.myDiscovery && summary.myDiscovery.name !== summary.myArtistOfSeason?.name) {
+    blocks.push(renderArtistCard("🔥 Моё открытие сезона", summary.myDiscovery, true));
+  }
+
+  // Цифры
+  blocks.push(renderMyNumbers(summary));
+
+  return '<div class="summary-grid">' + blocks.join("") + '</div>';
+}
+
+// ============================================================
+// Карточка награды с обложкой
+// ============================================================
+function renderAwardCard(title, rating, type) {
+  if (!rating || !rating.album) return "";
+  const tier = getTier(rating.final);
+  return '<div class="summary-award-card">' +
+    '<div class="sac-title">' + title + '</div>' +
+    '<div class="sac-body">' +
+      (rating.album.artwork
+        ? '<img class="sac-cover" src="' + escapeHtml(rating.album.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+        : '<div class="sac-cover sac-cover-noart">💿</div>') +
+      '<div class="sac-info">' +
+        '<div class="sac-album-title">' + escapeHtml(rating.album.title || "—") + '</div>' +
+        '<div class="sac-album-artist">' + escapeHtml(rating.album.artist || "—") + '</div>' +
+        '<div class="sac-tier">' + tier.emoji + ' ' + escapeHtml(tier.name) + '</div>' +
+      '</div>' +
+      '<div class="sac-score" style="color:' + tier.color + '">' + rating.final + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// ============================================================
+// Карточка артиста (без обложки релиза)
+// ============================================================
+function renderArtistCard(title, artist, isDiscovery) {
+  if (!artist) return "";
+  const tier = getTier(artist.avg);
+  const icon = isDiscovery ? "🔥" : "🎤";
+  return '<div class="summary-award-card">' +
+    '<div class="sac-title">' + title + '</div>' +
+    '<div class="sac-body">' +
+      '<div class="sac-artist-icon">' + icon + '</div>' +
+      '<div class="sac-info">' +
+        '<div class="sac-album-title">' + escapeHtml(artist.name) + '</div>' +
+        '<div class="sac-album-artist">' + artist.count + ' ' + plural(artist.count, "оценка", "оценки", "оценок") + '</div>' +
+        '<div class="sac-tier">' + tier.emoji + ' ' + escapeHtml(tier.name) + '</div>' +
+      '</div>' +
+      '<div class="sac-score" style="color:' + tier.color + '">' + artist.avg + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// ============================================================
+// Карточка «Мои цифры»
+// ============================================================
+function renderMyNumbers(summary) {
+  return '<div class="summary-award-card summary-numbers">' +
+    '<div class="sac-title">📈 Мои цифры</div>' +
+    '<div class="summary-numbers-grid">' +
+      '<div class="sng-item"><div class="sng-num">' + summary.ratingsCount + '</div><div class="sng-lbl">оценок</div></div>' +
+      '<div class="sng-item"><div class="sng-num">' + summary.avgFinal + '</div><div class="sng-lbl">средний балл</div></div>' +
+    '</div>' +
+  '</div>';
+}
+
+// ============================================================
+// Архив сезона: мои итоги + глобальные победители
+// ============================================================
+async function renderArchiveSeason(season) {
+  const summary = await computeMySeasonSummary(season);
+  const globalAwards = season.awards || null;
+
+  let html = '<div class="archive-season-card">' +
+    '<div class="arc-header">' +
+      '<span class="arc-emoji">' + (season.emoji || "🎵") + '</span>' +
+      '<span class="arc-title">' + escapeHtml(season.name || "Сезон") + ' ' + escapeHtml(String(season.year || "")) + '</span>' +
+      '<span class="arc-badge">завершён</span>' +
+    '</div>';
+
+  // Мои итоги
+  if (summary) {
+    html += '<div class="arc-subtitle">🏅 Ваши итоги</div>';
+    html += '<div class="arc-mine">';
+    if (summary.myAlbumOfSeason) {
+      html += renderMiniAward("🏆 Альбом", summary.myAlbumOfSeason);
+    }
+    if (summary.mySingleOfSeason) {
+      html += renderMiniAward("💿 Сингл", summary.mySingleOfSeason);
+    }
+    if (summary.myArtistOfSeason) {
+      html += '<div class="arc-mini arc-mini-artist">' +
+        '<div class="arc-mini-label">🎤 Артист</div>' +
+        '<div class="arc-mini-name">' + escapeHtml(summary.myArtistOfSeason.name) + '</div>' +
+        '<div class="arc-mini-score">' + summary.myArtistOfSeason.avg + '</div>' +
+      '</div>';
+    }
+    html += '</div>';
+  } else {
+    html += '<div class="arc-mine-empty">Вы не оценивали релизы в этом сезоне.</div>';
+  }
+
+  // Глобальные победители
+  if (globalAwards) {
+    html += '<div class="arc-subtitle" style="margin-top:14px;">🌐 Итоги всех юзеров</div>';
+    html += '<div class="arc-global">';
+    if (globalAwards.albumOfSeason) {
+      html += renderGlobalAward("🏆 Альбом сезона", globalAwards.albumOfSeason);
+    }
+    if (globalAwards.singleOfSeason) {
+      html += renderGlobalAward("💿 Сингл сезона", globalAwards.singleOfSeason);
+    }
+    if (globalAwards.artistOfSeason) {
+      html += '<div class="arc-global-item arc-global-artist">' +
+        '<div class="agi-title">🎤 Артист сезона</div>' +
+        '<div class="agi-name">' + escapeHtml(globalAwards.artistOfSeason.name) + '</div>' +
+        '<div class="agi-score">' + globalAwards.artistOfSeason.avg + '</div>' +
+      '</div>';
+    }
+    if (globalAwards.criticsChoice) {
+      html += renderGlobalAward("⭐ Выбор критиков", globalAwards.criticsChoice);
+    }
+    if (globalAwards.communityChoice) {
+      html += renderGlobalAward("🌍 Выбор сообщества", globalAwards.communityChoice);
+    }
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function renderMiniAward(label, rating) {
+  if (!rating || !rating.album) return "";
+  const tier = getTier(rating.final);
+  return '<div class="arc-mini">' +
+    '<div class="arc-mini-label">' + label + '</div>' +
+    '<div class="arc-mini-name">' + escapeHtml(rating.album.title || "") + '</div>' +
+    '<div class="arc-mini-score" style="color:' + tier.color + '">' + rating.final + '</div>' +
+  '</div>';
+}
+
+function renderGlobalAward(label, item) {
+  if (!item) return "";
+  const tier = getTier(item.avg || 0);
+  return '<div class="arc-global-item">' +
+    '<div class="agi-cover-wrap">' +
+      (item.album?.artwork
+        ? '<img class="agi-cover" src="' + escapeHtml(item.album.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+        : '<div class="agi-cover agi-cover-noart">💿</div>') +
+    '</div>' +
+    '<div class="agi-info">' +
+      '<div class="agi-title">' + label + '</div>' +
+      '<div class="agi-name">' + escapeHtml(item.album?.title || "—") + '</div>' +
+      '<div class="agi-artist">' + escapeHtml(item.album?.artist || "") + '</div>' +
+    '</div>' +
+    '<div class="agi-score" style="color:' + tier.color + '">' + (item.avg || 0) + '</div>' +
+  '</div>';
+}

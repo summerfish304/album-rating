@@ -81,7 +81,8 @@ import {
   onNowPlayingSearchInput, onNowPlayingKeydown, clearNowPlaying,
   checkAchievements,
   openCompareSelector, compareGo, compareBack, closeCompareModal,
-  openUserProfile, closeUserProfile, openCompareWithUser
+  openUserProfile, closeUserProfile, openCompareWithUser,
+  switchProfileTab, renderProfileSummaryTab
 } from './profile.js';
 
 import {
@@ -791,6 +792,7 @@ function getProfileCallbacks() {
     onUpdateLevelUI: updateProfileLevelUI,
     onAddXp: addXp,
     getCurrentSeason: () => getCurrentSeason(),
+    getSeasonHistory: () => getSeasonHistory(),
     getThemePreference: () => getThemePreference(),
     setThemePreference: (pref) => setThemePreference(pref),
     isParticlesOff: () => isParticlesOff(),
@@ -881,6 +883,7 @@ window.continueDraft = () => continueDraft((album) => loadAlbum(album));
 window.dismissDraft = dismissDraft;
 window.openProfile = () => switchNav("profile");
 window.saveNickname = saveNickname;
+window.switchProfileTab = switchProfileTab;
 
 window.adminEditRelease = adminEditRelease;
 window.closeEditRelease = closeEditRelease;

@@ -432,6 +432,16 @@
       <h2>👤 Профиль</h2>
     </div>
 
+    <!-- ВКЛАДКИ ПРОФИЛЯ -->
+    <div class="profile-tabs" id="profileTabs">
+      <button class="profile-tab active" data-tab="main" onclick="switchProfileTab('main')">👤 Профиль</button>
+      <button class="profile-tab" data-tab="stats" onclick="switchProfileTab('stats')">📊 Статистика</button>
+      <button class="profile-tab" data-tab="achievements" onclick="switchProfileTab('achievements')">🏆 Достижения</button>
+      <button class="profile-tab" data-tab="summary" onclick="switchProfileTab('summary')">📅 Итоги</button>
+    </div>
+
+    <!-- СЕКЦИЯ: ПРОФИЛЬ -->
+    <div class="profile-section" data-section="main">
     <div class="profile-card" id="profileCard">
       <div class="profile-avatar-big" id="profileAvatarBig">🎵</div>
       <div class="profile-info">
@@ -497,11 +507,43 @@
     </div>
     <div class="top10-grid" id="top10Grid"></div>
 
-    <!-- ДОСТИЖЕНИЯ -->
-    <div class="history-header" style="margin-top: 20px;" id="achievementsHeader">
-      <h2>🏆 Достижения <span class="hint" id="achCount" style="margin:0; font-weight:400;"></span></h2>
     </div>
-    <div class="achievements-grid" id="achievementsGrid"></div>
+    <!-- /СЕКЦИЯ main -->
+
+    <!-- СЕКЦИЯ: СТАТИСТИКА -->
+    <div class="profile-section hidden" data-section="stats">
+      <div class="history-header" style="margin-top: 20px;">
+        <h2>🎤 Любимые артисты</h2>
+      </div>
+      <div id="topArtists"></div>
+
+      <div class="history-header" style="margin-top: 20px;">
+        <h2>🏆 Личные топы</h2>
+      </div>
+      <div class="top10-grid" id="top10Grid"></div>
+
+      <div class="history-header" style="margin-top: 20px;">
+        <h2>🎧 Сейчас слушаю</h2>
+      </div>
+      <div id="nowPlayingSection"></div>
+    </div>
+
+    <!-- СЕКЦИЯ: ДОСТИЖЕНИЯ -->
+    <div class="profile-section hidden" data-section="achievements">
+      <div class="history-header" style="margin-top: 20px;" id="achievementsHeader">
+        <h2>🏆 Достижения <span class="hint" id="achCount" style="margin:0; font-weight:400;"></span></h2>
+      </div>
+      <div class="achievements-grid" id="achievementsGrid"></div>
+    </div>
+
+    <!-- СЕКЦИЯ: ИТОГИ -->
+    <div class="profile-section hidden" data-section="summary">
+      <div class="history-header" style="margin-top: 20px;">
+        <h2>📅 Сезонные итоги</h2>
+      </div>
+      <div id="profileSummary"></div>
+    </div>
+
   </div>
 
   <!-- АДМИН -->
