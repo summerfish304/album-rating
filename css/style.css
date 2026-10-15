@@ -3712,5 +3712,112 @@ body > .container {
   .season-canvas { display: none !important; }
 }
 
+/* ============================================================
+   ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ: СВОЯ СХЕМА / ТЕМА СЕЗОНА
+   ============================================================ */
+.theme-mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.theme-mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text-mid);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .85rem;
+  transition: border-color .15s, background .15s, transform .15s, box-shadow .2s;
+  box-shadow: none;
+  position: relative;
+}
+.theme-mode-btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--accent-glow);
+}
+.theme-mode-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  box-shadow: 0 0 12px var(--accent-glow);
+  color: var(--text);
+}
+.theme-mode-btn.disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  filter: grayscale(.6);
+}
+.theme-mode-btn.disabled:hover {
+  transform: none;
+  border-color: var(--border);
+  box-shadow: none;
+}
+.theme-mode-btn .tm-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.theme-mode-btn .tm-label {
+  font-weight: 700;
+  font-size: .82rem;
+  color: var(--text);
+}
+.theme-mode-btn.active .tm-label {
+  color: var(--text);
+}
+.theme-mode-btn .tm-note {
+  font-size: .68rem;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* Схема-сетка "приглушается", когда выбрана тема сезона */
+.theme-mode-grid + * + .scheme-grid,
+body.theme-season-active .scheme-grid {
+  opacity: .55;
+  filter: grayscale(.4);
+  transition: opacity .25s, filter .25s;
+}
+.theme-mode-grid + * + .scheme-grid:hover,
+body.theme-season-active .scheme-grid:hover {
+  opacity: 1;
+  filter: none;
+}
+
+/* Чекбокс анимированного фона */
+.particles-toggle-row {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+}
+.particles-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: .85rem;
+  color: var(--text-mid);
+  user-select: none;
+  margin: 0;
+}
+.particles-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin: 0;
+}
+
 /* Сезон доминирует над схемой пользователя:
    сезонные классы идут после .scheme-* в CSS → выигрывают по каскаду. */

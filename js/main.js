@@ -101,8 +101,12 @@ import {
   setSeasonContext,
   loadSeasonOnce, subscribeSeason,
   getCurrentSeason, getSeasonHistory,
-  applySeasonTheme, renderSeasonBanner
+  applySeasonTheme, renderSeasonBanner,
+  setUserScheme, setThemePreference, loadThemePreferenceFromLocal
 } from './season.js';
+
+import { isParticlesOff, setParticlesOff } from './season-particles.js';
+import { getThemePreference, setThemePreference } from './season.js';
 
 // ============================================================
 // Состояние main.js
@@ -292,7 +296,10 @@ onAuthStateChanged(auth, async (user) => {
     await loadSiteSettingsOnce(user);
     subscribeSiteSettings(user);
     startMaintenancePolling(user);
-    applyScheme(userProfile.scheme || loadSchemeLocally());
+    loadThemePreferenceFromLocal();
+    const pref = userProfile.seasonThemePreference || "season";
+    setThemePreference(pref);
+    setUserScheme(userProfile.scheme || loadSchemeLocally());
     applySeasonTheme();
     await loadSeasonOnce();
     subscribeSeason();
@@ -765,6 +772,11 @@ function getProfileCallbacks() {
     onUpdateUserChip: updateUserChip,
     onUpdateLevelUI: updateProfileLevelUI,
     onAddXp: addXp,
+    getCurrentSeason: () => getCurrentSeason(),
+    getThemePreference: () => getThemePreference(),
+    setThemePreference: (pref) => setThemePreference(pref),
+    isParticlesOff: () => isParticlesOff(),
+    setParticlesOff: (off) => setParticlesOff(off),
     onOpenRelease: (src, rid) => {
       const group = getBoardData().find(b => b.source === src && b.releaseId === String(rid));
       if (group) { switchNav("board"); setTimeout(() => openBoardModal(group), 250); }
@@ -927,6 +939,8 @@ setSeasonContext({
     }
   }
 });
+
+loadThemePreferenceFromLocal();
 
 // Debug
 window._db = db;

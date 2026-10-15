@@ -15,6 +15,31 @@ let _seasonUnsub = null;
 let _countdownTimer = null;
 let callbacks = {};
 
+// Предпочтение темы: "season" | "own"
+// Дублируем в localStorage, чтобы применить сразу при загрузке.
+const SEASON_THEME_PREF_KEY = "albumRating_seasonThemePref_v1";
+let themePreference = "season";     // по умолчанию — сезон (вариант C)
+let userScheme = "default";         // текущая схема юзера
+
+export function getThemePreference() { return themePreference; }
+export function setUserScheme(schemeId) {
+  userScheme = schemeId || "default";
+  applySeasonTheme();
+}
+
+export function setThemePreference(pref) {
+  themePreference = (pref === "own") ? "own" : "season";
+  try { localStorage.setItem(SEASON_THEME_PREF_KEY, themePreference); } catch (e) {}
+  applySeasonTheme();
+}
+
+export function loadThemePreferenceFromLocal() {
+  try {
+    const v = localStorage.getItem(SEASON_THEME_PREF_KEY);
+    if (v === "own" || v === "season") themePreference = v;
+  } catch (e) {}
+}
+
 // Типы сезонов (для справки и валидации)
 export const SEASON_TYPES = {
   autumn: { name: "Осень", emoji: "🍂" },
@@ -97,22 +122,27 @@ export function subscribeSeason() {
 // ============================================================
 export function applySeasonTheme() {
   const body = document.body;
-  // Убираем все сезонные классы
+
+  // Убираем все сезонные и схемные классы
   body.classList.remove("season-autumn", "season-winter", "season-spring", "season-summer");
+  body.classList.remove("scheme-ocean", "scheme-sunset", "scheme-forest", "scheme-berry", "scheme-mono");
 
-  // Управляем анимированным фоном
-  if (!currentSeason || !currentSeason.type || !SEASON_TYPES[currentSeason.type]) {
-    stopSeasonParticles();
-    return;
-  }
+  const hasSeason = currentSeason && currentSeason.type && SEASON_TYPES[currentSeason.type];
+  const useSeason = hasSeason && themePreference === "season";
 
-  const cls = "season-" + currentSeason.type;
-  body.classList.add(cls);
-
-  // Запускаем частицы (если не отключены)
-  if (!isParticlesOff()) {
-    startSeasonParticles(currentSeason.type);
+  if (useSeason) {
+    // Применяем сезон
+    body.classList.add("season-" + currentSeason.type);
+    if (!isParticlesOff()) {
+      startSeasonParticles(currentSeason.type);
+    } else {
+      stopSeasonParticles();
+    }
   } else {
+    // Применяем схему юзера
+    if (userScheme && userScheme !== "default") {
+      body.classList.add("scheme-" + userScheme);
+    }
     stopSeasonParticles();
   }
 }
@@ -279,4 +309,15 @@ export function isReleaseInCurrentSeason(releaseDateStr) {
 }
 if (typeof window !== "undefined") {
   window.__debugSetSeason = __debugSetSeason;
+}
+
+// Экспорт для отладки через F12 → Console
+if (typeof window !== "undefined") {
+  window.__debugSetSeason = __debugSetSeason;
+  window.__seasonTheme = {
+    getPref: getThemePreference,
+    setPref: setThemePreference,
+    setUserScheme,
+    apply: applySeasonTheme
+  };
 }

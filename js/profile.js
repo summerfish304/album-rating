@@ -78,6 +78,9 @@ export function renderProfile() {
     grid.appendChild(btn);
   });
 
+  // --- Переключатель темы: своя / сезонная ---
+  renderThemeModeSwitcher();
+
   const schemeGrid = document.getElementById("schemeGrid");
   schemeGrid.innerHTML = "";
   SCHEMES.forEach(s => {
@@ -776,6 +779,67 @@ export function closeUserProfile() {
   document.getElementById("userProfileBackdrop").classList.remove("open");
   document.body.style.overflow = "";
   _userProfileViewUid = null;
+}
+
+// ============================================================
+// Переключатель темы: своя схема / сезон
+// ============================================================
+function renderThemeModeSwitcher() {
+  const wrap = document.getElementById("themeModeSwitcher");
+  if (!wrap) return;
+
+  const hasSeason = callbacks.getCurrentSeason && callbacks.getCurrentSeason();
+  const pref = callbacks.getThemePreference ? callbacks.getThemePreference() : "season";
+
+  wrap.innerHTML =
+    '<label>Тема оформления</label>' +
+    '<div class="theme-mode-grid">' +
+      '<button type="button" class="theme-mode-btn' + (pref === "own" ? " active" : "") + '" data-mode="own">' +
+        '<span class="tm-icon">🎨</span>' +
+        '<span class="tm-label">Своя схема</span>' +
+      '</button>' +
+      '<button type="button" class="theme-mode-btn' + (pref === "season" ? " active" : "") + (hasSeason ? "" : " disabled") + '" data-mode="season">' +
+        '<span class="tm-icon">' + (hasSeason ? (hasSeason.emoji || "🍂") : "🚫") + '</span>' +
+        '<span class="tm-label">Тема сезона</span>' +
+        (hasSeason ? '' : '<span class="tm-note">Сезон ещё не запущен</span>') +
+      '</button>' +
+    '</div>' +
+    '<div class="particles-toggle-row">' +
+      '<label class="particles-toggle">' +
+        '<input type="checkbox" id="particlesToggle" ' + (callbacks.isParticlesOff && callbacks.isParticlesOff() ? "" : "checked") + '>' +
+        '<span>Анимированный фон</span>' +
+      '</label>' +
+    '</div>';
+
+  wrap.querySelectorAll(".theme-mode-btn").forEach(btn => {
+    btn.onclick = () => {
+      const mode = btn.dataset.mode;
+      if (mode === "season" && !hasSeason) {
+        showToast("Сезон ещё не запущен");
+        return;
+      }
+      selectThemeMode(mode);
+    };
+  });
+
+  const pt = document.getElementById("particlesToggle");
+  if (pt) {
+    pt.onchange = () => {
+      if (callbacks.setParticlesOff) callbacks.setParticlesOff(!pt.checked);
+      showToast(pt.checked ? "Фон включён" : "Фон отключён");
+    };
+  }
+}
+
+async function selectThemeMode(mode) {
+  if (!currentUser) return;
+  try {
+    await updateDoc(doc(db, "users", currentUser.uid), { seasonThemePreference: mode });
+    userProfile.seasonThemePreference = mode;
+    if (callbacks.setThemePreference) callbacks.setThemePreference(mode);
+    renderThemeModeSwitcher();
+    showToast(mode === "own" ? "Своя схема" : "Тема сезона", { success: true });
+  } catch (e) { showToast("Ошибка: " + e.message); }
 }
 
 export function openCompareWithUser(uid) {
