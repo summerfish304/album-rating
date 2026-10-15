@@ -95,11 +95,12 @@ import {
   adminDeleteReleaseFromBoard,
   publishAnnouncement, deleteAnnouncement,
   adminJumpToComment, adminDeleteReportedComment, clearCommentReports,
-  // === Сезоны (новое) ===
+  // === Сезоны ===
   adminOpenStartSeasonModal, adminCloseStartSeasonModal,
   adminSelectSeasonType, adminUpdateSeasonYear,
   adminConfirmStartSeason, adminFinishSeason,
-  adminDeleteSeasonFromHistory, renderAdminSeasons
+  adminDeleteSeasonFromHistory, renderAdminSeasons,
+  adminRecountAwards
 } from './admin.js';
 
 import {
