@@ -53,7 +53,8 @@ export function switchAdminTab(tab) {
     suggestions: "adminSuggestions",
     addrelease: "adminAddRelease",
     announcement: "adminAnnouncement",
-    maintenance: "adminMaintenance"
+    maintenance: "adminMaintenance",
+    seasons: "adminSeasons"
   };
   Object.keys(map).forEach(k => {
     const el = document.getElementById(map[k]);
@@ -66,6 +67,7 @@ export function switchAdminTab(tab) {
   if (tab === "addrelease") renderAdminAddRelease();
   if (tab === "announcement") renderAdminAnnouncement();
   if (tab === "maintenance" && callbacks.onRenderMaintenance) callbacks.onRenderMaintenance();
+  if (tab === "seasons") renderAdminSeasons();
 }
 
 // ============================================================
@@ -682,5 +684,331 @@ export async function adminDeleteReleaseFromBoard() {
     showToast("Ошибка удаления: " + e.message);
   } finally {
     showFloatingLoader(false);
+  }
+}
+
+// ============================================================
+// СЕЗОНЫ
+// ============================================================
+
+const SEASON_TYPES_ADMIN = {
+  autumn: { name: "Осень",  emoji: "🍂", startMonth: 8,  endMonth: 10 },  // сентябрь-ноябрь (0-indexed)
+  winter: { name: "Зима",   emoji: "❄️", startMonth: 11, endMonth: 1 },   // декабрь-февраль
+  spring: { name: "Весна",  emoji: "🌸", startMonth: 2,  endMonth: 4 },   // март-май
+  summer: { name: "Лето",   emoji: "☀️", startMonth: 5,  endMonth: 7 }    // июнь-август
+};
+
+// Генерация дат по типу сезона и году
+function getSeasonDates(type, year) {
+  const cfg = SEASON_TYPES_ADMIN[type];
+  if (!cfg) return null;
+  // Старт — 1-е число месяца начала
+  const start = new Date(year, cfg.startMonth, 1);
+  // Конец — последний день месяца окончания
+  const end = new Date(year, cfg.endMonth + 1, 0, 23, 59, 59);
+  // Для зимы: если endMonth < startMonth, значит конец — следующий год
+  if (type === "winter") {
+    end.setFullYear(year + 1);
+  }
+  return { start, end };
+}
+
+export function renderAdminSeasons() {
+  const el = document.getElementById("adminSeasons");
+  if (!el) return;
+
+  const season = callbacks.getCurrentSeason ? callbacks.getCurrentSeason() : null;
+
+  let html = '';
+
+  if (season) {
+    // Карточка активного сезона
+    const startMs = season.startedAt?.seconds ? season.startedAt.seconds * 1000 : new Date(season.startedAt).getTime();
+    const endMs = season.endsAt?.seconds ? season.endsAt.seconds * 1000 : new Date(season.endsAt).getTime();
+    const now = Date.now();
+    const daysLeft = Math.max(0, Math.ceil((endMs - now) / 86400000));
+    const totalDays = Math.ceil((endMs - startMs) / 86400000);
+    const passedDays = totalDays - daysLeft;
+    const pct = totalDays > 0 ? Math.min(100, Math.max(0, (passedDays / totalDays) * 100)) : 0;
+
+    const startStr = new Date(startMs).toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
+    const endStr = new Date(endMs).toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
+
+    html +=
+      '<div class="admin-card" style="padding:20px;">' +
+        '<div style="display:flex; align-items:center; gap:14px; margin-bottom:14px; flex-wrap:wrap;">' +
+          '<div style="font-size:2.4rem; line-height:1;">' + (season.emoji || "🎵") + '</div>' +
+          '<div style="flex:1; min-width:0;">' +
+            '<div style="font-size:1.2rem; font-weight:800; color:var(--text);">' +
+              escapeHtml((season.name || "Сезон") + " " + (season.year || "")) +
+            '</div>' +
+            '<div style="font-size:.82rem; color:var(--text-dim); margin-top:4px;">' +
+              'С ' + escapeHtml(startStr) + ' по ' + escapeHtml(endStr) +
+            '</div>' +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            '<div style="font-size:1.6rem; font-weight:800; color:var(--accent-3);">' + daysLeft + '</div>' +
+            '<div style="font-size:.72rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em;">' +
+              plural(daysLeft, "день", "дня", "дней") + ' осталось' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="height:6px; background:rgba(0,0,0,.25); border-radius:3px; overflow:hidden; margin-bottom:16px;">' +
+          '<div style="height:100%; width:' + pct.toFixed(1) + '%; background:linear-gradient(90deg, var(--accent), var(--accent-3)); border-radius:3px; transition:width .4s;"></div>' +
+        '</div>' +
+        '<div style="display:flex; gap:10px; flex-wrap:wrap;">' +
+          '<button class="btn-danger" onclick="adminFinishSeason()">🏁 Завершить сезон</button>' +
+        '</div>' +
+      '</div>';
+  } else {
+    // Сезон не запущен
+    html +=
+      '<div class="admin-card" style="padding:20px; text-align:center;">' +
+        '<div style="font-size:2.6rem; margin-bottom:10px; opacity:.7;">🎵</div>' +
+        '<div style="font-size:1.05rem; font-weight:700; color:var(--text); margin-bottom:6px;">Сезон ещё не запущен</div>' +
+        '<div style="font-size:.85rem; color:var(--text-dim); margin-bottom:18px;">Запустите сезон, чтобы юзеры увидели сезонные награды и тему</div>' +
+        '<button onclick="adminOpenStartSeasonModal()">🚀 Запустить новый сезон</button>' +
+      '</div>';
+  }
+
+  // История сезонов
+  const history = callbacks.getSeasonHistory ? callbacks.getSeasonHistory() : [];
+  if (history.length > 0) {
+    html += '<div style="margin-top:20px;">' +
+      '<h3 style="font-size:.95rem; color:var(--text); margin-bottom:10px;">📜 История сезонов</h3>' +
+      '<div style="display:flex; flex-direction:column; gap:8px;">';
+    history.slice().reverse().forEach(h => {
+      const startMs = h.startedAt?.seconds ? h.startedAt.seconds * 1000 : new Date(h.startedAt).getTime();
+      const endMs = h.endsAt?.seconds ? h.endsAt.seconds * 1000 : new Date(h.endsAt).getTime();
+      const startStr = new Date(startMs).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+      const endStr = new Date(endMs).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+      html +=
+        '<div class="admin-user-row">' +
+          '<div style="font-size:1.5rem;">' + (h.emoji || "🎵") + '</div>' +
+          '<div class="info">' +
+            '<div class="nick">' + escapeHtml((h.name || "Сезон") + " " + (h.year || "")) + '</div>' +
+            '<div class="meta">' + escapeHtml(startStr) + ' — ' + escapeHtml(endStr) + '</div>' +
+          '</div>' +
+          '<div class="actions">' +
+            '<button class="btn-danger" onclick="adminDeleteSeasonFromHistory(\'' + escapeHtml(h.id || "") + '\')">🗑 Удалить</button>' +
+          '</div>' +
+        '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ============================================================
+// Модалка «Запустить новый сезон»
+// ============================================================
+export function adminOpenStartSeasonModal() {
+  const modal = document.getElementById("startSeasonBackdrop");
+  if (!modal) return;
+
+  const currentYear = new Date().getFullYear();
+
+  // Определяем дефолтный тип по текущему месяцу
+  const month = new Date().getMonth();
+  let defaultType = "autumn";
+  if (month >= 11 || month <= 1) defaultType = "winter";
+  else if (month >= 2 && month <= 4) defaultType = "spring";
+  else if (month >= 5 && month <= 7) defaultType = "summer";
+  else defaultType = "autumn";
+
+  // Заполняем поле года
+  const yearInput = document.getElementById("startSeasonYear");
+  if (yearInput) yearInput.value = currentYear;
+
+  // Сбрасываем выбор типа
+  document.querySelectorAll(".season-type-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.type === defaultType);
+  });
+
+  // Пересчитываем даты
+  updateSeasonDatesPreview();
+
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+export function adminCloseStartSeasonModal() {
+  const modal = document.getElementById("startSeasonBackdrop");
+  if (modal) modal.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+export function adminSelectSeasonType(type) {
+  document.querySelectorAll(".season-type-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.type === type);
+  });
+  updateSeasonDatesPreview();
+}
+
+export function adminUpdateSeasonYear() {
+  updateSeasonDatesPreview();
+}
+
+function updateSeasonDatesPreview() {
+  const activeBtn = document.querySelector(".season-type-btn.active");
+  const yearInput = document.getElementById("startSeasonYear");
+  const preview = document.getElementById("startSeasonPreview");
+  if (!activeBtn || !yearInput || !preview) return;
+
+  const type = activeBtn.dataset.type;
+  const year = parseInt(yearInput.value) || new Date().getFullYear();
+  const dates = getSeasonDates(type, year);
+  if (!dates) { preview.textContent = ""; return; }
+
+  const startStr = dates.start.toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
+  const endStr = dates.end.toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
+  preview.innerHTML = 'Сезон продлится: <b>' + escapeHtml(startStr) + '</b> — <b>' + escapeHtml(endStr) + '</b>';
+}
+
+// ============================================================
+// Запуск сезона
+// ============================================================
+export async function adminConfirmStartSeason() {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) return;
+
+  // Проверка: нет ли уже активного сезона
+  if (callbacks.getCurrentSeason && callbacks.getCurrentSeason()) {
+    showToast("Сначала завершите текущий сезон");
+    return;
+  }
+
+  const activeBtn = document.querySelector(".season-type-btn.active");
+  const yearInput = document.getElementById("startSeasonYear");
+  if (!activeBtn || !yearInput) return;
+
+  const type = activeBtn.dataset.type;
+  const year = parseInt(yearInput.value);
+  if (!year || year < 2000 || year > 2100) { showToast("Год от 2000 до 2100"); return; }
+
+  const cfg = SEASON_TYPES_ADMIN[type];
+  if (!cfg) { showToast("Неверный тип сезона"); return; }
+
+  const dates = getSeasonDates(type, year);
+
+  try {
+    const { doc, setDoc, serverTimestamp } = await import('./firebase.js');
+    const seasonId = type + "-" + year;
+    const newSeason = {
+      id: seasonId,
+      type: type,
+      name: cfg.name,
+      emoji: cfg.emoji,
+      year: year,
+      startedAt: dates.start,
+      endsAt: dates.end,
+      createdAt: new Date()
+    };
+
+    // Обновляем settings/seasons: current = новый, history не трогаем
+    const { db: _db } = await import('./firebase.js');
+    const seasonRef = doc(_db, "settings", "seasons");
+    const snap = await getDoc(seasonRef);
+    const existing = snap.exists() ? snap.data() : { history: [] };
+
+    await setDoc(seasonRef, {
+      current: newSeason,
+      history: existing.history || [],
+      updatedAt: serverTimestamp()
+    });
+
+    showToast("Сезон запущен: " + cfg.emoji + " " + cfg.name + " " + year, { gold: true });
+
+    adminCloseStartSeasonModal();
+    renderAdminSeasons();
+
+    // Обновляем локальный сезон немедленно
+    if (callbacks.onSeasonChanged) callbacks.onSeasonChanged();
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+  }
+}
+
+// ============================================================
+// Завершение сезона
+// ============================================================
+export async function adminFinishSeason() {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) return;
+  const season = callbacks.getCurrentSeason ? callbacks.getCurrentSeason() : null;
+  if (!season) { showToast("Нет активного сезона"); return; }
+
+  const ok = await showConfirm({
+    icon: "🏁",
+    title: "Завершить сезон?",
+    text: "Сезон «" + (season.name || "") + " " + (season.year || "") + "» будет перемещён в историю. Сайт вернётся к схеме юзера.",
+    okText: "Завершить",
+    okClass: "btn-danger"
+  });
+  if (!ok) return;
+
+  try {
+    const { doc, setDoc, getDoc, serverTimestamp } = await import('./firebase.js');
+    const { db: _db } = await import('./firebase.js');
+
+    const seasonRef = doc(_db, "settings", "seasons");
+    const snap = await getDoc(seasonRef);
+    const existing = snap.exists() ? snap.data() : { history: [] };
+
+    const history = existing.history || [];
+    // Не дублируем, если уже там
+    if (!history.some(h => h.id === season.id)) {
+      history.push({ ...season, finishedAt: new Date() });
+    }
+
+    await setDoc(seasonRef, {
+      current: null,
+      history: history,
+      updatedAt: serverTimestamp()
+    });
+
+    showToast("Сезон завершён", { success: true });
+    renderAdminSeasons();
+    if (callbacks.onSeasonChanged) callbacks.onSeasonChanged();
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+  }
+}
+
+// ============================================================
+// Удаление сезона из истории
+// ============================================================
+export async function adminDeleteSeasonFromHistory(seasonId) {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) return;
+  if (!seasonId) return;
+
+  const ok = await showConfirm({
+    icon: "🗑",
+    title: "Удалить сезон из истории?",
+    text: "Запись исчезнет безвозвратно. Оценки юзеров не пострадают.",
+    okText: "Удалить",
+    okClass: "btn-danger"
+  });
+  if (!ok) return;
+
+  try {
+    const { doc, setDoc, getDoc, serverTimestamp } = await import('./firebase.js');
+    const { db: _db } = await import('./firebase.js');
+
+    const seasonRef = doc(_db, "settings", "seasons");
+    const snap = await getDoc(seasonRef);
+    if (!snap.exists()) return;
+    const existing = snap.data();
+    const history = (existing.history || []).filter(h => h.id !== seasonId);
+
+    await setDoc(seasonRef, {
+      current: existing.current || null,
+      history: history,
+      updatedAt: serverTimestamp()
+    });
+
+    showToast("Удалено из истории");
+    renderAdminSeasons();
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
   }
 }

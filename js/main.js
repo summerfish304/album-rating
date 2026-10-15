@@ -94,7 +94,12 @@ import {
   adminEditRelease, closeEditRelease, saveEditRelease, resetEditRelease,
   adminDeleteReleaseFromBoard,
   publishAnnouncement, deleteAnnouncement,
-  adminJumpToComment, adminDeleteReportedComment, clearCommentReports
+  adminJumpToComment, adminDeleteReportedComment, clearCommentReports,
+  // === Сезоны (новое) ===
+  adminOpenStartSeasonModal, adminCloseStartSeasonModal,
+  adminSelectSeasonType, adminUpdateSeasonYear,
+  adminConfirmStartSeason, adminFinishSeason,
+  adminDeleteSeasonFromHistory, renderAdminSeasons
 } from './admin.js';
 
 import {
@@ -754,10 +759,19 @@ function getAdminCallbacks() {
     onSwitchNav: (nav) => switchNav(nav),
     onOpenBoardModal: (group) => openBoardModal(group),
     onPushActivity: pushActivity,
-    onReloadAlbum: () => { /* album рендерится в ratings.js, но можно перерисовать */ },
+    onReloadAlbum: () => {},
     onRenderMaintenance: renderAdminMaintenance,
     getCurrentAlbum: () => getCurrentAlbum(),
     getCurrentTracks: () => getCurrentTracks(),
+    getCurrentSeason: () => getCurrentSeason(),
+    getSeasonHistory: () => getSeasonHistory(),
+    onSeasonChanged: () => {
+      // Перечитать сезон из Firestore и перерисовать всё
+      loadSeasonOnce().then(() => {
+        applySeasonTheme();
+        renderSeasonBanner();
+      });
+    },
     onAfterDeleteRelease: () => {
       loadMyRatings().then(() => {
         updateUserRatingCount();
@@ -827,6 +841,13 @@ window.approveSuggestion = approveSuggestion;
 window.rejectSuggestion = rejectSuggestion;
 window.deleteSuggestion = deleteSuggestion;
 window.createRelease = createRelease;
+window.adminOpenStartSeasonModal = adminOpenStartSeasonModal;
+window.adminCloseStartSeasonModal = adminCloseStartSeasonModal;
+window.adminSelectSeasonType = adminSelectSeasonType;
+window.adminUpdateSeasonYear = adminUpdateSeasonYear;
+window.adminConfirmStartSeason = adminConfirmStartSeason;
+window.adminFinishSeason = adminFinishSeason;
+window.adminDeleteSeasonFromHistory = adminDeleteSeasonFromHistory;
 
 window.closeModal = closeModal;
 window.toggleHelp = toggleHelp;

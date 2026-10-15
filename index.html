@@ -518,6 +518,7 @@
       <button class="admin-tab" data-admin="addrelease" onclick="switchAdminTab('addrelease')">➕ Релиз</button>
       <button class="admin-tab" data-admin="announcement" onclick="switchAdminTab('announcement')">📢 Объявление</button>
       <button class="admin-tab" data-admin="maintenance" onclick="switchAdminTab('maintenance')">🔧 Техработы</button>
+      <button class="admin-tab" data-admin="seasons" onclick="switchAdminTab('seasons')">🍂 Сезоны</button>
     </div>
 
     <div id="adminDashboard"></div>
@@ -527,6 +528,7 @@
     <div id="adminAddRelease" class="hidden"></div>
     <div id="adminAnnouncement" class="hidden"></div>
     <div id="adminMaintenance" class="hidden"></div>
+    <div id="adminSeasons" class="hidden"></div>
   </div>
 </div>
 
@@ -886,6 +888,44 @@
 <!-- КОНТЕЙНЕР ДОСТИЖЕНИЙ -->
 <div id="achievementToasts"></div>
 
+<!-- МОДАЛКА ЗАПУСКА СЕЗОНА (АДМИН) -->
+<div class="modal-backdrop" id="startSeasonBackdrop" onclick="if(event.target===this) adminCloseStartSeasonModal()">
+  <div class="modal" id="startSeasonModal">
+    <button class="close-btn" onclick="adminCloseStartSeasonModal()" title="Закрыть">✕</button>
+    <div class="track-header">
+      <div class="info">
+        <div class="track-title">🚀 Запустить новый сезон</div>
+        <div class="track-artist">Юзеры сразу увидят баннер, тему и награды</div>
+      </div>
+    </div>
+
+    <label>Тип сезона</label>
+    <div class="season-type-grid">
+      <button type="button" class="season-type-btn" data-type="autumn" onclick="adminSelectSeasonType('autumn')">
+        <span class="st-icon">🍂</span><span class="st-name">Осень</span>
+      </button>
+      <button type="button" class="season-type-btn" data-type="winter" onclick="adminSelectSeasonType('winter')">
+        <span class="st-icon">❄️</span><span class="st-name">Зима</span>
+      </button>
+      <button type="button" class="season-type-btn" data-type="spring" onclick="adminSelectSeasonType('spring')">
+        <span class="st-icon">🌸</span><span class="st-name">Весна</span>
+      </button>
+      <button type="button" class="season-type-btn" data-type="summer" onclick="adminSelectSeasonType('summer')">
+        <span class="st-icon">☀️</span><span class="st-name">Лето</span>
+      </button>
+    </div>
+
+    <label style="margin-top:16px;">Год</label>
+    <input type="number" id="startSeasonYear" min="2000" max="2100" style="margin-bottom:12px;" oninput="adminUpdateSeasonYear()">
+
+    <div class="start-season-preview" id="startSeasonPreview"></div>
+
+    <div style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button onclick="adminConfirmStartSeason()">🚀 Запустить сезон</button>
+      <button class="btn-secondary" onclick="adminCloseStartSeasonModal()">Отмена</button>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="js/main.js"></script>
 </body>
