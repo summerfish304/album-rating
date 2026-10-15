@@ -826,6 +826,8 @@ function renderThemeModeSwitcher() {
   if (pt) {
     pt.onchange = () => {
       if (callbacks.setParticlesOff) callbacks.setParticlesOff(!pt.checked);
+      // Мгновенно применяем изменения — перезапускаем/останавливаем частицы
+      if (callbacks.applySeasonTheme) callbacks.applySeasonTheme();
       showToast(pt.checked ? "Фон включён" : "Фон отключён");
     };
   }
