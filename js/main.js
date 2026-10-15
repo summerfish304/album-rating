@@ -102,11 +102,12 @@ import {
   loadSeasonOnce, subscribeSeason,
   getCurrentSeason, getSeasonHistory,
   applySeasonTheme, renderSeasonBanner,
-  setUserScheme, setThemePreference, loadThemePreferenceFromLocal
+  setUserScheme, setThemePreference, loadThemePreferenceFromLocal,
+  getThemePreference
 } from './season.js';
 
 import { isParticlesOff, setParticlesOff } from './season-particles.js';
-import { getThemePreference, setThemePreference } from './season.js';
+
 
 // ============================================================
 // Состояние main.js
