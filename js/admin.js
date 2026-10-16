@@ -57,6 +57,7 @@ export function switchAdminTab(tab) {
     dashboard: "adminDashboard",
     users: "adminUsers",
     reports: "adminReports",
+    reviews: "adminReviews",
     suggestions: "adminSuggestions",
     addrelease: "adminAddRelease",
     announcement: "adminAnnouncement",
@@ -70,6 +71,7 @@ export function switchAdminTab(tab) {
   if (tab === "dashboard") renderAdminDashboard();
   if (tab === "users") renderAdminUsers();
   if (tab === "reports") renderAdminReports();
+  if (tab === "reviews") renderAdminReviews();
   if (tab === "suggestions") renderAdminSuggestions();
   if (tab === "addrelease") renderAdminAddRelease();
   if (tab === "announcement") renderAdminAnnouncement();
@@ -215,49 +217,91 @@ export async function renderAdminReports() {
   try {
     const snap = await getDocs(collection(db, "reports"));
     const reports = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+
+    // Группируем жалобы
+    // Для новых жалоб на рецензии — reviewId
+    // Для старых — commentId (совместимость)
     const groups = {};
     reports.forEach(r => {
-      if (!groups[r.commentId]) groups[r.commentId] = { commentId: r.commentId, source: r.source, releaseId: r.releaseId, reports: [] };
-      groups[r.commentId].reports.push(r);
+      const key = r.reviewId || r.commentId;
+      if (!key) return;
+      if (!groups[key]) {
+        groups[key] = {
+          targetId: key,
+          isReview: !!r.reviewId,
+          source: r.source,
+          releaseId: r.releaseId,
+          reports: []
+        };
+      }
+      groups[key].reports.push(r);
     });
+
     const list = Object.values(groups).sort((a, b) => b.reports.length - a.reports.length);
+
+    // Бейдж
     const badge = document.getElementById("reportsBadge");
     if (badge) {
-      if (list.length > 0) { badge.textContent = list.length; badge.style.display = "inline-flex"; badge.classList.remove("hidden"); }
-      else { badge.style.display = "none"; badge.classList.add("hidden"); }
+      if (list.length > 0) {
+        badge.textContent = list.length;
+        badge.style.display = "inline-flex";
+        badge.classList.remove("hidden");
+      } else {
+        badge.style.display = "none";
+        badge.classList.add("hidden");
+      }
     }
+
     if (list.length === 0) {
       el.innerHTML = '<div class="empty-msg">Жалоб пока нет 🎉</div>';
       return;
     }
+
     el.innerHTML = "";
     for (const g of list) {
-      let commentData = null;
-      try {
-        const cs = await getDoc(doc(db, "comments", g.commentId));
-        if (cs.exists()) commentData = cs.data();
-      } catch (e) {}
+      let reviewData = null;
+      if (g.isReview) {
+        try {
+          const rs = await getDoc(doc(db, "reviews", g.targetId));
+          if (rs.exists()) reviewData = rs.data();
+        } catch (e) {}
+      } else {
+        // legacy: комментарий
+        try {
+          const cs = await getDoc(doc(db, "comments", g.targetId));
+          if (cs.exists()) reviewData = cs.data();
+        } catch (e) {}
+      }
+
       const div = document.createElement("div");
       div.className = "report-item";
       const count = g.reports.length;
-      let commentHtml = '<div class="report-comment" style="color:var(--danger); font-style:italic;">Комментарий удалён</div>';
-      if (commentData) {
-        commentHtml = '<div class="report-comment">' +
-          '<b style="color:var(--text);">' + escapeHtml(commentData.nickname || "—") + ':</b> ' + escapeHtml(commentData.text || "") +
-        '</div>';
+
+      let contentHtml = '<div class="report-comment" style="color:var(--danger); font-style:italic;">Рецензия удалена</div>';
+      if (reviewData) {
+        // Убираем markdown-звёздочки для читаемости в жалобе
+        const cleanText = (reviewData.text || "").replace(/\*\*/g, "").replace(/\*/g, "");
+        const preview = cleanText.length > 300 ? cleanText.slice(0, 300) + "…" : cleanText;
+        contentHtml =
+          '<div class="report-comment">' +
+            '<b style="color:var(--text);">' + escapeHtml(reviewData.nickname || "—") + ':</b> ' +
+            escapeHtml(preview) +
+          '</div>';
       }
+
       const reportersList = g.reports.map(r => escapeHtml(r.reporterNickname || "?")).join(", ");
+
       div.innerHTML =
         '<div class="head">' +
           '<span class="who">На релиз <b>' + escapeHtml(g.source) + '_' + escapeHtml(String(g.releaseId)) + '</b> · жалобщики: ' + reportersList + '</span>' +
           '<span class="report-count">🚨 ' + count + ' ' + plural(count, "жалоба", "жалобы", "жалоб") + '</span>' +
         '</div>' +
-        commentHtml +
+        contentHtml +
         '<div class="actions">' +
-          (commentData ? '<button class="btn-secondary" onclick="adminJumpToComment(\'' + g.source + '\',\'' + g.releaseId + '\')">👁 Показать релиз</button>' : '') +
-          '<button class="btn-danger" onclick="adminDeleteReportedComment(\'' + g.commentId + '\')">🗑 Удалить комментарий</button>' +
-          (commentData ? '<button class="btn-danger" onclick="openBanModal(\'' + commentData.uid + '\',\'' + escapeHtml(commentData.nickname || "").replace(/'/g, "\\'") + '\')">🚫 Забанить автора</button>' : '') +
-          '<button class="btn-secondary" onclick="clearCommentReports(\'' + g.commentId + '\')">✓ Жалобы обработаны</button>' +
+          (reviewData ? '<button class="btn-secondary" onclick="adminJumpToComment(\'' + g.source + '\',\'' + g.releaseId + '\')">👁 Показать релиз</button>' : '') +
+          '<button class="btn-danger" onclick="adminDeleteReportedReview(\'' + g.targetId + '\',\'' + (g.isReview ? "review" : "comment") + '\')">🗑 Удалить рецензию</button>' +
+          (reviewData && reviewData.uid ? '<button class="btn-danger" onclick="openBanModal(\'' + reviewData.uid + '\',\'' + escapeHtml(reviewData.nickname || "").replace(/'/g, "\\'") + '\')">🚫 Забанить автора</button>' : '') +
+          '<button class="btn-secondary" onclick="clearReviewReports(\'' + g.targetId + '\')">✓ Жалобы обработаны</button>' +
         '</div>';
       el.appendChild(div);
     }
@@ -1086,4 +1130,138 @@ export async function adminRecountAwards(seasonId) {
   } finally {
     showFloatingLoader(false);
   }
+}
+
+// ============================================================
+// УДАЛЕНИЕ РЕЦЕНЗИИ ИЗ ЖАЛОБ
+// ============================================================
+export async function adminDeleteReportedReview(targetId, type) {
+  const collectionName = type === "review" ? "reviews" : "comments";
+  const ok = await showConfirm({
+    icon: "🗑",
+    title: "Удалить рецензию?",
+    text: "Рецензия и все жалобы на неё будут удалены.",
+    okText: "Удалить",
+    okClass: "btn-danger"
+  });
+  if (!ok) return;
+
+  try {
+    await deleteDoc(doc(db, collectionName, targetId));
+
+    // Удаляем жалобы
+    const field = type === "review" ? "reviewId" : "commentId";
+    const rs = await getDocs(query(collection(db, "reports"), where(field, "==", targetId)));
+    await Promise.all(rs.docs.map(d => deleteDoc(doc(db, "reports", d.id))));
+
+    showToast("Рецензия и жалобы удалены", { success: true });
+    renderAdminReports();
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+  }
+}
+
+// ============================================================
+// ОЧИСТКА ЖАЛОБ БЕЗ УДАЛЕНИЯ РЕЦЕНЗИИ
+// ============================================================
+export async function clearReviewReports(targetId) {
+  try {
+    const rs = await getDocs(query(collection(db, "reports"), where("reviewId", "==", targetId)));
+    const rs2 = await getDocs(query(collection(db, "reports"), where("commentId", "==", targetId)));
+
+    await Promise.all([
+      ...rs.docs.map(d => deleteDoc(doc(db, "reports", d.id))),
+      ...rs2.docs.map(d => deleteDoc(doc(db, "reports", d.id)))
+    ]);
+
+    showToast("Жалобы обработаны", { success: true });
+    renderAdminReports();
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+  }
+}
+
+// ============================================================
+// ВКЛАДКА «РЕЦЕНЗИИ» — все рецензии с модерацией
+// ============================================================
+export async function renderAdminReviews() {
+  const el = document.getElementById("adminReviews");
+  if (!el) return;
+
+  el.innerHTML = '<div class="empty-msg"><span class="spinner"></span> Загрузка…</div>';
+
+  try {
+    const snap = await getDocs(collection(db, "reviews"));
+    const reviews = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    reviews.sort((a, b) => (b.ts?.seconds || 0) - (a.ts?.seconds || 0));
+
+    if (reviews.length === 0) {
+      el.innerHTML = '<div class="empty-msg">Пока никто не написал рецензий.</div>';
+      return;
+    }
+
+    el.innerHTML =
+      '<div class="hint" style="margin-bottom:12px;">Всего рецензий: <b>' + reviews.length + '</b>. Свежие — сверху.</div>';
+
+    reviews.forEach(r => {
+      const div = document.createElement("div");
+      div.className = "review-item";
+      div.style.marginBottom = "10px";
+
+      const album = r.album || {};
+      const time = r.ts?.seconds ? formatTime(r.ts.seconds) : "";
+
+      // Считаем превью текста
+      const cleanText = (r.text || "").replace(/\*\*/g, "").replace(/\*/g, "");
+      const preview = cleanText.length > 300 ? cleanText.slice(0, 300) + "…" : cleanText;
+
+      div.innerHTML =
+        '<div class="review-avatar" style="background:' + colorFromString(r.nickname || "?") + '">' +
+          escapeHtml(r.avatar || "🎵") +
+        '</div>' +
+        '<div class="review-body">' +
+          '<div class="review-head">' +
+            '<span class="review-nick">' + escapeHtml(r.nickname || "—") + '</span>' +
+            '<span class="review-time">' + time + '</span>' +
+          '</div>' +
+          (album.artwork
+            ? '<div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">' +
+                '<img src="' + escapeHtml(album.artwork) + '" style="width:36px; height:36px; border-radius:6px; object-fit:cover;" alt="" onerror="this.style.visibility=\'hidden\'">' +
+                '<div style="min-width:0;">' +
+                  '<div style="font-size:.85rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + escapeHtml(album.title || "—") + '</div>' +
+                  '<div style="font-size:.72rem; color:var(--text-dim);">' + escapeHtml(album.artist || "") + '</div>' +
+                '</div>' +
+              '</div>'
+            : '') +
+          '<div class="review-text">' + escapeHtml(preview) + '</div>' +
+          '<div class="review-actions">' +
+            '<button class="review-action-btn btn-secondary" onclick="adminJumpToComment(\'' + escapeHtml(r.source) + '\',\'' + escapeHtml(String(r.releaseId)) + '\')">👁 Показать релиз</button>' +
+            '<button class="review-action-btn review-delete-btn" onclick="adminDeleteReviewManually(\'' + r._id + '\')">🗑 Удалить</button>' +
+            (r.uid && r.uid !== ADMIN_UID
+              ? '<button class="review-action-btn review-report-btn" onclick="openBanModal(\'' + r.uid + '\',\'' + escapeHtml(r.nickname || "").replace(/'/g, "\\'") + '\')">🚫 Забанить</button>'
+              : '') +
+          '</div>' +
+        '</div>';
+      el.appendChild(div);
+    });
+  } catch (e) {
+    el.innerHTML = '<div class="error">Ошибка: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+// Удалить рецензию вручную из админки
+export async function adminDeleteReviewManually(reviewId) {
+  const ok = await showConfirm({
+    icon: "🗑",
+    title: "Удалить рецензию?",
+    text: "Рецензия будет удалена безвозвратно.",
+    okText: "Удалить",
+    okClass: "btn-danger"
+  });
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, "reviews", reviewId));
+    showToast("Рецензия удалена", { success: true });
+    renderAdminReviews();
+  } catch (e) { showToast("Ошибка: " + e.message); }
 }

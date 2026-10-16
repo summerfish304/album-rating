@@ -95,8 +95,9 @@ import {
   adminEditRelease, closeEditRelease, saveEditRelease, resetEditRelease,
   adminDeleteReleaseFromBoard,
   publishAnnouncement, deleteAnnouncement,
-  adminJumpToComment, adminDeleteReportedComment, clearCommentReports,
-  // === Сезоны ===
+  adminJumpToComment,
+  adminDeleteReportedReview, clearReviewReports,
+  renderAdminReviews, adminDeleteReviewManually,
   adminOpenStartSeasonModal, adminCloseStartSeasonModal,
   adminSelectSeasonType, adminUpdateSeasonYear,
   adminConfirmStartSeason, adminFinishSeason,
@@ -938,8 +939,9 @@ window.clearNowPlaying = clearNowPlaying;
 
 window.openShareDialog = openShareDialog;
 window.adminJumpToComment = adminJumpToComment;
-window.adminDeleteReportedComment = adminDeleteReportedComment;
-window.clearCommentReports = clearCommentReports;
+window.adminDeleteReportedReview = adminDeleteReportedReview;
+window.clearReviewReports = clearReviewReports;
+window.adminDeleteReviewManually = adminDeleteReviewManually;
 
 // ============================================================
 // INIT
