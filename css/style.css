@@ -4663,5 +4663,171 @@ body.theme-season-active .scheme-grid:hover {
   font-size: .92em;
   border: 1px solid var(--border-soft);
 }
-/* Сезон доминирует над схемой пользователя:
-   сезонные классы идут после .scheme-* в CSS → выигрывают по каскаду. */
+
+/* ============================================================
+   РЕЦЕНЗИИ В МОДАЛКЕ ДОСКИ
+   ============================================================ */
+.reviews-section {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-soft);
+}
+.reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.reviews-header h3 {
+  font-size: .95rem;
+  color: var(--text);
+}
+
+.reviews-empty {
+  text-align: center;
+  padding: 24px 14px;
+  color: var(--text-dim);
+}
+.reviews-empty-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: .5;
+}
+.reviews-empty-text {
+  font-size: .85rem;
+  margin-bottom: 12px;
+}
+
+.review-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  margin-bottom: 10px;
+  animation: fadeUp .3s ease;
+  position: relative;
+}
+.review-item.my-review {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(124,108,240,.06), rgba(169,155,255,.03));
+}
+.review-item.admin-review {
+  border-left: 3px solid var(--gold-lvl);
+  background: linear-gradient(90deg, rgba(245,196,81,.06), transparent 60%);
+}
+
+.review-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  position: relative;
+}
+.review-avatar .mini-level {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--xp-1), var(--xp-2));
+  color: #1a1a1a;
+  font-size: .55rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px var(--panel-2);
+}
+
+.review-body {
+  flex: 1;
+  min-width: 0;
+}
+.review-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.review-nick {
+  font-weight: 700;
+  color: var(--text);
+  font-size: .85rem;
+  cursor: pointer;
+  transition: color .15s;
+}
+.review-nick:hover { color: var(--accent-3); }
+.review-nick.admin-nick {
+  background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.review-time {
+  font-size: .72rem;
+  color: var(--text-dim);
+}
+.review-edited {
+  font-style: italic;
+  opacity: .7;
+}
+
+.review-text {
+  font-size: .9rem;
+  color: var(--text-mid);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.review-text strong { color: var(--text); font-weight: 700; }
+.review-text em { color: var(--accent-3); font-style: italic; }
+
+.review-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.review-action-btn {
+  padding: 5px 10px;
+  font-size: .72rem;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.review-action-btn:hover {
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+.review-delete-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(255,107,138,.1);
+}
+.review-rewrite-btn:hover {
+  color: var(--accent-3);
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+.review-report-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(255,107,138,.1);
+}

@@ -239,7 +239,7 @@ export async function openBoardModal(group, callbacks) {
   if (currentUser && currentUser.uid === ADMIN_UID) document.getElementById("adminBoardQuick").classList.remove("hidden");
   else document.getElementById("adminBoardQuick").classList.add("hidden");
   renderBoardModalUsers(group, callbacks);
-  await loadComments(group.source, group.releaseId, callbacks);
+  await loadReviews(group.source, group.releaseId, callbacks);
   document.getElementById("boardModalBackdrop").classList.add("open");
   document.body.style.overflow = "hidden";
 }
@@ -828,3 +828,206 @@ export async function renderHotToday(callbacks) {
 // Экспорт вспомогательного для main.js
 // ============================================================
 export function setCurrentTopTab(tab) { currentTopTab = tab; }
+
+// ============================================================
+// РЕЦЕНЗИИ (замена комментариев)
+// ============================================================
+
+// Загрузить все рецензии к релизу
+export async function loadReviews(source, releaseId, callbacks) {
+  const listEl = document.getElementById("reviewsList");
+  const countEl = document.getElementById("reviewsCount");
+  if (!listEl) return;
+
+  listEl.innerHTML = '<div class="empty-msg" style="padding:14px;"><span class="spinner"></span></div>';
+
+  try {
+    const q = query(
+      collection(db, "reviews"),
+      where("source", "==", source),
+      where("releaseId", "==", String(releaseId))
+    );
+    const snap = await getDocs(q);
+    let items = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    // Сортируем: сначала свежие
+    items.sort((a, b) => (b.ts?.seconds || 0) - (a.ts?.seconds || 0));
+
+    if (countEl) countEl.textContent = items.length ? "(" + items.length + ")" : "";
+
+    if (items.length === 0) {
+      listEl.innerHTML =
+        '<div class="reviews-empty">' +
+          '<div class="reviews-empty-icon">📝</div>' +
+          '<div class="reviews-empty-text">Пока никто не написал рецензию на этот релиз.</div>' +
+          (currentUser
+            ? '<button class="btn-secondary btn-sm" onclick="openCalculatorFromBoard()">✏️ Оценить и написать</button>'
+            : '') +
+        '</div>';
+      return;
+    }
+
+    listEl.innerHTML = "";
+    items.forEach(r => {
+      listEl.appendChild(buildReviewItem(r, source, releaseId, callbacks));
+    });
+  } catch (e) {
+    listEl.innerHTML = '<div class="error">Ошибка: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+// Один блок рецензии
+function buildReviewItem(review, source, releaseId, callbacks) {
+  const el = document.createElement("div");
+  const isAdmin = review.uid === ADMIN_UID;
+  const isMe = currentUser && review.uid === currentUser.uid;
+  el.className = "review-item" + (isAdmin ? " admin-review" : "") + (isMe ? " my-review" : "");
+
+  const time = review.ts?.seconds ? formatTime(review.ts.seconds) : "";
+  const lvl = isAdmin ? "👑" : (review.level || 1);
+  const avatar = review.avatar || "🎵";
+  const nick = review.nickname || "Без имени";
+  const edited = review.editedAt ? ' <span class="review-edited">(изм.)</span>' : '';
+
+  el.innerHTML =
+    '<div class="review-avatar" style="background:' + colorFromString(nick) + '">' +
+      escapeHtml(avatar) +
+      '<span class="mini-level' + (isAdmin ? ' admin-mini' : '') + '">' + lvl + '</span>' +
+    '</div>' +
+    '<div class="review-body">' +
+      '<div class="review-head">' +
+        '<span class="review-nick' + (isAdmin ? " admin-nick" : "") + '" data-uid="' + review.uid + '">' +
+          escapeHtml(nick) + (isAdmin ? " 👑" : "") +
+        '</span>' +
+        '<span class="review-time">' + time + edited + '</span>' +
+      '</div>' +
+      '<div class="review-text">' + formatReviewText(review.text || "") + '</div>' +
+      '<div class="review-actions">' +
+        (isMe
+          ? '<button class="review-action-btn review-delete-btn" title="Удалить рецензию">🗑 Удалить</button>' +
+            '<button class="review-action-btn review-rewrite-btn" title="Удалить и написать заново">✏️ Написать заново</button>'
+          : (currentUser && !isAdmin
+              ? '<button class="review-action-btn review-report-btn" title="Пожаловаться">⚠️ Пожаловаться</button>'
+              : '')
+        ) +
+      '</div>' +
+    '</div>';
+
+  // Клик по нику — открыть профиль
+  const nickEl = el.querySelector(".review-nick");
+  if (nickEl && callbacks && callbacks.onOpenUserProfile) {
+    nickEl.onclick = (ev) => {
+      ev.stopPropagation();
+      callbacks.onOpenUserProfile(review.uid);
+    };
+  }
+
+  // Удалить
+  const delBtn = el.querySelector(".review-delete-btn");
+  if (delBtn) {
+    delBtn.onclick = () => deleteReview(review._id, source, releaseId, callbacks);
+  }
+
+  // Написать заново
+  const rewriteBtn = el.querySelector(".review-rewrite-btn");
+  if (rewriteBtn) {
+    rewriteBtn.onclick = () => rewriteReview(review, source, releaseId, callbacks);
+  }
+
+  // Жалоба
+  const reportBtn = el.querySelector(".review-report-btn");
+  if (reportBtn) {
+    reportBtn.onclick = () => reportReview(review._id, source, releaseId);
+  }
+
+  return el;
+}
+
+// Форматирование текста: **жирный**, *курсив*, переносы
+export function formatReviewText(text) {
+  if (!text) return "";
+  let html = escapeHtml(text);
+
+  // Жирный **текст**
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Курсив *текст* (но не трогаем уже преобразованные **)
+  html = html.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  // Переносы строк
+  html = html.replace(/\n/g, "<br>");
+
+  return html;
+}
+
+// Удалить свою рецензию
+async function deleteReview(reviewId, source, releaseId, callbacks) {
+  const ok = await showConfirm({
+    icon: "🗑",
+    title: "Удалить рецензию?",
+    text: "Рецензию нельзя восстановить. Вы сможете написать новую на этот же релиз.",
+    okText: "Удалить",
+    okClass: "btn-danger"
+  });
+  if (!ok) return;
+
+  try {
+    await deleteDoc(doc(db, "reviews", reviewId));
+    showToast("Рецензия удалена", { success: true });
+    await loadReviews(source, releaseId, callbacks);
+  } catch (e) { showToast("Ошибка: " + e.message); }
+}
+
+// Написать заново: удаляет и открывает калькулятор
+async function rewriteReview(review, source, releaseId, callbacks) {
+  const ok = await showConfirm({
+    icon: "✏️",
+    title: "Написать заново?",
+    text: "Старая рецензия будет удалена. Откроется экран оценки релиза, где вы сможете написать новую.",
+    okText: "Продолжить",
+    okClass: "btn-secondary"
+  });
+  if (!ok) return;
+
+  try {
+    await deleteDoc(doc(db, "reviews", review._id));
+    showToast("Старая рецензия удалена", { success: true });
+
+    // Закрываем модалку и открываем калькулятор
+    closeBoardModal();
+    if (callbacks && callbacks.onSwitchNav) callbacks.onSwitchNav("main");
+    // Загружаем этот же релиз в калькулятор
+    setTimeout(() => {
+      if (callbacks && callbacks.onLoadAlbum) {
+        callbacks.onLoadAlbum({ id: review.releaseId, title: "", cover: "", source: review.source });
+      }
+    }, 300);
+  } catch (e) { showToast("Ошибка: " + e.message); }
+}
+
+// Пожаловаться на рецензию
+async function reportReview(reviewId, source, releaseId) {
+  if (!currentUser) { showToast("Нужно войти"); return; }
+  if (myReportedComments.has(reviewId)) { showToast("Вы уже жаловались на эту рецензию"); return; }
+
+  const ok = await showConfirm({
+    icon: "⚠️",
+    title: "Пожаловаться на рецензию?",
+    text: "Жалоба будет отправлена администрации.",
+    okText: "Пожаловаться",
+    okClass: "btn-danger"
+  });
+  if (!ok) return;
+
+  try {
+    await addDoc(collection(db, "reports"), {
+      reviewId: reviewId,
+      reporterUid: currentUser.uid,
+      reporterNickname: userProfile.nickname,
+      source: source,
+      releaseId: String(releaseId),
+      type: "review",
+      ts: serverTimestamp()
+    });
+    myReportedComments.add(reviewId);
+    saveLocalReported();
+    showToast("Жалоба отправлена", { success: true });
+  } catch (e) { showToast("Ошибка: " + e.message); }
+}

@@ -65,13 +65,13 @@ import {
 } from './ratings.js';
 
 import {
-  setBoardContext, getBoardData, getBoardModalRelease,
+  setBoardContext, getBoardData, getBoardModalRelease, getMyReportedComments,
   loadLocalReported, saveLocalReported,
-  refreshBoard, renderBoard, onBoardSearchInput,
+  refreshBoard, renderBoard, renderBoardDynamicStats, onBoardSearchInput,
   openBoardModal, closeBoardModal,
-  loadComments, submitComment, reportComment, replyToComment,
+  loadReviews, formatReviewText,
   switchTopTab, renderTops,
-  subscribeFeed, refreshFeed, renderHotToday
+  subscribeFeed, refreshFeed, renderFeed, renderHotToday
 } from './board.js';
 
 import {
@@ -917,8 +917,6 @@ window.publishAnnouncement = publishAnnouncement;
 window.deleteAnnouncement = deleteAnnouncement;
 
 window.refreshFeed = () => refreshFeed(getFeedCallbacks());
-window.reportComment = reportComment;
-window.replyToComment = replyToComment;
 window.openUserProfile = (uid) => openUserProfile(uid, {
   onOpenRelease: (src, rid) => {
     const group = getBoardData().find(b => b.source === src && b.releaseId === String(rid));
