@@ -690,14 +690,18 @@ function buildMiniFeedItem(item, callbacks) {
           '<div class="mini-feed-score" style="color:' + tier.color + '">' + (item.final || 0) + '</div>' +
         '</div>';
     }
-  } else if (item.type === "comment") {
-    icon = "💬";
+  } else if (item.type === "review") {
+    icon = "📝";
+    const text = item.text || "";
+    const preview = text.length > 120 ? text.slice(0, 120) + "…" : text;
+    // Убираем markdown-звёздочки для превью в ленте
+    const cleanPreview = preview.replace(/\*\*/g, "").replace(/\*/g, "");
     content =
       '<div class="mini-feed-content">' +
         (item.releaseArtwork ? '<img src="' + escapeHtml(item.releaseArtwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '') +
         '<div class="mini-feed-text">' +
-          '<div class="mini-feed-comment">«' + escapeHtml((item.text || "").slice(0, 80)) + ((item.text || "").length > 80 ? "…" : "") + '»</div>' +
-          '<div class="mini-feed-sub">на ' + escapeHtml(item.releaseTitle || "") + '</div>' +
+          '<div class="mini-feed-review">«' + escapeHtml(cleanPreview) + '»</div>' +
+          '<div class="mini-feed-sub">рецензия на <b>' + escapeHtml(item.releaseTitle || "") + '</b></div>' +
         '</div>' +
       '</div>';
   } else if (item.type === "release") {

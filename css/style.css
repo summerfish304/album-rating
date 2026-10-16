@@ -1700,8 +1700,9 @@
     background: linear-gradient(135deg, rgba(126,224,212,.25), rgba(130,200,255,.15));
     color: var(--vibe-1);
   }
-  .feed-item.type-comment .feed-badge {
-    background: rgba(124,108,240,.2);
+  .feed-item.type-review .feed-badge {
+    background: linear-gradient(135deg, rgba(126,224,212,.25), rgba(124,108,240,.15));
+    color: var(--vibe-1);
   }
 
   /* ПРОФИЛЬ ЮЗЕРА (модалка) */
@@ -2037,9 +2038,10 @@
     color: var(--text);
     font-weight: 600;
   }
-  .mini-feed-comment {
+  .mini-feed-review {
     color: var(--text);
     font-style: italic;
+    line-height: 1.45;
   }
   .mini-feed-sub {
     font-size: .72rem;

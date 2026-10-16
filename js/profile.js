@@ -11,7 +11,6 @@ import { applyScheme, saveSchemeLocally } from './theme.js';
 import { spotifySearchAlbums, mapSpotifyAlbum } from './search.js';
 import { formatReviewText } from './board.js';
 import { showConfirm } from './confirm.js';
-import { deleteDoc } from './firebase.js';
 // ============================================================
 // Контекст (устанавливается из main.js)
 // ============================================================

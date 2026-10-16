@@ -1217,6 +1217,27 @@ async function saveReview(source, releaseId, album) {
       return { action: "updated" };
     } else {
       await setDoc(doc(db, "reviews", docId), reviewData);
+
+      // Пуш в ленту активности
+      try {
+        await addDoc(collection(db, "activity"), {
+          type: "review",
+          uid: currentUser.uid,
+          nickname: userProfile.nickname,
+          avatar: userProfile.avatar || "🎵",
+          level: getLevelByXp(userProfile.xp || 0).level,
+          releaseId: String(releaseId),
+          releaseTitle: album.title,
+          releaseArtist: album.artist,
+          releaseArtwork: album.artwork,
+          source: source,
+          text: text,
+          ts: serverTimestamp()
+        });
+      } catch (e) {
+        console.warn("Не удалось записать activity для рецензии:", e.message);
+      }
+
       return { action: "created" };
     }
   } catch (e) {
