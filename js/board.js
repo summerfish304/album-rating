@@ -33,9 +33,12 @@ let _boardSentinelObserver = null;
 // ============================================================
 // Геттеры/сеттеры
 // ============================================================
+let callbacks = {};
+
 export function setBoardContext(opts) {
   if (opts.currentUser !== undefined) currentUser = opts.currentUser;
   if (opts.userProfile !== undefined) userProfile = opts.userProfile;
+  if (opts.callbacks !== undefined) callbacks = opts.callbacks || {};
 }
 export function getBoardData() { return boardData; }
 export function getCompareSelection() { return compareSelection; }
@@ -225,12 +228,24 @@ function setupBoardSentinel(sentinel) {
 // ============================================================
 // Модалка релиза на доске
 // ============================================================
-export async function openBoardModal(group, callbacks) {
+export async function openBoardModal(group) {
   boardModalRelease = group;
   document.getElementById("boardModalCover").src = group.album.artwork || "";
   document.getElementById("boardModalCover").onerror = function() { this.style.visibility = "hidden"; };
   document.getElementById("boardModalTitle").textContent = group.album.title;
-  document.getElementById("boardModalArtist").textContent = group.album.artist;
+  // Делаем артиста кликабельным
+  const artistEl = document.getElementById("boardModalArtist");
+  const artistName = group.album.artist || "";
+  artistEl.textContent = artistName;
+  if (artistName && group.album.artistId) {
+    // Если у релиза есть artistId — сразу ссылка
+    artistEl.classList.add("clickable-artist");
+    artistEl.onclick = () => openArtistFromBoard(group.album.artistId);
+  } else {
+    // Если нет artistId — при клике ищем артиста через поиск Spotify
+    artistEl.classList.add("clickable-artist");
+    artistEl.onclick = () => openArtistByNameFromBoard(artistName);
+  }
   document.getElementById("boardModalAvg").textContent = group.avgFinal;
   document.getElementById("boardModalAvgHint").textContent = "из " + FINAL_MAX + " · " + group.userCount + " " + plural(group.userCount, "оценка", "оценки", "оценок");
   const hasAdmin = group.adminRating != null;
@@ -1034,4 +1049,22 @@ async function reportReview(reviewId, source, releaseId) {
     saveLocalReported();
     showToast("Жалоба отправлена", { success: true });
   } catch (e) { showToast("Ошибка: " + e.message); }
+}
+// ============================================================
+// КЛИК ПО АРТИСТУ ИЗ МОДАЛКИ ДОСКИ
+// ============================================================
+function openArtistFromBoard(artistId) {
+  if (!artistId) return;
+  closeBoardModal();
+  if (typeof window.openArtistFromBoard === "function") {
+    window.openArtistFromBoard(artistId);
+  }
+}
+
+function openArtistByNameFromBoard(artistName) {
+  if (!artistName) return;
+  closeBoardModal();
+  if (typeof window.openArtistByName === "function") {
+    window.openArtistByName(artistName);
+  }
 }

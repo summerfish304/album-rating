@@ -482,6 +482,7 @@
     <div class="profile-tabs" id="profileTabs">
       <button class="profile-tab active" data-tab="main" onclick="switchProfileTab('main')">👤 Профиль</button>
       <button class="profile-tab" data-tab="stats" onclick="switchProfileTab('stats')">📊 Статистика</button>
+      <button class="profile-tab" data-tab="artists" onclick="switchProfileTab('artists')">🎤 Артисты</button>
       <button class="profile-tab" data-tab="reviews" onclick="switchProfileTab('reviews')">📝 Рецензии</button>
       <button class="profile-tab" data-tab="achievements" onclick="switchProfileTab('achievements')">🏆 Достижения</button>
       <button class="profile-tab" data-tab="summary" onclick="switchProfileTab('summary')">📅 Итоги</button>
@@ -573,6 +574,14 @@
         <h2>🎧 Сейчас слушаю</h2>
       </div>
       <div id="nowPlayingSection"></div>
+    </div>
+
+    <!-- СЕКЦИЯ: МОИ АРТИСТЫ -->
+    <div class="profile-section hidden" data-section="artists">
+      <div class="history-header" style="margin-top: 20px;">
+        <h2>🎤 Мои артисты <span class="hint" id="myArtistsCount" style="margin:0; font-weight:400;"></span></h2>
+      </div>
+      <div id="myArtistsList"></div>
     </div>
 
     <!-- СЕКЦИЯ: РЕЦЕНЗИИ -->
@@ -982,6 +991,56 @@
 
 <!-- КОНТЕЙНЕР ДОСТИЖЕНИЙ -->
 <div id="achievementToasts"></div>
+
+<!-- МОДАЛКА ОЦЕНКИ АРТИСТА -->
+<div class="modal-backdrop" id="artistRatingBackdrop" onclick="if(event.target===this) closeArtistRatingForm()">
+  <div class="modal" id="artistRatingModal">
+    <button class="close-btn" onclick="closeArtistRatingForm()" title="Закрыть">✕</button>
+    <div class="track-header">
+      <img id="artistRatingPhoto" alt="" onerror="this.style.visibility='hidden'">
+      <div class="info">
+        <div class="track-title" id="artistRatingName">—</div>
+        <div class="track-artist" id="artistRatingGenres">—</div>
+      </div>
+    </div>
+
+    <button class="help-toggle" onclick="toggleArtistHelp()">
+      <span>ℹ️</span><span>Что означают критерии?</span>
+    </button>
+
+    <div class="criteria-help hidden" id="artistHelpBox">
+      <div class="row"><b>🎤 Вокал / техника</b> — диапазон, подача, чистота интонаций, техника. Умеет ли артист управлять голосом.</div>
+      <div class="row"><b>🖋 Тексты / смысл</b> — качество текстов: метафоры, идеи, лирика. Насколько осмысленно то, что поёт артист.</div>
+      <div class="row"><b>🎼 Музыка / композиция</b> — как устроена музыка: мелодии, гармонии, аранжировки. Насколько интересно слушать с точки зрения музыкальной фактуры.</div>
+      <div class="row"><b>🌟 Уникальность / стиль</b> — отличие от других, узнаваемость, свой почерк. Можно ли спутать с кем-то.</div>
+      <div class="row"><b>🎭 Харизма / образ</b> — личность, сценический образ, обаяние. Тянет ли артист на себя внимание.</div>
+      <div class="row"><b>🌌 Атмосфера / вайб</b> — общее настроение и погружение. Работает как <b>множитель</b>.</div>
+      <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
+        <b>Итог (1–360):</b> как у релизов — база × 36 × множитель вайба.
+      </div>
+    </div>
+
+    <div id="artistCriteriaList"></div>
+
+    <div class="modal-total">
+      <div>
+        <div class="label">Итоговая оценка артиста</div>
+        <div class="value" id="artistModalTotal">—</div>
+        <div class="hint" id="artistModalHint">из 360</div>
+      </div>
+      <button onclick="applyArtistRating()">✓ Сохранить</button>
+    </div>
+
+    <!-- Рецензия на артиста -->
+    <div class="review-input-block" style="margin-top:14px;">
+      <div class="review-input-header">
+        <span>📝 Рецензия на артиста</span>
+        <span class="review-input-hint">опционально</span>
+      </div>
+      <textarea id="artistReviewInput" class="review-input" rows="4" maxlength="5000" placeholder="Ваше мнение об артисте… Поддерживается **жирный**, *курсив* и переносы строк."></textarea>
+    </div>
+  </div>
+</div>
 
 <!-- МОДАЛКА ЗАПУСКА СЕЗОНА (АДМИН) -->
 <div class="modal-backdrop" id="startSeasonBackdrop" onclick="if(event.target===this) adminCloseStartSeasonModal()">

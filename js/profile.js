@@ -11,6 +11,10 @@ import { applyScheme, saveSchemeLocally } from './theme.js';
 import { spotifySearchAlbums, mapSpotifyAlbum } from './search.js';
 import { formatReviewText } from './board.js';
 import { showConfirm } from './confirm.js';
+import {
+  loadMyArtistRatings,
+  deleteMyArtistRating
+} from './artists.js';
 // ============================================================
 // Контекст (устанавливается из main.js)
 // ============================================================
@@ -862,6 +866,7 @@ export function switchProfileTab(tab) {
     s.classList.toggle("hidden", s.dataset.section !== tab);
   });
   if (tab === "stats") renderProfileStatsTab();
+  if (tab === "artists") renderMyArtistsTab();
   if (tab === "reviews") renderMyReviewsTab();
   if (tab === "achievements") renderAchievements();
   if (tab === "summary") renderProfileSummaryTab();
@@ -1300,4 +1305,108 @@ async function deleteMyReview(reviewId) {
     showToast("Рецензия удалена", { success: true });
     renderMyReviewsTab();
   } catch (e) { showToast("Ошибка: " + e.message); }
+}
+// ============================================================
+// ВКЛАДКА «МОИ АРТИСТЫ»
+// ============================================================
+export async function renderMyArtistsTab() {
+  const el = document.getElementById("myArtistsList");
+  const countEl = document.getElementById("myArtistsCount");
+  if (!el) return;
+
+  el.innerHTML = '<div class="empty-msg"><span class="spinner"></span> Загрузка…</div>';
+
+  if (!currentUser) {
+    el.innerHTML = '<div class="empty-msg">Нужно войти в аккаунт.</div>';
+    return;
+  }
+
+  try {
+    const ratings = await loadMyArtistRatings();
+    if (countEl) countEl.textContent = ratings.length ? "(" + ratings.length + ")" : "";
+
+    if (ratings.length === 0) {
+      el.innerHTML =
+        '<div class="reviews-empty">' +
+          '<div class="reviews-empty-icon">🎤</div>' +
+          '<div class="reviews-empty-text">Вы пока не оценили ни одного артиста.<br>Найдите артиста через поиск и поставьте оценку по 5 критериям.</div>' +
+        '</div>';
+      return;
+    }
+
+    el.innerHTML = "";
+    ratings.forEach(r => {
+      el.appendChild(buildMyArtistCard(r));
+    });
+  } catch (e) {
+    el.innerHTML = '<div class="error">Ошибка: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+function buildMyArtistCard(rating) {
+  const el = document.createElement("div");
+  el.className = "my-artist-card";
+
+  const tier = getTier(rating.final);
+  const time = rating.ts?.seconds ? formatTime(rating.ts.seconds) : "";
+  const artistName = rating.artist?.name || "—";
+  const artistPhoto = rating.artist?.photo || "";
+
+  el.innerHTML =
+    (artistPhoto
+      ? '<img class="mac-photo" src="' + escapeHtml(artistPhoto) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+      : '<div class="mac-photo mac-noimg">🎤</div>') +
+    '<div class="mac-info">' +
+      '<div class="mac-name">' + escapeHtml(artistName) + '</div>' +
+      '<div class="mac-meta">' +
+        '<span class="mac-tier" style="color:' + tier.color + '">' + tier.emoji + ' ' + escapeHtml(tier.name) + '</span>' +
+        '<span class="mac-time">' + time + '</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="mac-score" style="color:' + tier.color + '">' + rating.final + '</div>' +
+    '<div class="mac-actions">' +
+      '<button class="review-action-btn mac-open-btn" title="Открыть артиста">👁</button>' +
+      '<button class="review-action-btn review-delete-btn mac-del-btn" title="Удалить оценку">🗑</button>' +
+    '</div>';
+
+  // Открыть артиста
+  const openBtn = el.querySelector(".mac-open-btn");
+  if (openBtn) {
+    openBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      if (callbacks.onSwitchNav) callbacks.onSwitchNav("main");
+      if (callbacks.onOpenArtist) {
+        setTimeout(() => callbacks.onOpenArtist(rating.artistId), 250);
+      }
+    };
+  }
+
+  // Удалить
+  const delBtn = el.querySelector(".mac-del-btn");
+  if (delBtn) {
+    delBtn.onclick = async (ev) => {
+      ev.stopPropagation();
+      const ok = await showConfirm({
+        icon: "🗑",
+        title: "Удалить оценку артиста?",
+        text: "Оценка «" + artistName + "» будет удалена.",
+        okText: "Удалить",
+        okClass: "btn-danger"
+      });
+      if (!ok) return;
+      await deleteMyArtistRating(rating.artistId);
+      showToast("Оценка удалена", { success: true });
+      renderMyArtistsTab();
+    };
+  }
+
+  // Клик по карточке = открыть артиста
+  el.onclick = () => {
+    if (callbacks.onSwitchNav) callbacks.onSwitchNav("main");
+    if (callbacks.onOpenArtist) {
+      setTimeout(() => callbacks.onOpenArtist(rating.artistId), 250);
+    }
+  };
+
+  return el;
 }

@@ -118,7 +118,8 @@ import {
 import {
   setArtistsContext,
   openArtist, closeArtistPage, openAlbumFromArtist,
-  openArtistRatingForm
+  openArtistRatingForm, closeArtistRatingForm, applyArtistRating,
+  toggleArtistHelp, searchArtists
 } from './artists.js';
 
 import { isParticlesOff, setParticlesOff } from './season-particles.js';
@@ -378,7 +379,12 @@ onAuthStateChanged(auth, async (user) => {
       callbacks: {
         onSwitchNav: (nav) => switchNav(nav),
         onLoadAlbum: (album) => loadAlbum(album),
-        onCloseArtistPage: () => closeArtistPage()
+        onCloseArtistPage: () => closeArtistPage(),
+        onPushActivity: pushActivity,
+        onAfterArtistRating: (artistId) => {
+          // Перерисовываем страницу артиста
+          if (artistId) openArtist(artistId);
+        }
       }
     });
 
@@ -822,6 +828,7 @@ function getProfileCallbacks() {
     onSwitchNav: (nav) => switchNav(nav),
     onOpenBoardModal: (group) => openBoardModal(group),
     onGetBoardData: () => getBoardData(),
+    onOpenArtist: (artistId) => openArtist(artistId),
     onOpenRelease: (src, rid) => {
       const group = getBoardData().find(b => b.source === src && b.releaseId === String(rid));
       if (group) { switchNav("board"); setTimeout(() => openBoardModal(group), 250); }
@@ -891,6 +898,31 @@ window.adminUpdateSeasonYear = adminUpdateSeasonYear;
 window.adminConfirmStartSeason = adminConfirmStartSeason;
 window.adminFinishSeason = adminFinishSeason;
 window.adminDeleteSeasonFromHistory = adminDeleteSeasonFromHistory;
+
+window.openArtistRatingForm = openArtistRatingForm;
+window.closeArtistRatingForm = closeArtistRatingForm;
+window.applyArtistRating = applyArtistRating;
+window.toggleArtistHelp = toggleArtistHelp;
+
+window.openArtistFromBoard = (artistId) => {
+  switchNav("main");
+  setTimeout(() => openArtist(artistId), 250);
+};
+
+window.openArtistByName = async (name) => {
+  try {
+    const items = await searchArtists(name, 1);
+    if (items && items[0]) {
+      const id = items[0].id;
+      switchNav("main");
+      setTimeout(() => openArtist(id), 250);
+    } else {
+      showToast("Артист не найден");
+    }
+  } catch (e) {
+    showToast("Не удалось открыть артиста");
+  }
+};
 
 window.closeModal = closeModal;
 window.toggleHelp = toggleHelp;
@@ -969,6 +1001,22 @@ window.adminDeleteReportedReview = adminDeleteReportedReview;
 window.clearReviewReports = clearReviewReports;
 window.adminDeleteReviewManually = adminDeleteReviewManually;
 
+window.openArtistFromBoard = (artistId) => {
+  switchNav("main");
+  setTimeout(() => openArtist(artistId), 250);
+};
+
+window.openArtistByName = async (name) => {
+  try {
+    const items = await searchArtists(name, 1);
+    if (items && items[0]) {
+      const id = items[0].id;
+      switchNav("main");
+      setTimeout(() => openArtist(id), 250);
+    }
+  } catch (e) { showToast("Артист не найден"); }
+};
+
 // ============================================================
 // INIT
 // ============================================================
@@ -1004,7 +1052,13 @@ setArtistsContext({
   userProfile,
   callbacks: {
     onSwitchNav: (nav) => switchNav(nav),
-    onLoadAlbum: (album) => loadAlbum(album)
+    onLoadAlbum: (album) => loadAlbum(album),
+    onCloseArtistPage: () => closeArtistPage(),
+    onPushActivity: pushActivity,
+    onAfterArtistRating: (artistId) => {
+      // Перерисовываем страницу артиста
+      if (artistId) openArtist(artistId);
+    }
   }
 });
 setSeasonContext({

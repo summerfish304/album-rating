@@ -99,26 +99,71 @@ export async function computeSeasonAwards(season) {
   const singleOfSeason = singlesOnly[0] || null;
 
   // ============================================================
-  // 🎤 Артист сезона — средняя по всем его релизам в сезоне
+  // 🎤 Артист сезона — гибридная формула 20/80:
+  //     20% — средняя оценка артиста (если есть)
+  //     80% — средняя оценка его релизов в сезоне
   // ============================================================
   const byArtist = {};
   releasesList.forEach(r => {
     const artist = r.album && r.album.artist;
     if (!artist) return;
-    if (!byArtist[artist]) byArtist[artist] = { name: artist, releases: [] };
+    if (!byArtist[artist]) byArtist[artist] = { name: artist, releases: [], artistId: null };
     byArtist[artist].releases.push(r);
+    // Запоминаем artistId, если есть
+    if (!byArtist[artist].artistId && r.album.artistId) {
+      byArtist[artist].artistId = r.album.artistId;
+    }
   });
+
+  // Загружаем оценки артистов из Firestore (по имени)
+  const artistRatingsSnap = await getDocs(collection(db, "artist_ratings"));
+  const artistRatings = artistRatingsSnap.docs.map(d => d.data()).filter(r => !r.hidden);
+
+  // Группируем оценки артистов по имени
+  const artistRatingsByName = {};
+  artistRatings.forEach(r => {
+    const name = r.artist && r.artist.name;
+    if (!name) return;
+    if (!artistRatingsByName[name]) artistRatingsByName[name] = [];
+    artistRatingsByName[name].push(r.final);
+  });
+
   const artistList = Object.values(byArtist).map(a => {
+    // Средняя по релизам в сезоне
     const totalWeighted = a.releases.reduce((sum, r) => sum + r.avg * r.count, 0);
     const totalCount = a.releases.reduce((sum, r) => sum + r.count, 0);
+    const releasesAvg = Math.round(totalWeighted / totalCount);
+
+    // Средняя оценка артиста (из artist_ratings)
+    let artistAvg = null;
+    let artistRatingCount = 0;
+    const nameRatings = artistRatingsByName[a.name];
+    if (nameRatings && nameRatings.length) {
+      artistAvg = Math.round(nameRatings.reduce((s, v) => s + v, 0) / nameRatings.length);
+      artistRatingCount = nameRatings.length;
+    }
+
+    // Гибрид 20/80
+    let combined;
+    if (artistAvg !== null) {
+      combined = Math.round(artistAvg * 0.2 + releasesAvg * 0.8);
+    } else {
+      combined = releasesAvg;   // если оценки артиста нет — только релизы
+    }
+
     return {
       name: a.name,
-      avg: Math.round(totalWeighted / totalCount),
+      artistId: a.artistId,
+      avg: combined,
+      releasesAvg: releasesAvg,
+      artistAvg: artistAvg,
+      artistRatingCount: artistRatingCount,
       count: totalCount,
       releaseCount: a.releases.length
     };
   }).filter(a => a.count >= minRatings)
     .sort((a, b) => b.avg - a.avg || b.count - a.count);
+
   const artistOfSeason = artistList[0] || null;
 
   // ============================================================

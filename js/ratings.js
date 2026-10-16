@@ -90,11 +90,11 @@ export async function loadAlbum(album) {
 
     const title = data.name || album.title;
     const artist = (data.artists || []).map(x => x.name).join(", ") || "";
+    const artistId = (data.artists && data.artists[0] && data.artists[0].id) || "";
     const rawArtwork = (data.images && data.images[0] && data.images[0].url) || "";
     const artwork = rawArtwork
       ? ITUNES_PROXY + "?u=" + encodeURIComponent(rawArtwork)
       : (album.cover || "");
-    // Spotify отдаёт release_date в формате "YYYY-MM-DD" или "YYYY" или "YYYY-MM"
     const releaseDate = data.release_date || "";
     const songs = data.tracks.items
       .sort((a, b) => (a.track_number || 0) - (b.track_number || 0))
@@ -109,7 +109,7 @@ export async function loadAlbum(album) {
       errorBox.textContent = "";
     }
 
-    currentAlbum = { id: album.id, title, artist, artwork, source: "spotify", releaseDate };
+    currentAlbum = { id: album.id, title, artist, artistId, artwork, source: "spotify", releaseDate };
     currentTracks = songs.map(s => ({ name: s.name, artist: s.artist }));
     trackDetails = {}; overallValue = 7; coverRating = 7; singleValues = {};
 
@@ -176,10 +176,29 @@ export function renderAlbum() {
   const parentNote = currentAlbum.isSingleFromAlbum && currentAlbum.parentAlbum
     ? '<div style="font-size:.75rem; color:var(--vibe-1); margin-top:4px;">🎯 Сингл из альбома «' + escapeHtml(currentAlbum.parentAlbum.title) + '»</div>'
     : '';
+  const artistClickable = currentAlbum.artist && currentAlbum.artistId
+    ? ' clickable-artist'
+    : (currentAlbum.artist ? ' clickable-artist' : '');
   document.getElementById("albumCard").innerHTML =
     '<div class="bg-blur" style="background-image:url(\'' + escapeHtml(currentAlbum.artwork) + '\')"></div>' +
     '<img class="cover" src="' + escapeHtml(currentAlbum.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
-    '<div class="info"><div class="title">' + escapeHtml(currentAlbum.title) + '</div><div class="artist">' + escapeHtml(currentAlbum.artist) + '</div>' + parentNote + '</div>';
+    '<div class="info"><div class="title">' + escapeHtml(currentAlbum.title) + '</div>' +
+    '<div class="artist' + artistClickable + '" data-artist-id="' + (currentAlbum.artistId || '') + '">' + escapeHtml(currentAlbum.artist) + '</div>' +
+    parentNote + '</div>';
+
+  // Навешиваем обработчик на артиста
+  const artistEl = document.querySelector('#albumCard .artist.clickable-artist');
+  if (artistEl) {
+    artistEl.onclick = (e) => {
+      e.stopPropagation();
+      const id = artistEl.dataset.artistId;
+      if (id && typeof window.openArtistFromBoard === "function") {
+        window.openArtistFromBoard(id);
+      } else if (currentAlbum.artist && typeof window.openArtistByName === "function") {
+        window.openArtistByName(currentAlbum.artist);
+      }
+    };
+  }
   const isSingle = currentTracks.length === 1;
   const tracksSection = document.getElementById("tracksSection");
   const singleSection = document.getElementById("singleSection");
@@ -832,7 +851,8 @@ export async function submitRating(onAfterSave) {
       source: currentAlbum.source,
       album: {
         id: currentAlbum.id, title: currentAlbum.title,
-        artist: currentAlbum.artist, artwork: currentAlbum.artwork,
+        artist: currentAlbum.artist, artistId: currentAlbum.artistId || "",
+        artwork: currentAlbum.artwork,
         source: currentAlbum.source,
         releaseDate: currentAlbum.releaseDate || "",
         parentAlbum: currentAlbum.parentAlbum || null,
@@ -998,6 +1018,7 @@ function renderPearls() {
 export async function restoreFromMyRatings(item) {
   currentAlbum = {
     id: item.album.id, title: item.album.title, artist: item.album.artist,
+    artistId: item.album.artistId || "",
     artwork: item.album.artwork, source: item.album.source || item.source,
     releaseDate: item.album.releaseDate || ""
   };

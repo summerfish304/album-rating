@@ -5245,3 +5245,127 @@ body.theme-season-active .scheme-grid:hover {
 #artistPageView {
   animation: fadeUp .3s ease;
 }
+
+/* ============================================================
+   БАННЕР «МОЯ ОЦЕНКА АРТИСТА»
+   ============================================================ */
+.artist-my-rating {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--panel), var(--panel-3));
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 0 14px var(--accent-glow);
+  flex-wrap: wrap;
+}
+.artist-my-rating-label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.artist-my-rating-score {
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.artist-my-rating-tier {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--text-mid);
+}
+
+/* ============================================================
+   МОИ АРТИСТЫ В ПРОФИЛЕ
+   ============================================================ */
+.my-artist-card {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, transform .15s;
+  animation: fadeUp .3s ease;
+}
+.my-artist-card:hover {
+  border-color: var(--accent);
+  background: var(--panel-3);
+  transform: translateX(2px);
+}
+.mac-photo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--panel-3);
+}
+.mac-noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+.mac-info { flex: 1; min-width: 0; }
+.mac-name {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mac-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.mac-tier {
+  font-size: .75rem;
+  font-weight: 700;
+}
+.mac-time {
+  font-size: .72rem;
+  color: var(--text-dim);
+}
+.mac-score {
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+.mac-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  flex-direction: column;
+}
+.mac-actions .review-action-btn {
+  padding: 5px 8px;
+  font-size: .75rem;
+}
+
+/* ============================================================
+   КЛИКАБЕЛЬНЫЙ АРТИСТ
+   ============================================================ */
+.clickable-artist {
+  cursor: pointer;
+  transition: color .15s;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+}
+.clickable-artist:hover {
+  color: var(--accent-3);
+  text-decoration-color: var(--accent-3);
+}
