@@ -116,7 +116,11 @@ import {
 } from './season.js';
 
 import {
-  setArtistsContext
+  setArtistsContext,
+  openArtistsTab,
+  onArtistSearchInput, onArtistSearchKeydown,
+  openArtist, closeArtistPage, openAlbumFromArtist,
+  openArtistRatingForm
 } from './artists.js';
 
 import { isParticlesOff, setParticlesOff } from './season-particles.js';
@@ -134,7 +138,7 @@ let swipeStartX = 0;
 let swipeStartY = 0;
 let authMode = "login";
 let _lastNav = "main";
-const NAV_ORDER = ["main", "board", "tops", "history", "wishlist", "profile", "admin"];
+const NAV_ORDER = ["main", "artists", "board", "tops", "history", "wishlist", "profile", "admin"];
 
 // ============================================================
 // Rate limit (общий для всех)
@@ -373,7 +377,10 @@ onAuthStateChanged(auth, async (user) => {
     setArtistsContext({
       currentUser,
       userProfile,
-      callbacks: {}
+      callbacks: {
+        onSwitchNav: (nav) => switchNav(nav),
+        onLoadAlbum: (album) => loadAlbum(album)
+      }
     });
 
     updateWishlistBadge();
@@ -553,7 +560,8 @@ function switchNav(nav) {
   document.querySelectorAll(".nav-tab").forEach(t => t.classList.toggle("active", t.dataset.nav === nav));
   document.querySelectorAll(".mnav-btn").forEach(t => t.classList.toggle("active", t.dataset.nav === nav));
   const map = {
-    main: "navMain", board: "navBoard", tops: "navTops",
+    main: "navMain", artists: "navArtists",
+    board: "navBoard", tops: "navTops",
     history: "navHistory", wishlist: "navWishlist",
     profile: "navProfile", admin: "navAdmin"
   };
@@ -570,10 +578,10 @@ function switchNav(nav) {
       el.classList.add("hidden");
     }
   });
+  if (nav === "artists") openArtistsTab();
   if (nav === "board") refreshBoard();
   if (nav === "tops") {
     renderTops();
-    // Сбрасываем на подтаб «Топы» при входе
     switchRatingsTab("tops");
   }
   if (nav === "history") renderHistory();
@@ -857,6 +865,13 @@ window.switchAdminTab = switchAdminTab;
 
 window.clearReviewInput = clearReviewInput;
 
+window.onArtistSearchInput = onArtistSearchInput;
+window.onArtistSearchKeydown = onArtistSearchKeydown;
+window.openArtist = openArtist;
+window.closeArtistPage = closeArtistPage;
+window.openAlbumFromArtist = openAlbumFromArtist;
+window.openArtistRatingForm = openArtistRatingForm;
+
 window.openBanModal = openBanModal;
 window.closeBanModal = closeBanModal;
 window.selectBanDuration = selectBanDuration;
@@ -985,7 +1000,10 @@ setAdminContext({
 setArtistsContext({
   currentUser,
   userProfile,
-  callbacks: {}
+  callbacks: {
+    onSwitchNav: (nav) => switchNav(nav),
+    onLoadAlbum: (album) => loadAlbum(album)
+  }
 });
 setSeasonContext({
   callbacks: {

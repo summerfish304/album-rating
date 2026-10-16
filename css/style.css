@@ -4914,3 +4914,286 @@ body.theme-season-active .scheme-grid:hover {
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* ============================================================
+   ВКЛАДКА «АРТИСТЫ» — ПОИСК
+   ============================================================ */
+.artist-search-wrap {
+  margin-bottom: 16px;
+}
+.artist-search-hint {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--text-dim);
+  font-size: .88rem;
+  background: var(--panel-2);
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  line-height: 1.6;
+}
+.artist-search-hint-icon {
+  font-size: 2.4rem;
+  margin-bottom: 10px;
+  opacity: .6;
+}
+
+.artist-suggestion img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--panel-3);
+}
+.artist-suggestion-noimg {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-3);
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   СТРАНИЦА АРТИСТА
+   ============================================================ */
+.artist-header {
+  display: flex;
+  gap: 18px;
+  padding: 20px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--panel-2), var(--panel-3));
+  border: 1px solid var(--border-soft);
+  margin-bottom: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.artist-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--panel-3);
+  box-shadow: 0 10px 30px rgba(0,0,0,.4);
+}
+.artist-photo-noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+.artist-header-info { flex: 1; min-width: 200px; }
+.artist-name {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  margin-bottom: 6px;
+}
+.artist-genres {
+  font-size: .82rem;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.artist-meta {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.artist-stat {
+  font-size: .82rem;
+  color: var(--text-mid);
+  font-weight: 600;
+}
+.artist-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.artist-section {
+  margin-bottom: 22px;
+}
+.artist-section-header {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 12px;
+}
+
+/* Топ-треки */
+.artist-tracks {
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.artist-track {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.artist-track:last-child { border-bottom: none; }
+.artist-track-num {
+  font-size: .8rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  min-width: 20px;
+  text-align: center;
+}
+.artist-track-cover {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--panel-3);
+  flex-shrink: 0;
+}
+.artist-track-noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.artist-track-info { flex: 1; min-width: 0; }
+.artist-track-name {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.artist-track-album {
+  font-size: .74rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Дискография */
+.artist-albums {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.artist-album-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  cursor: pointer;
+  transition: border-color .15s, transform .15s;
+}
+.artist-album-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.artist-album-cover {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--panel-3);
+}
+.artist-album-noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+.artist-album-info { min-width: 0; }
+.artist-album-title {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.artist-album-year {
+  font-size: .72rem;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+/* Мои оценённые артисты */
+.artist-my-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.artist-my-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.artist-my-item:hover {
+  border-color: var(--accent);
+  background: var(--panel-3);
+}
+.artist-my-item img,
+.artist-my-noimg {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--panel-3);
+}
+.artist-my-noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+.artist-my-info { flex: 1; min-width: 0; }
+.artist-my-name {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.artist-my-tier {
+  font-size: .72rem;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+.artist-my-score {
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+@media (max-width: 700px) {
+  .artist-photo { width: 90px; height: 90px; }
+  .artist-name { font-size: 1.3rem; }
+  .artist-albums { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+}

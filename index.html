@@ -164,11 +164,45 @@
 
   <div class="nav-tabs" id="navTabs">
     <button class="nav-tab active" data-nav="main" onclick="switchNav('main')">🎵 <span>Оценивать</span></button>
+    <button class="nav-tab" data-nav="artists" onclick="switchNav('artists')">🎤 <span>Артисты</span></button>
     <button class="nav-tab" data-nav="board" onclick="switchNav('board')">📊 <span>Доска</span></button>
     <button class="nav-tab" data-nav="tops" onclick="switchNav('tops')">🏆 <span>Топы</span></button>
     <button class="nav-tab" data-nav="history" onclick="switchNav('history')">💿 <span>Мои</span></button>
     <button class="nav-tab" data-nav="wishlist" onclick="switchNav('wishlist')">📝 <span>Позже</span><span class="count-badge hidden" id="wishlistBadge">0</span></button>
     <button class="nav-tab" data-nav="profile" onclick="switchNav('profile')">👤 <span>Профиль</span></button>
+  </div>
+
+  <!-- АРТИСТЫ -->
+  <div class="section hidden" id="navArtists">
+    <!-- Экран поиска -->
+    <div id="artistsSearchView">
+      <div class="history-header">
+        <h2>🎤 Артисты</h2>
+      </div>
+
+      <div class="artist-search-wrap">
+        <div class="autocomplete-wrap">
+          <input type="text" id="artistSearchInput"
+                 autocomplete="off" spellcheck="false"
+                 placeholder="Например: Radiohead"
+                 oninput="onArtistSearchInput()"
+                 onkeydown="onArtistSearchKeydown(event)">
+          <div class="autocomplete-list" id="artistSuggestions"></div>
+        </div>
+        <p class="hint">Поиск артиста по Spotify — имя, дискография, оценка</p>
+      </div>
+
+      <div id="artistsSearchError" class="error"></div>
+
+      <!-- Популярные/мои оценённые артисты -->
+      <div id="artistsRecentBlock"></div>
+    </div>
+
+    <!-- Экран артиста -->
+    <div id="artistPageView" class="hidden">
+      <button class="btn-secondary btn-sm" onclick="closeArtistPage()" style="margin-bottom:14px;">← Назад к поиску</button>
+      <div id="artistPageContent"></div>
+    </div>
   </div>
 
   <!-- ГЛАВНАЯ -->
@@ -944,6 +978,9 @@
 <div class="mobile-nav" id="mobileNav">
   <button class="mnav-btn active" data-nav="main" onclick="switchNav('main')" title="Оценивать">
     <span class="mnav-icon">🎵</span>
+  </button>
+  <button class="mnav-btn" data-nav="artists" onclick="switchNav('artists')" title="Артисты">
+    <span class="mnav-icon">🎤</span>
   </button>
   <button class="mnav-btn" data-nav="board" onclick="switchNav('board')" title="Доска">
     <span class="mnav-icon">📊</span>
