@@ -4563,5 +4563,105 @@ body.theme-season-active .scheme-grid:hover {
 @media (max-width: 700px) {
   .sac-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   ФОРМА РЕЦЕНЗИИ В ОЦЕНКЕ
+   ============================================================ */
+.review-input-block {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  text-align: left;
+}
+.review-input-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.review-input-header > span:first-child {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.review-input-hint {
+  font-size: .75rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.review-input {
+  width: 100%;
+  min-height: 100px;
+  max-height: 320px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: .92rem;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  box-sizing: border-box;
+}
+.review-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+.review-input::placeholder {
+  color: var(--text-dim);
+  opacity: .7;
+}
+.review-input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.review-input-counter {
+  font-size: .74rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.review-clear-btn {
+  padding: 6px 12px;
+  font-size: .76rem;
+  border-radius: 9px;
+  background: var(--panel-3);
+  color: var(--text-mid);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  font-weight: 600;
+}
+.review-clear-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+.review-input-format-hint {
+  margin-top: 8px;
+  font-size: .72rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.review-input-format-hint code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--accent-3);
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: .92em;
+  border: 1px solid var(--border-soft);
+}
 /* Сезон доминирует над схемой пользователя:
    сезонные классы идут после .scheme-* в CSS → выигрывают по каскаду. */

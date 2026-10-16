@@ -318,6 +318,22 @@
           <div class="hist-bars" id="histBars"></div>
           <div class="hist-summary" id="histSummary"></div>
         </div>
+
+        <!-- РЕЦЕНЗИЯ -->
+        <div class="review-input-block">
+          <div class="review-input-header">
+            <span>📝 Рецензия</span>
+            <span class="review-input-hint">опционально · напишите свои мысли о релизе</span>
+          </div>
+          <textarea id="reviewInput" class="review-input" rows="5" maxlength="5000" placeholder="Что думаете о релизе? Что зацепило, что не очень… Поддерживается **жирный**, *курсив* и переносы строк."></textarea>
+          <div class="review-input-footer">
+            <span class="review-input-counter" id="reviewInputCounter">0 / 5000</span>
+            <button class="review-clear-btn" id="reviewClearBtn" onclick="clearReviewInput()">🗑 Очистить</button>
+          </div>
+          <div class="review-input-format-hint">
+            <b>Подсказка:</b> <code>**жирный**</code>, <code>*курсив*</code>, переносы строк сохраняются.
+          </div>
+        </div>
       </div>
 
       <div class="result-actions">

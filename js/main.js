@@ -59,9 +59,9 @@ import {
   onCoverRatingChange, updateScore, toggleHistogram,
   openModal, closeModal, toggleHelp, toggleHelpSingle,
   rateTrackAsSingle, applyModalRating,
-  submitRating, deleteMyRating, loadMyRatings, renderHistory,
-  checkDraftBanner, continueDraft, dismissDraft,
-  reset
+  submitRating, deleteMyRating, loadMyRatings, renderHistory, restoreFromMyRatings,
+  saveDraft, clearDraft, checkDraftBanner, continueDraft, dismissDraft,
+  reset, clearReviewInput
 } from './ratings.js';
 
 import {
@@ -841,6 +841,8 @@ window.onBoardSearchInput = onBoardSearchInput;
 window.renderHistory = renderHistory;
 window.switchTopTab = switchTopTab;
 window.switchAdminTab = switchAdminTab;
+
+window.clearReviewInput = clearReviewInput;
 
 window.openBanModal = openBanModal;
 window.closeBanModal = closeBanModal;

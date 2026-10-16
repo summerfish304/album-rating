@@ -1,4 +1,4 @@
-import { db, collection, doc, setDoc, getDoc, getDocs, query, where, deleteDoc, serverTimestamp } from './firebase.js';
+import { db, collection, doc, setDoc, getDoc, getDocs, query, where, deleteDoc, serverTimestamp, addDoc, updateDoc } from './firebase.js';
 import {
   ADMIN_UID, FINAL_MAX, MAX_TRACKS, ITUNES_PROXY,
   LS_RELEASE_CACHE, LS_MODE, LS_DRAFT,
@@ -203,6 +203,8 @@ export function renderAlbum() {
   updateSliderFill(document.getElementById("coverRating"));
   updateCoverBadge();
   updateScore();
+  // Подгружаем существующую рецензию в textarea
+  initReviewInput(currentAlbum, currentAlbum.source, currentAlbum.id);
 }
 
 function renderSingleCriteria() {
@@ -851,6 +853,16 @@ export async function submitRating(onAfterSave) {
     const savedBadge = document.getElementById("savedBadge");
     savedBadge.classList.add("show");
     setTimeout(() => savedBadge.classList.remove("show"), 2000);
+    // Сохраняем рецензию (если есть текст)
+    try {
+      const reviewResult = await saveReview(currentAlbum.source, currentAlbum.id, currentAlbum);
+      if (reviewResult && reviewResult.action === "created") {
+        showToast("Рецензия опубликована", { success: true });
+      }
+    } catch (e) {
+      console.warn("Ошибка сохранения рецензии:", e);
+    }
+
     clearDraft();
     showToast("Оценка сохранена: " + final, { success: true });
     if (onAfterSave) await onAfterSave({ isNew, final });
@@ -1079,4 +1091,136 @@ export function reset() {
   if (cl) cl.classList.add("hidden");
   const cb = document.getElementById("coverBadge");
   if (cb) cb.classList.add("hidden");
+}
+
+// ============================================================
+// РЕЦЕНЗИИ
+// ============================================================
+
+const REVIEW_MAX_LENGTH = 5000;
+let currentReviewText = "";   // что сейчас в textarea
+
+// Инициализация textarea рецензии (вызывается при загрузке альбома)
+export function initReviewInput(album, source, releaseId) {
+  const input = document.getElementById("reviewInput");
+  const counter = document.getElementById("reviewInputCounter");
+  if (!input) return;
+
+  currentReviewText = "";
+
+  // Пробуем подгрузить существующую рецензию (если юзер уже писал)
+  const loadExisting = async () => {
+    if (!currentUser) return;
+    try {
+      const docId = source + "_" + releaseId + "_" + currentUser.uid;
+      const snap = await getDoc(doc(db, "reviews", docId));
+      if (snap.exists()) {
+        const data = snap.data();
+        currentReviewText = data.text || "";
+        input.value = currentReviewText;
+        updateReviewCounter();
+      } else {
+        input.value = "";
+        updateReviewCounter();
+      }
+    } catch (e) {
+      console.warn("Не удалось загрузить рецензию:", e.message);
+    }
+  };
+  loadExisting();
+
+  // Привязываем обработчик ввода
+  input.oninput = () => {
+    if (input.value.length > REVIEW_MAX_LENGTH) {
+      input.value = input.value.slice(0, REVIEW_MAX_LENGTH);
+    }
+    currentReviewText = input.value;
+    updateReviewCounter();
+  };
+  updateReviewCounter();
+}
+
+function updateReviewCounter() {
+  const counter = document.getElementById("reviewInputCounter");
+  if (!counter) return;
+  const len = currentReviewText.length;
+  counter.textContent = len + " / " + REVIEW_MAX_LENGTH;
+  if (len > REVIEW_MAX_LENGTH * 0.9) {
+    counter.style.color = "var(--danger)";
+  } else {
+    counter.style.color = "";
+  }
+}
+
+// Очистить textarea
+export function clearReviewInput() {
+  const input = document.getElementById("reviewInput");
+  if (!input) return;
+  input.value = "";
+  currentReviewText = "";
+  updateReviewCounter();
+}
+
+// Получить текущий текст
+export function getCurrentReviewText() {
+  const input = document.getElementById("reviewInput");
+  return input ? input.value.trim() : "";
+}
+
+// Сохранить рецензию (вызывается из submitRating)
+async function saveReview(source, releaseId, album) {
+  if (!currentUser) return;
+  const text = getCurrentReviewText();
+  const docId = source + "_" + releaseId + "_" + currentUser.uid;
+
+  try {
+    const existing = await getDoc(doc(db, "reviews", docId));
+
+    if (!text) {
+      // Текст пустой. Если рецензия есть — НЕ удаляем автоматически.
+      // Пользователь должен явно удалить её через модалку.
+      // Но если рецензии нет — ничего не делаем.
+      return { action: "none" };
+    }
+
+    const reviewData = {
+      uid: currentUser.uid,
+      nickname: userProfile.nickname,
+      avatar: userProfile.avatar || "🎵",
+      level: getLevelByXp(userProfile.xp || 0).level,
+      releaseId: String(releaseId),
+      source: source,
+      album: {
+        id: album.id,
+        title: album.title,
+        artist: album.artist,
+        artwork: album.artwork,
+        releaseDate: album.releaseDate || ""
+      },
+      text: text,
+      ts: serverTimestamp(),
+      likes: 0
+    };
+
+    if (existing.exists()) {
+      // Рецензия уже есть — обновляем только если текст изменился
+      const old = existing.data();
+      if (old.text === text) {
+        return { action: "unchanged" };
+      }
+      // По правилам: редактировать нельзя. Но так как это делается в момент
+      // переоценки — разрешаем. Пользователь сам должен удалить через модалку.
+      await updateDoc(doc(db, "reviews", docId), {
+        ...reviewData,
+        editedAt: serverTimestamp()
+      });
+      return { action: "updated" };
+    } else {
+      await setDoc(doc(db, "reviews", docId), reviewData);
+      return { action: "created" };
+    }
+  } catch (e) {
+    console.warn("Ошибка сохранения рецензии:", e.message);
+    return { action: "error", error: e.message };
+  }
 }
