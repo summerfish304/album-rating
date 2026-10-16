@@ -804,6 +804,9 @@ function getProfileCallbacks() {
     isParticlesOff: () => isParticlesOff(),
     setParticlesOff: (off) => setParticlesOff(off),
     applySeasonTheme: () => applySeasonTheme(),
+    onSwitchNav: (nav) => switchNav(nav),
+    onOpenBoardModal: (group) => openBoardModal(group),
+    onGetBoardData: () => getBoardData(),
     onOpenRelease: (src, rid) => {
       const group = getBoardData().find(b => b.source === src && b.releaseId === String(rid));
       if (group) { switchNav("board"); setTimeout(() => openBoardModal(group), 250); }

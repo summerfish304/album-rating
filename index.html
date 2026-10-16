@@ -468,6 +468,7 @@
     <div class="profile-tabs" id="profileTabs">
       <button class="profile-tab active" data-tab="main" onclick="switchProfileTab('main')">👤 Профиль</button>
       <button class="profile-tab" data-tab="stats" onclick="switchProfileTab('stats')">📊 Статистика</button>
+      <button class="profile-tab" data-tab="reviews" onclick="switchProfileTab('reviews')">📝 Рецензии</button>
       <button class="profile-tab" data-tab="achievements" onclick="switchProfileTab('achievements')">🏆 Достижения</button>
       <button class="profile-tab" data-tab="summary" onclick="switchProfileTab('summary')">📅 Итоги</button>
     </div>
@@ -558,6 +559,14 @@
         <h2>🎧 Сейчас слушаю</h2>
       </div>
       <div id="nowPlayingSection"></div>
+    </div>
+
+    <!-- СЕКЦИЯ: РЕЦЕНЗИИ -->
+    <div class="profile-section hidden" data-section="reviews">
+      <div class="history-header" style="margin-top: 20px;">
+        <h2>📝 Мои рецензии <span class="hint" id="myReviewsCount" style="margin:0; font-weight:400;"></span></h2>
+      </div>
+      <div id="myReviewsList"></div>
     </div>
 
     <!-- СЕКЦИЯ: ДОСТИЖЕНИЯ -->

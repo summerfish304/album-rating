@@ -4,12 +4,14 @@ import {
   XP_REWARDS, NOW_PLAYING_TTL
 } from './config.js';
 import {
-  getLevelByXp, getTier, escapeHtml, colorFromString, plural
+  getLevelByXp, getTier, escapeHtml, colorFromString, plural, formatTime
 } from './utils.js';
 import { showToast } from './ui.js';
 import { applyScheme, saveSchemeLocally } from './theme.js';
 import { spotifySearchAlbums, mapSpotifyAlbum } from './search.js';
-
+import { formatReviewText } from './board.js';
+import { showConfirm } from './confirm.js';
+import { deleteDoc } from './firebase.js';
 // ============================================================
 // Контекст (устанавливается из main.js)
 // ============================================================
@@ -861,6 +863,7 @@ export function switchProfileTab(tab) {
     s.classList.toggle("hidden", s.dataset.section !== tab);
   });
   if (tab === "stats") renderProfileStatsTab();
+  if (tab === "reviews") renderMyReviewsTab();
   if (tab === "achievements") renderAchievements();
   if (tab === "summary") renderProfileSummaryTab();
 }
@@ -1187,4 +1190,115 @@ function renderGlobalAward(label, item) {
     '</div>' +
     '<div class="agi-score" style="color:' + tier.color + '">' + (item.avg || 0) + '</div>' +
   '</div>';
+}
+
+// ============================================================
+// Вкладка «МОИ РЕЦЕНЗИИ»
+// ============================================================
+export async function renderMyReviewsTab() {
+  const el = document.getElementById("myReviewsList");
+  const countEl = document.getElementById("myReviewsCount");
+  if (!el) return;
+
+  el.innerHTML = '<div class="empty-msg"><span class="spinner"></span> Загрузка…</div>';
+
+  if (!currentUser) {
+    el.innerHTML = '<div class="empty-msg">Нужно войти в аккаунт.</div>';
+    return;
+  }
+
+  try {
+    const q = query(
+      collection(db, "reviews"),
+      where("uid", "==", currentUser.uid)
+    );
+    const snap = await getDocs(q);
+    let reviews = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    reviews.sort((a, b) => (b.ts?.seconds || 0) - (a.ts?.seconds || 0));
+
+    if (countEl) countEl.textContent = reviews.length ? "(" + reviews.length + ")" : "";
+
+    if (reviews.length === 0) {
+      el.innerHTML =
+        '<div class="reviews-empty">' +
+          '<div class="reviews-empty-icon">📝</div>' +
+          '<div class="reviews-empty-text">Вы пока не написали ни одной рецензии.<br>Оцените релиз и напишите своё мнение.</div>' +
+        '</div>';
+      return;
+    }
+
+    el.innerHTML = "";
+    reviews.forEach(r => {
+      el.appendChild(buildMyReviewCard(r));
+    });
+  } catch (e) {
+    el.innerHTML = '<div class="error">Ошибка: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+function buildMyReviewCard(review) {
+  const el = document.createElement("div");
+  el.className = "my-review-card";
+
+  const album = review.album || {};
+  const time = review.ts?.seconds ? formatTime(review.ts.seconds) : "";
+  const edited = review.editedAt ? ' <span class="review-edited">(изм.)</span>' : '';
+
+  el.innerHTML =
+    '<div class="mrc-album-row">' +
+      (album.artwork
+        ? '<img class="mrc-cover" src="' + escapeHtml(album.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+        : '<div class="mrc-cover mrc-noart">💿</div>') +
+      '<div class="mrc-album-info">' +
+        '<div class="mrc-album-title">' + escapeHtml(album.title || "—") + '</div>' +
+        '<div class="mrc-album-artist">' + escapeHtml(album.artist || "") + '</div>' +
+      '</div>' +
+      '<div class="mrc-time">' + time + edited + '</div>' +
+    '</div>' +
+    '<div class="mrc-text">' + formatReviewText(review.text || "") + '</div>' +
+    '<div class="mrc-actions">' +
+      '<button class="review-action-btn mrc-open-btn">👁 Открыть на доске</button>' +
+      '<button class="review-action-btn review-delete-btn mrc-delete-btn">🗑 Удалить</button>' +
+    '</div>';
+
+  // Открыть на доске
+  const openBtn = el.querySelector(".mrc-open-btn");
+  if (openBtn) {
+    openBtn.onclick = () => {
+      if (callbacks.onSwitchNav) callbacks.onSwitchNav("board");
+      const group = callbacks.onGetBoardData
+        ? callbacks.onGetBoardData().find(b => b.source === review.source && b.releaseId === String(review.releaseId))
+        : null;
+      if (group && callbacks.onOpenBoardModal) {
+        setTimeout(() => callbacks.onOpenBoardModal(group), 300);
+      } else {
+        showToast("Релиз пока не на доске");
+      }
+    };
+  }
+
+  // Удалить
+  const delBtn = el.querySelector(".mrc-delete-btn");
+  if (delBtn) {
+    delBtn.onclick = () => deleteMyReview(review._id);
+  }
+
+  return el;
+}
+
+async function deleteMyReview(reviewId) {
+  const ok = await showConfirm({
+    icon: "🗑",
+    title: "Удалить рецензию?",
+    text: "Рецензию нельзя восстановить.",
+    okText: "Удалить",
+    okClass: "btn-danger"
+  });
+  if (!ok) return;
+
+  try {
+    await deleteDoc(doc(db, "reviews", reviewId));
+    showToast("Рецензия удалена", { success: true });
+    renderMyReviewsTab();
+  } catch (e) { showToast("Ошибка: " + e.message); }
 }

@@ -4831,3 +4831,84 @@ body.theme-season-active .scheme-grid:hover {
   border-color: var(--danger);
   background: rgba(255,107,138,.1);
 }
+
+/* ============================================================
+   МОИ РЕЦЕНЗИИ В ПРОФИЛЕ
+   ============================================================ */
+.my-review-card {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  margin-bottom: 12px;
+  animation: fadeUp .3s ease;
+  transition: border-color .15s;
+}
+.my-review-card:hover {
+  border-color: var(--accent);
+}
+
+.mrc-album-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed var(--border-soft);
+}
+.mrc-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--panel-3);
+  flex-shrink: 0;
+}
+.mrc-noart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+.mrc-album-info {
+  flex: 1;
+  min-width: 0;
+}
+.mrc-album-title {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mrc-album-artist {
+  font-size: .78rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mrc-time {
+  font-size: .72rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.mrc-text {
+  font-size: .9rem;
+  color: var(--text-mid);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 12px;
+}
+.mrc-text strong { color: var(--text); font-weight: 700; }
+.mrc-text em { color: var(--accent-3); font-style: italic; }
+
+.mrc-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
