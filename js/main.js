@@ -115,6 +115,10 @@ import {
   switchRatingsTab, renderSeasonsArchive
 } from './season.js';
 
+import {
+  setArtistsContext
+} from './artists.js';
+
 import { isParticlesOff, setParticlesOff } from './season-particles.js';
 
 import { computeSeasonAwards } from './season-awards.js';
@@ -365,6 +369,11 @@ onAuthStateChanged(auth, async (user) => {
       userProfile,
       siteSettings: getSiteSettings(),
       callbacks: getAdminCallbacks()
+    });
+    setArtistsContext({
+      currentUser,
+      userProfile,
+      callbacks: {}
     });
 
     updateWishlistBadge();
@@ -972,6 +981,11 @@ setAdminContext({
   currentUser, userProfile,
   siteSettings: getSiteSettings(),
   callbacks: getAdminCallbacks()
+});
+setArtistsContext({
+  currentUser,
+  userProfile,
+  callbacks: {}
 });
 setSeasonContext({
   callbacks: {
