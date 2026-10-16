@@ -51,27 +51,74 @@ export async function getArtistById(artistId) {
 
 // Дискография артиста (альбомы + синглы + EP)
 export async function getArtistAlbums(artistId, limit) {
-  limit = limit || 50;
-  const data = await spotifyFetch(
-    "/artists/" + artistId + "/albums?include_groups=album,single&limit=" + Math.min(50, limit)
-  );
-  const items = (data.items || []);
-  // Сортируем по дате выхода (новые сверху)
+  limit = limit || 200;
+  try {
+    // Первый запрос — узнаём total
+    const firstUrl = "/artists/" + artistId + "/albums?include_groups=album,single,compilation&offset=0";
+    const firstPage = await spotifyFetch(firstUrl);
+    const total = typeof firstPage.total === "number" ? firstPage.total : (firstPage.items || []).length;
+    let allItems = [...(firstPage.items || [])];
+
+    if (allItems.length >= total || allItems.length >= limit) {
+      return sortAndSlice(allItems, limit);
+    }
+
+    // Считаем, сколько ещё страниц нужно
+    const PAGE_SIZE = 5;
+    const pagesNeeded = Math.min(60, Math.ceil((Math.min(total, limit) - allItems.length) / PAGE_SIZE));
+    const offsets = [];
+    for (let i = 1; i <= pagesNeeded; i++) {
+      offsets.push(i * PAGE_SIZE);
+    }
+
+    // Загружаем параллельно, по 4 запроса за раз
+    const CONCURRENCY = 4;
+    for (let i = 0; i < offsets.length; i += CONCURRENCY) {
+      const batch = offsets.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(batch.map(async (offset) => {
+        try {
+          const url = "/artists/" + artistId + "/albums?include_groups=album,single,compilation&offset=" + offset;
+          const page = await spotifyFetch(url);
+          return page.items || [];
+        } catch (e) {
+          console.warn("Ошибка страницы offset=" + offset + ":", e.message);
+          return [];
+        }
+      }));
+      results.forEach(chunk => { allItems = allItems.concat(chunk); });
+      if (allItems.length >= total || allItems.length >= limit) break;
+    }
+
+    console.log("[Artists] " + artistId + " — загружено " + allItems.length + " из " + total + " релизов Spotify");
+
+    return sortAndSlice(allItems, limit);
+  } catch (e) {
+    console.warn("Ошибка загрузки альбомов артиста:", e.message);
+    return [];
+  }
+}
+
+function sortAndSlice(items, limit) {
   items.sort((a, b) => {
     const da = a.release_date || "";
     const db_ = b.release_date || "";
     return db_.localeCompare(da);
   });
-  return items;
+  return items.slice(0, limit);
 }
 
 // Топ-треки артиста
-export async function getArtistTopTracks(artistId, market) {
-  market = market || "US";
-  const data = await spotifyFetch(
-    "/artists/" + artistId + "/top-tracks?market=" + market
-  );
-  return data.tracks || [];
+export async function getArtistTopTracks(artistId) {
+  try {
+    // Попробуем с market — если 403, вернём пустой массив
+    const data = await spotifyFetch(
+      "/artists/" + artistId + "/top-tracks?market=US"
+    );
+    return data.tracks || [];
+  } catch (e) {
+    console.warn("Не удалось загрузить топ-треки:", e.message);
+    return [];
+  }
 }
 
 // Нормализация артиста из Spotify → наш формат
@@ -274,80 +321,27 @@ let artistSearchDebounce = null;
 let currentSuggestions = [];
 let currentArtist = null;      // артист, открытый на странице
 
-// -------- Открыть вкладку «Артисты» --------
-export function openArtistsTab() {
-  // Сбрасываем на поиск
-  document.getElementById("artistsSearchView").classList.remove("hidden");
-  document.getElementById("artistPageView").classList.add("hidden");
-  renderRecentArtists();
-  // Фокус в поиск
-  setTimeout(() => {
-    const inp = document.getElementById("artistSearchInput");
-    if (inp) inp.focus();
-  }, 100);
-}
 
-// -------- Ввод в поиске --------
-export function onArtistSearchInput() {
-  const q = document.getElementById("artistSearchInput").value.trim();
-  const listEl = document.getElementById("artistSuggestions");
-  clearTimeout(artistSearchDebounce);
-
-  if (q.length < 2) {
-    listEl.classList.remove("open");
-    listEl.innerHTML = "";
-    return;
-  }
-
-  listEl.innerHTML = '<div class="status"><span class="spinner"></span> Поиск…</div>';
-  listEl.classList.add("open");
-
-  artistSearchDebounce = setTimeout(async () => {
-    try {
-      const items = await searchArtists(q, 15);
-      const mapped = items.map(mapSpotifyArtist);
-      if (mapped.length === 0) {
-        listEl.innerHTML = '<div class="status">Ничего не найдено</div>';
-        return;
-      }
-      currentSuggestions = mapped;
-      listEl.innerHTML = "";
-      mapped.forEach((a, i) => {
-        const el = document.createElement("div");
-        el.className = "suggestion artist-suggestion";
-        el.innerHTML =
-          (a.photo
-            ? '<img src="' + escapeHtml(a.photo) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
-            : '<div class="artist-suggestion-noimg">🎤</div>') +
-          '<div class="text">' +
-            '<div class="t">' + escapeHtml(a.name) + '</div>' +
-            '<div class="a">' + (a.genres && a.genres.length ? escapeHtml(a.genres.slice(0, 2).join(", ")) : "Артист") + '</div>' +
-          '</div>';
-        el.onmousedown = (e) => { e.preventDefault(); openArtist(a.id); };
-        listEl.appendChild(el);
-      });
-      listEl.classList.add("open");
-    } catch (e) {
-      listEl.innerHTML = '<div class="status">Ошибка: ' + escapeHtml(e.message) + '</div>';
-    }
-  }, 400);
-}
-
-export function onArtistSearchKeydown(e) {
-  if (e.key === "Escape") {
-    document.getElementById("artistSuggestions").classList.remove("open");
-  }
-}
 
 // -------- Открыть страницу артиста --------
 export async function openArtist(artistId) {
   if (!artistId) return;
-  document.getElementById("artistSuggestions").classList.remove("open");
-  document.getElementById("artistsSearchView").classList.add("hidden");
-  document.getElementById("artistPageView").classList.remove("hidden");
+
+  // Закрываем подсказки, если открыты
+  const sugg = document.getElementById("suggestionList");
+  if (sugg) sugg.classList.remove("open");
+
+  // Скрываем содержимое главной, показываем страницу артиста
+  const mainContent = document.getElementById("mainDefaultContent");
+  const artistView = document.getElementById("artistPageView");
+  if (mainContent) mainContent.classList.add("hidden");
+  if (artistView) artistView.classList.remove("hidden");
 
   const content = document.getElementById("artistPageContent");
   content.innerHTML = '<div class="empty-msg"><span class="spinner"></span> Загрузка артиста…</div>';
+
+  // Прокрутка наверх
+  window.scrollTo({ top: 0, behavior: "smooth" });
 
   try {
     const data = await getArtistById(artistId);
@@ -355,19 +349,9 @@ export async function openArtist(artistId) {
     currentArtist = artist;
 
     // Параллельно грузим альбомы и топ-треки
-    const [albumsRaw, tracksRaw] = await Promise.all([
-      getArtistAlbums(artistId, 50).catch(() => []),
-      getArtistTopTracks(artistId).catch(() => [])
-    ]);
-
+    const albumsRaw = await getArtistAlbums(artistId, 200).catch(() => []);
     const albums = albumsRaw.map(mapSpotifyArtistAlbum);
-    const tracks = tracksRaw.slice(0, 5).map(t => ({
-      name: t.name,
-      album: t.album?.name || "",
-      cover: t.album?.images?.[0]?.url ? PROXY + "?u=" + encodeURIComponent(t.album.images[0].url) : "",
-      preview: t.preview_url || "",
-      duration: t.duration_ms || 0
-    }));
+    const tracks = [];   // Топ-треки недоступны через Client Credentials Flow
 
     // Сохраняем в Firestore (кэш)
     saveArtistToFirestore(artist);
@@ -479,9 +463,14 @@ function formatFollowers(n) {
 
 // -------- Вернуться к поиску --------
 export function closeArtistPage() {
-  document.getElementById("artistPageView").classList.add("hidden");
-  document.getElementById("artistsSearchView").classList.remove("hidden");
+  const mainContent = document.getElementById("mainDefaultContent");
+  const artistView = document.getElementById("artistPageView");
+  if (artistView) artistView.classList.add("hidden");
+  if (mainContent) mainContent.classList.remove("hidden");
   currentArtist = null;
+
+  // Прокрутка наверх
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 // -------- Клик по альбому → открываем оценку релиза --------
@@ -501,47 +490,10 @@ export function openArtistRatingForm(artistId) {
   alert("Скоро: форма оценки артиста. Открыта страница: " + artistId);
 }
 
-// -------- Недавно оценённые артисты (на экране поиска) --------
-async function renderRecentArtists() {
-  const el = document.getElementById("artistsRecentBlock");
-  if (!el) return;
-  if (!currentUser) { el.innerHTML = ""; return; }
 
-  const myRatings = await loadMyArtistRatings();
-  if (!myRatings.length) {
-    el.innerHTML =
-      '<div class="artist-search-hint">' +
-        '<div class="artist-search-hint-icon">🎤</div>' +
-        '<div>Найдите артиста через поиск и поставьте ему оценку по 5 критериям.</div>' +
-      '</div>';
-    return;
-  }
-
-  el.innerHTML =
-    '<div class="artist-section" style="margin-top:20px;">' +
-      '<div class="artist-section-header">📝 Мои оценённые артисты (' + myRatings.length + ')</div>' +
-      '<div class="artist-my-list">' +
-        myRatings.slice(0, 20).map(r => {
-          const tier = getTier(r.final);
-          return '<div class="artist-my-item" onclick="openArtist(\'' + escapeHtml(r.artistId) + '\')">' +
-            (r.artist?.photo
-              ? '<img src="' + escapeHtml(r.artist.photo) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
-              : '<div class="artist-my-noimg">🎤</div>') +
-            '<div class="artist-my-info">' +
-              '<div class="artist-my-name">' + escapeHtml(r.artist?.name || "—") + '</div>' +
-              '<div class="artist-my-tier">' + tier.emoji + ' ' + escapeHtml(tier.name) + '</div>' +
-            '</div>' +
-            '<div class="artist-my-score" style="color:' + tier.color + '">' + r.final + '</div>' +
-          '</div>';
-        }).join("") +
-      '</div>' +
-    '</div>';
-}
 
 // Экспорт в window для onclick
 if (typeof window !== "undefined") {
-  window.onArtistSearchInput = onArtistSearchInput;
-  window.onArtistSearchKeydown = onArtistSearchKeydown;
   window.openArtist = openArtist;
   window.closeArtistPage = closeArtistPage;
   window.openAlbumFromArtist = openAlbumFromArtist;

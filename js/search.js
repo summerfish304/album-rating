@@ -1,5 +1,6 @@
 import { ITUNES_PROXY, DEBOUNCE_MS, LS_SEARCH_CACHE, LS_RELEASE_CACHE } from './config.js';
 import { escapeHtml } from './utils.js';
+import { mapSpotifyArtist, mapSpotifyArtistAlbum } from './artists.js';
 import { cacheGet, cacheSet } from './cache.js';
 import { showWarning, hideWarning } from './ui.js';
 
@@ -52,6 +53,47 @@ export async function spotifySearchAlbums(query, limit) {
   return items.slice(0, Math.max(1, Math.min(50, limit)));
 }
 
+// ============================================================
+// ЕДИНЫЙ ПОИСК: альбомы + артисты
+// ============================================================
+export async function searchAll(query, limit) {
+  limit = limit || 25;
+  const data = await spotifyFetch(
+    "/search?q=" + encodeURIComponent(query) + "&type=album,artist"
+  );
+
+  const albumsRaw = (data.albums && data.albums.items) || [];
+  const artistsRaw = (data.artists && data.artists.items) || [];
+
+  const albums = albumsRaw.map(mapSpotifyAlbum).map(a => ({
+    kind: "release",
+    ...a
+  }));
+
+  const artists = artistsRaw.map(mapSpotifyArtist).map(a => ({
+    kind: "artist",
+    id: a.id,
+    title: a.name,
+    cover: a.photo,
+    artist: (a.genres && a.genres.length ? a.genres.slice(0, 2).join(", ") : "Артист"),
+    source: "spotify",
+    followers: a.followers,
+    genres: a.genres
+  }));
+
+  // Смешиваем: сначала пара артистов (для клика на страницу),
+  // потом релизы. Или всё подряд с сохранением порядка поиска.
+  // Простой вариант: артисты + релизы, чередуя в начале.
+  const mixed = [];
+  const maxLen = Math.max(artists.length, albums.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (artists[i]) mixed.push(artists[i]);
+    if (albums[i]) mixed.push(albums[i]);
+    if (mixed.length >= limit) break;
+  }
+  return mixed.slice(0, limit);
+}
+
 export async function spotifyGetAlbum(id) {
   return spotifyFetch("/albums/" + id);
 }
@@ -76,12 +118,12 @@ export function mapSpotifyAlbum(a) {
   };
 }
 
-export function onSearchInput(onChoose) {
+export function onSearchInput(onChoose, onChooseArtist) {
   const q = document.getElementById("searchInput").value.trim();
   clearTimeout(debounceTimer);
   if (q.length < 2) { lastSuggestions = []; activeIndex = -1; closeSuggestions(); return; }
   renderSkeletonSuggestions();
-  debounceTimer = setTimeout(() => fetchSuggestions(q, onChoose), DEBOUNCE_MS);
+  debounceTimer = setTimeout(() => fetchSuggestions(q, onChoose, onChooseArtist), DEBOUNCE_MS);
 }
 
 function renderSkeletonSuggestions() {
@@ -96,27 +138,26 @@ function renderSkeletonSuggestions() {
   list.classList.add("open");
 }
 
-async function fetchSuggestions(q, onChoose) {
+async function fetchSuggestions(q, onChoose, onChooseArtist) {
   try {
-    const cacheKey = "spotify|" + q.toLowerCase();
+    const cacheKey = "spotify_all|" + q.toLowerCase();
     const cached = cacheGet(LS_SEARCH_CACHE, cacheKey);
     if (cached && cached.length) {
-      lastSuggestions = cached.slice(0, 20);
+      lastSuggestions = cached.slice(0, 25);
       activeIndex = -1;
-      renderSuggestions(onChoose);
+      renderSuggestions(onChoose, onChooseArtist);
       return;
     }
-    const albums = await spotifySearchAlbums(q, 20);
-    const items = albums.map(mapSpotifyAlbum);
+    const items = await searchAll(q, 25);
     if (items.length === 0) {
       lastSuggestions = [];
       renderStatus("Ничего не найдено");
       return;
     }
     cacheSet(LS_SEARCH_CACHE, cacheKey, items);
-    lastSuggestions = items.slice(0, 20);
+    lastSuggestions = items.slice(0, 25);
     activeIndex = -1;
-    renderSuggestions(onChoose);
+    renderSuggestions(onChoose, onChooseArtist);
     hideWarning();
   } catch (e) {
     console.error("Spotify search error:", e);
@@ -126,16 +167,32 @@ async function fetchSuggestions(q, onChoose) {
   }
 }
 
-function renderSuggestions(onChoose) {
+function renderSuggestions(onChoose, onChooseArtist) {
   const list = document.getElementById("suggestionList");
   list.innerHTML = "";
-  lastSuggestions.forEach((album, i) => {
+  lastSuggestions.forEach((item, i) => {
     const el = document.createElement("div");
-    el.className = "suggestion" + (i === activeIndex ? " active" : "");
+    el.className = "suggestion" + (i === activeIndex ? " active" : "") + (item.kind === "artist" ? " suggestion-artist" : "");
     el.dataset.index = i;
-    el.innerHTML = '<img src="' + escapeHtml(album.cover) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
-      '<div class="text"><div class="t">' + escapeHtml(album.title) + '</div><div class="a">' + escapeHtml(album.artist) + '</div></div>';
-    el.onmousedown = (e) => { e.preventDefault(); chooseSuggestion(i, onChoose); };
+    if (item.kind === "artist") {
+      el.innerHTML =
+        (item.cover
+          ? '<img class="suggestion-artist-img" src="' + escapeHtml(item.cover) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+          : '<div class="suggestion-artist-noimg">🎤</div>') +
+        '<div class="text">' +
+          '<div class="t">' + escapeHtml(item.title) + '</div>' +
+          '<div class="a">🎤 ' + escapeHtml(item.artist || "Артист") + '</div>' +
+        '</div>' +
+        '<div class="suggestion-badge">Артист</div>';
+    } else {
+      el.innerHTML =
+        '<img src="' + escapeHtml(item.cover) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+        '<div class="text">' +
+          '<div class="t">' + escapeHtml(item.title) + '</div>' +
+          '<div class="a">💿 ' + escapeHtml(item.artist) + (item.year ? ' · ' + item.year : '') + '</div>' +
+        '</div>';
+    }
+    el.onmousedown = (e) => { e.preventDefault(); chooseSuggestion(i, onChoose, onChooseArtist); };
     el.onmouseenter = () => { activeIndex = i; updateActiveHighlight(); };
     list.appendChild(el);
   });
@@ -159,7 +216,7 @@ export function updateActiveHighlight() {
   if (active) active.scrollIntoView({ block: "nearest" });
 }
 
-export function onSearchKeydown(e, onChoose) {
+export function onSearchKeydown(e, onChoose, onChooseArtist) {
   const isOpen = document.getElementById("suggestionList").classList.contains("open");
   if (e.key === "ArrowDown") {
     if (!lastSuggestions.length) return;
@@ -179,21 +236,31 @@ export function onSearchKeydown(e, onChoose) {
     else activeIndex = (activeIndex + 1) % lastSuggestions.length;
     updateActiveHighlight();
   } else if (e.key === "Enter") {
-    if (isOpen && activeIndex >= 0 && lastSuggestions[activeIndex]) { e.preventDefault(); chooseSuggestion(activeIndex, onChoose); }
-    else if (lastSuggestions.length > 0) { e.preventDefault(); chooseSuggestion(0, onChoose); }
+    if (isOpen && activeIndex >= 0 && lastSuggestions[activeIndex]) { e.preventDefault(); chooseSuggestion(activeIndex, onChoose, onChooseArtist); }
+    else if (lastSuggestions.length > 0) { e.preventDefault(); chooseSuggestion(0, onChoose, onChooseArtist); }
   } else if (e.key === "Escape") {
     closeSuggestions();
   }
 }
 
-export function chooseSuggestion(i, onChoose) {
-  const album = lastSuggestions[i];
-  if (!album) return;
+export function chooseSuggestion(i, onChoose, onChooseArtist) {
+  const item = lastSuggestions[i];
+  if (!item) return;
   closeSuggestions();
-  document.getElementById("searchInput").value = album.title + " — " + album.artist;
+
+  if (item.kind === "artist") {
+    document.getElementById("searchInput").value = "🎤 " + item.title;
+    lastSuggestions = [];
+    activeIndex = -1;
+    if (onChooseArtist) onChooseArtist(item.id);
+    return;
+  }
+
+  // Релиз
+  document.getElementById("searchInput").value = item.title + " — " + item.artist;
   lastSuggestions = [];
   activeIndex = -1;
-  if (onChoose) onChoose({ id: album.id, title: album.title, cover: album.cover, source: "spotify" });
+  if (onChoose) onChoose({ id: item.id, title: item.title, cover: item.cover, source: "spotify" });
 }
 
 export function resetSearchState() {

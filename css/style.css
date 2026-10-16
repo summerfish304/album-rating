@@ -5197,3 +5197,51 @@ body.theme-season-active .scheme-grid:hover {
   .artist-name { font-size: 1.3rem; }
   .artist-albums { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
 }
+
+/* ============================================================
+   ЕДИНЫЙ ПОИСК: АРТИСТ В ПОДСКАЗКАХ
+   ============================================================ */
+.suggestion-artist {
+  background: linear-gradient(90deg, rgba(124,108,240,.06), transparent 60%);
+}
+.suggestion-artist:hover,
+.suggestion-artist.active {
+  background: linear-gradient(90deg, rgba(124,108,240,.15), var(--panel-3));
+}
+.suggestion-artist-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50% !important;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--panel-3);
+}
+.suggestion-artist-noimg {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-3);
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.suggestion-badge {
+  font-size: .65rem;
+  padding: 3px 9px;
+  border-radius: 10px;
+  background: var(--accent-glow);
+  color: var(--accent-3);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   СТРАНИЦА АРТИСТА (внутри navMain)
+   ============================================================ */
+#artistPageView {
+  animation: fadeUp .3s ease;
+}

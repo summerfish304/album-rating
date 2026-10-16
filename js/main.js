@@ -117,8 +117,6 @@ import {
 
 import {
   setArtistsContext,
-  openArtistsTab,
-  onArtistSearchInput, onArtistSearchKeydown,
   openArtist, closeArtistPage, openAlbumFromArtist,
   openArtistRatingForm
 } from './artists.js';
@@ -138,7 +136,7 @@ let swipeStartX = 0;
 let swipeStartY = 0;
 let authMode = "login";
 let _lastNav = "main";
-const NAV_ORDER = ["main", "artists", "board", "tops", "history", "wishlist", "profile", "admin"];
+const NAV_ORDER = ["main", "board", "tops", "history", "wishlist", "profile", "admin"];
 
 // ============================================================
 // Rate limit (общий для всех)
@@ -379,7 +377,8 @@ onAuthStateChanged(auth, async (user) => {
       userProfile,
       callbacks: {
         onSwitchNav: (nav) => switchNav(nav),
-        onLoadAlbum: (album) => loadAlbum(album)
+        onLoadAlbum: (album) => loadAlbum(album),
+        onCloseArtistPage: () => closeArtistPage()
       }
     });
 
@@ -560,8 +559,7 @@ function switchNav(nav) {
   document.querySelectorAll(".nav-tab").forEach(t => t.classList.toggle("active", t.dataset.nav === nav));
   document.querySelectorAll(".mnav-btn").forEach(t => t.classList.toggle("active", t.dataset.nav === nav));
   const map = {
-    main: "navMain", artists: "navArtists",
-    board: "navBoard", tops: "navTops",
+    main: "navMain", board: "navBoard", tops: "navTops",
     history: "navHistory", wishlist: "navWishlist",
     profile: "navProfile", admin: "navAdmin"
   };
@@ -578,7 +576,6 @@ function switchNav(nav) {
       el.classList.add("hidden");
     }
   });
-  if (nav === "artists") openArtistsTab();
   if (nav === "board") refreshBoard();
   if (nav === "tops") {
     renderTops();
@@ -844,8 +841,15 @@ window.switchNav = switchNav;
 window.goHome = goHome;
 
 window.setRatingMode = setRatingMode;
-window.onSearchInput = () => onSearchInput((album) => loadAlbum(album));
-window.onSearchKeydown = (e) => onSearchKeydown(e, (album) => loadAlbum(album));
+window.onSearchInput = () => onSearchInput(
+  (album) => loadAlbum(album),
+  (artistId) => openArtist(artistId)
+);
+window.onSearchKeydown = (e) => onSearchKeydown(
+  e,
+  (album) => loadAlbum(album),
+  (artistId) => openArtist(artistId)
+);
 window.checkShowSuggestions = () => { try { showSuggestions(); } catch (e) {} };
 
 window.openBoardModal = (g) => openBoardModal(g);
@@ -865,8 +869,6 @@ window.switchAdminTab = switchAdminTab;
 
 window.clearReviewInput = clearReviewInput;
 
-window.onArtistSearchInput = onArtistSearchInput;
-window.onArtistSearchKeydown = onArtistSearchKeydown;
 window.openArtist = openArtist;
 window.closeArtistPage = closeArtistPage;
 window.openAlbumFromArtist = openAlbumFromArtist;
