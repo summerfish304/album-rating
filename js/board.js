@@ -1,13 +1,14 @@
 import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, query, where, deleteDoc, serverTimestamp, onSnapshot, orderBy, fbLimit } from './firebase.js';
 import {
   ADMIN_UID, FINAL_MAX, BOARD_PAGE_SIZE, FEED_PAGE_SIZE, FEED_MAX_ITEMS,
-  LS_REPORTS, MAIN_CRITERIA
+  LS_REPORTS, MAIN_CRITERIA, TIERS
 } from './config.js';
 import {
   getTier, getLevelByXp, plural, escapeHtml, colorFromString, formatTime,
   tierBadgeHtml
 } from './utils.js';
 import { cacheGet, scheduleCoverCaching, hydrateImagesFromCache } from './cache.js';
+import { spotifyGetAlbum } from './search.js';
 import { showToast, showFloatingLoader, renderSkeletonList } from './ui.js';
 import { showConfirm } from './confirm.js';
 
@@ -23,6 +24,15 @@ let boardRendered = 0;
 let boardFilteredList = [];
 let boardLoadingMore = false;
 let boardAllLoaded = false;
+// Вид и фильтры
+let boardView = "list";             // "list" | "tiles"
+let boardTierFilter = new Set();    // cssClass тиров
+let boardYearFilter = "all";        // "all" | "2026" | ...
+let boardArtistFilter = new Set();  // имена артистов
+const LS_BOARD_VIEW = "albumRating_boardView_v1";
+const LS_BOARD_TIERS = "albumRating_boardTiers_v1";
+const LS_BOARD_YEAR = "albumRating_boardYear_v1";
+const LS_BOARD_ARTISTS = "albumRating_boardArtists_v1";
 let myReportedComments = new Set();
 let currentFeedTab = "all";
 let feedData = [];
@@ -41,6 +51,7 @@ export function setBoardContext(opts) {
   if (opts.currentUser !== undefined) currentUser = opts.currentUser;
   if (opts.userProfile !== undefined) userProfile = opts.userProfile;
   if (opts.callbacks !== undefined) callbacks = opts.callbacks || {};
+  loadBoardPreferences();
 }
 export function getBoardData() { return boardData; }
 export function getCompareSelection() { return compareSelection; }
@@ -64,17 +75,227 @@ export function saveLocalReported() {
 }
 
 // ============================================================
+// Вид и фильтры доски — загрузка/сохранение
+// ============================================================
+function loadBoardPreferences() {
+  try {
+    const v = localStorage.getItem(LS_BOARD_VIEW);
+    if (v === "list" || v === "tiles") boardView = v;
+    const tiers = localStorage.getItem(LS_BOARD_TIERS);
+    if (tiers) {
+      const arr = JSON.parse(tiers);
+      if (Array.isArray(arr)) boardTierFilter = new Set(arr);
+    }
+    const year = localStorage.getItem(LS_BOARD_YEAR);
+    if (year) boardYearFilter = year;
+    const artists = localStorage.getItem(LS_BOARD_ARTISTS);
+    if (artists) {
+      const arr = JSON.parse(artists);
+      if (Array.isArray(arr)) boardArtistFilter = new Set(arr);
+    }
+  } catch (e) {}
+}
+
+function saveBoardPreferences() {
+  try {
+    localStorage.setItem(LS_BOARD_VIEW, boardView);
+    localStorage.setItem(LS_BOARD_TIERS, JSON.stringify([...boardTierFilter]));
+    localStorage.setItem(LS_BOARD_YEAR, boardYearFilter);
+    localStorage.setItem(LS_BOARD_ARTISTS, JSON.stringify([...boardArtistFilter]));
+  } catch (e) {}
+}
+
+export function setBoardView(view) {
+  boardView = (view === "tiles") ? "tiles" : "list";
+  document.querySelectorAll(".bf-view-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.view === boardView);
+  });
+  saveBoardPreferences();
+  renderBoard();
+}
+
+export function toggleBoardTier(cssClass) {
+  if (boardTierFilter.has(cssClass)) boardTierFilter.delete(cssClass);
+  else boardTierFilter.add(cssClass);
+  saveBoardPreferences();
+  renderBoardTierChips();
+  updateBoardResetBtn();
+  renderBoard();
+}
+
+export function setBoardYearFilter(year) {
+  boardYearFilter = year || "all";
+  saveBoardPreferences();
+  updateBoardResetBtn();
+  renderBoard();
+}
+
+export function toggleBoardArtist(artistName) {
+  if (boardArtistFilter.has(artistName)) boardArtistFilter.delete(artistName);
+  else boardArtistFilter.add(artistName);
+  saveBoardPreferences();
+  renderBoardArtistChips();
+  updateBoardResetBtn();
+  renderBoard();
+}
+
+export function resetBoardFilters() {
+  boardTierFilter = new Set();
+  boardYearFilter = "all";
+  boardArtistFilter = new Set();
+  saveBoardPreferences();
+  renderBoardTierChips();
+  renderBoardArtistChips();
+  updateBoardResetBtn();
+  const yearSel = document.getElementById("boardYearFilter");
+  if (yearSel) yearSel.value = "all";
+  renderBoard();
+}
+
+function updateBoardResetBtn() {
+  const btn = document.getElementById("boardResetBtn");
+  if (!btn) return;
+  const hasFilters = boardTierFilter.size > 0 || boardYearFilter !== "all" || boardArtistFilter.size > 0;
+  btn.classList.toggle("hidden", !hasFilters);
+}
+
+function renderBoardTierChips() {
+  const el = document.getElementById("boardTierChips");
+  if (!el) return;
+  const tiers = TIERS; // из config.js
+  let html = '<button class="bf-chip' + (boardTierFilter.size === 0 ? " active" : "") + '" onclick="resetBoardTierOnly()">Все</button>';
+  tiers.forEach(t => {
+    const active = boardTierFilter.has(t.cssClass);
+    html += '<button class="bf-chip bf-chip-tier' + (active ? " active" : "") + '" data-tier="' + escapeHtml(t.cssClass) + '" title="' + escapeHtml(t.name) + '">' + t.emoji + '</button>';
+  });
+  el.innerHTML = html;
+  el.querySelectorAll(".bf-chip[data-tier]").forEach(btn => {
+    btn.onclick = () => toggleBoardTier(btn.dataset.tier);
+  });
+}
+
+export function resetBoardTierOnly() {
+  boardTierFilter = new Set();
+  saveBoardPreferences();
+  renderBoardTierChips();
+  updateBoardResetBtn();
+  renderBoard();
+}
+
+function renderBoardYearFilter() {
+  const sel = document.getElementById("boardYearFilter");
+  if (!sel) return;
+  const years = new Set();
+  boardData.forEach(g => {
+    const rd = g.album && g.album.releaseDate;
+    if (rd && /^\d{4}/.test(rd)) years.add(rd.slice(0, 4));
+  });
+  const sorted = [...years].sort((a, b) => parseInt(b) - parseInt(a));
+  let html = '<option value="all">Все годы</option>';
+  sorted.forEach(y => {
+    html += '<option value="' + y + '">' + y + '</option>';
+  });
+  sel.innerHTML = html;
+  sel.value = sorted.includes(boardYearFilter) ? boardYearFilter : "all";
+  if (!sorted.includes(boardYearFilter)) boardYearFilter = "all";
+}
+
+let _artistsExpanded = false;
+
+function renderBoardArtistChips() {
+  const row = document.getElementById("boardArtistRow");
+  const el = document.getElementById("boardArtistChips");
+  if (!row || !el) return;
+  // Топ-15 артистов по количеству релизов
+  const counts = {};
+  boardData.forEach(g => {
+    const a = g.album && g.album.artist;
+    if (a) counts[a] = (counts[a] || 0) + 1;
+  });
+  const top = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15);
+  if (top.length === 0) { row.classList.add("hidden"); return; }
+  row.classList.remove("hidden");
+
+  const VISIBLE = 8;
+  // Выбранные артисты, которых нет в «видимой» части — показываем всегда
+  const selectedOutsideTop = [...boardArtistFilter].filter(n => !top.slice(0, VISIBLE).some(([nm]) => nm === n));
+
+  let html = "";
+  top.forEach(([name, cnt], idx) => {
+    const active = boardArtistFilter.has(name);
+    const hiddenClass = (idx >= VISIBLE && !_artistsExpanded && !active) ? " hidden" : "";
+    html += '<button class="bf-chip' + (active ? " active" : "") + hiddenClass + '" data-artist="' + escapeHtml(name) + '">' +
+      escapeHtml(name) + ' <span style="opacity:.55;font-size:.7em;">' + cnt + '</span></button>';
+  });
+  // Дополнительные выбранные (не в топ-15 вовсе)
+  selectedOutsideTop.forEach(name => {
+    html += '<button class="bf-chip active" data-artist="' + escapeHtml(name) + '">' +
+      escapeHtml(name) + '</button>';
+  });
+  // Кнопка «ещё»
+  const extraCount = Math.max(0, top.length - VISIBLE);
+  if (extraCount > 0) {
+    html += '<button class="bf-chip bf-chip-more" id="boardArtistsMoreBtn">' +
+      (_artistsExpanded ? 'Скрыть ▴' : 'Ещё ' + extraCount + ' ▾') +
+    '</button>';
+  }
+  el.innerHTML = html;
+  el.querySelectorAll(".bf-chip[data-artist]").forEach(btn => {
+    btn.onclick = () => toggleBoardArtist(btn.dataset.artist);
+  });
+  const moreBtn = document.getElementById("boardArtistsMoreBtn");
+  if (moreBtn) {
+    moreBtn.onclick = () => {
+      _artistsExpanded = !_artistsExpanded;
+      renderBoardArtistChips();
+    };
+  }
+}
+
+export function refreshBoardFiltersUI() {
+  renderBoardTierChips();
+  renderBoardYearFilter();
+  renderBoardArtistChips();
+  updateBoardResetBtn();
+  document.querySelectorAll(".bf-view-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.view === boardView);
+  });
+}
+
+// ============================================================
 // Доска
 // ============================================================
 function prepareBoardList() {
   let list = [...boardData];
+  // Поиск
   if (boardSearchLower) {
     list = list.filter(g =>
       (g.album.title || "").toLowerCase().includes(boardSearchLower) ||
       (g.album.artist || "").toLowerCase().includes(boardSearchLower) ||
       g.ratings.some(r => (r.nickname || "").toLowerCase().includes(boardSearchLower)));
   }
-  const sort = document.getElementById("boardSort").value;
+  // Фильтр по тирам
+  if (boardTierFilter.size > 0) {
+    list = list.filter(g => {
+      const tier = getTier(g.avgFinal);
+      return boardTierFilter.has(tier.cssClass);
+    });
+  }
+  // Фильтр по году
+  if (boardYearFilter !== "all") {
+    list = list.filter(g => {
+      const rd = g.album && g.album.releaseDate;
+      return rd && rd.slice(0, 4) === boardYearFilter;
+    });
+  }
+  // Фильтр по артистам
+  if (boardArtistFilter.size > 0) {
+    list = list.filter(g => boardArtistFilter.has(g.album && g.album.artist));
+  }
+  const sortEl = document.getElementById("boardSort");
+  const sort = sortEl ? sortEl.value : "date_desc";
   list.sort((a, b) => {
     switch (sort) {
       case "date_desc": return b.lastTs - a.lastTs;
@@ -116,11 +337,21 @@ export async function refreshBoard() {
       const sum = g.ratings.reduce((a, r) => a + r.final, 0);
       g.avgFinal = Math.round(sum / g.ratings.length);
       g.userCount = g.ratings.length;
+      // Фолбэк: если у первой оценки нет releaseDate — ищем в других
+      if (!g.album.releaseDate) {
+        // уже собрали ratings[] — но там нет album. Используем all
+        const found = all.find(r => r.source === g.source && String(r.releaseId) === String(g.releaseId) && r.album && r.album.releaseDate);
+        if (found) g.album.releaseDate = found.album.releaseDate;
+      }
       return g;
     });
     renderBoardDynamicStats();
+    refreshBoardFiltersUI();
     prepareBoardList();
     renderBoard();
+
+    // Ленивая подгрузка отсутствующих дат из Spotify
+    lazyHydrateReleaseDates();
   } catch (e) {
     listEl.innerHTML = '<div class="empty-msg" style="color:var(--danger)">Ошибка: ' + escapeHtml(e.message) + '</div>';
   } finally { showFloatingLoader(false); }
@@ -146,12 +377,13 @@ export function renderBoard() {
   prepareBoardList();
   const listEl = document.getElementById("boardList");
   listEl.innerHTML = "";
+  listEl.classList.toggle("board-tiles", boardView === "tiles");
   if (boardFilteredList.length === 0) {
-    listEl.innerHTML = '<div class="empty-msg">Пока никто не оценил ни одного релиза.<br>Будьте первым!</div>';
+    listEl.innerHTML = '<div class="empty-msg">Ничего не найдено по выбранным фильтрам.<br>Попробуйте сбросить фильтры.</div>';
     document.getElementById("boardStats").textContent = "0 релизов";
     return;
   }
-  document.getElementById("boardStats").textContent = boardFilteredList.length + " релизов";
+  document.getElementById("boardStats").textContent = boardFilteredList.length + " " + plural(boardFilteredList.length, "релиз", "релиза", "релизов");
   appendBoardChunk();
 }
 
@@ -161,10 +393,12 @@ function appendBoardChunk() {
   const chunk = boardFilteredList.slice(boardRendered, end);
   const fragment = document.createDocumentFragment();
   const urlsToCache = [];
+  const isTiles = boardView === "tiles";
+
   chunk.forEach(g => {
     const tier = getTier(g.avgFinal);
     const el = document.createElement("div");
-    el.className = "board-item " + tier.cssClass;
+    el.className = "board-item " + tier.cssClass + (isTiles ? " board-tile" : "");
     const hasAdmin = g.adminRating != null;
     const singleNote = g.album.isSingleFromAlbum && g.album.parentAlbum
       ? ' <span style="font-size:.68rem; color:var(--vibe-1); background:rgba(126,224,212,.15); padding:2px 6px; border-radius:8px; font-weight:600;">🎯 из «' + escapeHtml(g.album.parentAlbum.title) + '»</span>'
@@ -179,14 +413,32 @@ function appendBoardChunk() {
         '<span style="color:' + tier.color + '; font-weight:800;">' + myRating.final + '</span>' +
       '</div>';
     }
-    el.innerHTML = '<img src="' + escapeHtml(g.album.artwork || "") + '" alt="" data-cacheable="1" data-src="' + escapeHtml(g.album.artwork || "") + '" onerror="this.style.visibility=\'hidden\'">' +
-      '<div class="info"><div class="title">' + escapeHtml(g.album.title) + tierBadgeHtml(tier) + singleNote + '</div>' +
-      '<div class="artist">' + escapeHtml(g.album.artist) + '</div></div>' +
-      '<div class="numbers">' +
-        (myChangeHtml ? '<div class="num-block" style="min-width:auto;">' + myChangeHtml + '</div>' : '') +
-        '<div class="num-block avg"><div class="num-label">Средняя (' + g.userCount + ')</div><div class="num-value">' + g.avgFinal + '</div></div>' +
-        '<div class="num-block admin ' + (hasAdmin ? "" : "none") + '"><div class="num-label">👑 Админ</div><div class="num-value">' + (hasAdmin ? g.adminRating : "—") + '</div></div>' +
-      '</div>';
+
+    if (isTiles) {
+      // ПЛИТКА
+      el.innerHTML =
+        '<div class="bt-cover-wrap">' +
+          '<img class="bt-cover" src="' + escapeHtml(g.album.artwork || "") + '" alt="" data-cacheable="1" data-src="' + escapeHtml(g.album.artwork || "") + '" onerror="this.style.visibility=\'hidden\'">' +
+          '<div class="bt-tier-badge">' + tier.emoji + '</div>' +
+        '</div>' +
+        '<div class="bt-info">' +
+          '<div class="bt-title">' + escapeHtml(g.album.title) + '</div>' +
+          '<div class="bt-artist">' + escapeHtml(g.album.artist) + '</div>' +
+          '<div class="bt-score" style="color:' + tier.color + '">' + g.avgFinal + '<span class="bt-of">/360</span></div>' +
+          '<div class="bt-meta">' + g.userCount + ' ' + plural(g.userCount, "оценка", "оценки", "оценок") + (hasAdmin ? ' · 👑 ' + g.adminRating : '') + '</div>' +
+        '</div>';
+    } else {
+      // СПИСОК
+      el.innerHTML = '<img src="' + escapeHtml(g.album.artwork || "") + '" alt="" data-cacheable="1" data-src="' + escapeHtml(g.album.artwork || "") + '" onerror="this.style.visibility=\'hidden\'">' +
+        '<div class="info"><div class="title">' + escapeHtml(g.album.title) + tierBadgeHtml(tier) + singleNote + '</div>' +
+        '<div class="artist">' + escapeHtml(g.album.artist) + '</div></div>' +
+        '<div class="numbers">' +
+          (myChangeHtml ? '<div class="num-block" style="min-width:auto;">' + myChangeHtml + '</div>' : '') +
+          '<div class="num-block avg"><div class="num-label">Средняя (' + g.userCount + ')</div><div class="num-value">' + g.avgFinal + '</div></div>' +
+          '<div class="num-block admin ' + (hasAdmin ? "" : "none") + '"><div class="num-label">👑 Админ</div><div class="num-value">' + (hasAdmin ? g.adminRating : "—") + '</div></div>' +
+        '</div>';
+    }
+
     el.onclick = () => openBoardModal(g);
     fragment.appendChild(el);
     if (g.album.artwork) urlsToCache.push(g.album.artwork);
@@ -1065,7 +1317,52 @@ function buildReviewItem(review, source, releaseId, callbacks) {
 
   return el;
 }
+// ============================================================
+// ЛЕНИВАЯ ПОДГРУЗКА releaseDate ИЗ SPOTIFY
+// ============================================================
+const _releaseDateCache = new Map();   // key: source_releaseId → "YYYY-MM-DD" | ""
+let _hydratingDates = false;
 
+async function lazyHydrateReleaseDates() {
+  if (_hydratingDates) return;
+  _hydratingDates = true;
+  try {
+    const need = boardData.filter(g => {
+      if (g.album.releaseDate) return false;
+      const key = g.source + "_" + g.releaseId;
+      if (_releaseDateCache.has(key)) return false;
+      return g.source === "spotify";
+    });
+    if (need.length === 0) { _hydratingDates = false; return; }
+
+    // Качаем по 3 параллельно, чтобы не забить прокси
+    const BATCH = 3;
+    for (let i = 0; i < need.length; i += BATCH) {
+      const batch = need.slice(i, i + BATCH);
+      await Promise.all(batch.map(async g => {
+        const key = g.source + "_" + g.releaseId;
+        try {
+          const data = await spotifyGetAlbum(g.releaseId);
+          const rd = data && data.release_date ? data.release_date : "";
+          _releaseDateCache.set(key, rd);
+          if (rd) g.album.releaseDate = rd;
+        } catch (e) {
+          _releaseDateCache.set(key, "");
+        }
+      }));
+    }
+
+    // Обновляем фильтр годов и перерисовываем (без перезагрузки данных)
+    renderBoardYearFilter();
+    updateBoardResetBtn();
+    prepareBoardList();
+    renderBoard();
+  } catch (e) {
+    console.warn("lazyHydrateReleaseDates error:", e.message);
+  } finally {
+    _hydratingDates = false;
+  }
+}
 // Форматирование текста: **жирный**, *курсив*, переносы
 export function formatReviewText(text) {
   if (!text) return "";

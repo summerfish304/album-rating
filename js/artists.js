@@ -6,7 +6,7 @@ import { db, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, que
 import {
   ADMIN_UID, ITUNES_PROXY,
   ARTIST_CRITERIA, ARTIST_VIBE_KEY, ARTIST_MAIN_CRITERIA,
-  VERDICTS_ARTIST, FINAL_MAX
+  VERDICTS_ARTIST, FINAL_MAX, TIERS
 } from './config.js';
 import { escapeHtml, getLevelByXp, getTier, computeFinalScore, getNextTier } from './utils.js';
 import { showToast } from './ui.js';
@@ -501,25 +501,38 @@ export function openAlbumFromArtist(albumId) {
   }
 }
 
-
-
 // ============================================================
-// ФОРМА ОЦЕНКИ АРТИСТА
+// ФОРМА ОЦЕНКИ АРТИСТА (отдельная страница, как у релизов)
 // ============================================================
-
-
 let artistModalValues = {};
 let artistModalArtist = null;
+let artistModalExisting = null;
 
-// Открыть форму
+const ARTIST_RESULT_EXPANDED_KEY = "albumRating_artistResultExpanded_v1";
+
+function _getArtistResultExpanded() {
+  try { return localStorage.getItem(ARTIST_RESULT_EXPANDED_KEY) === "1"; }
+  catch (e) { return false; }
+}
+function _setArtistResultExpanded(val) {
+  try { localStorage.setItem(ARTIST_RESULT_EXPANDED_KEY, val ? "1" : "0"); } catch (e) {}
+  const details = document.getElementById("artistResultDetails");
+  const label = document.getElementById("artistResultToggleLabel");
+  const arrow = document.getElementById("artistResultToggleArrow");
+  if (details) details.classList.toggle("open", !!val);
+  if (label) label.textContent = val ? "📊 Свернуть" : "📊 Подробнее";
+  if (arrow) arrow.textContent = val ? "▴" : "▾";
+}
+
+export function toggleArtistResultDetails() {
+  _setArtistResultExpanded(!_getArtistResultExpanded());
+}
+
+// Открыть страницу оценки артиста
 export async function openArtistRatingForm(artistId) {
-  if (!currentUser) {
-    showToast && showToast("Нужно войти");
-    return;
-  }
+  if (!currentUser) { showToast("Нужно войти"); return; }
   const artist = currentArtist;
   if (!artist || artist.id !== artistId) {
-    // Если артиста нет в памяти — грузим
     try {
       const data = await getArtistById(artistId);
       artistModalArtist = mapSpotifyArtist(data);
@@ -531,51 +544,84 @@ export async function openArtistRatingForm(artistId) {
     artistModalArtist = artist;
   }
 
-  const modal = document.getElementById("artistRatingBackdrop");
-  if (!modal) return;
+  // Переключаем экраны
+  const artistView = document.getElementById("artistPageView");
+  const ratingView = document.getElementById("artistRatingView");
+  const mainDefault = document.getElementById("mainDefaultContent");
+  if (artistView) artistView.classList.add("hidden");
+  if (mainDefault) mainDefault.classList.add("hidden");
+  if (ratingView) ratingView.classList.remove("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
 
-  // Заполняем шапку
-  const photoEl = document.getElementById("artistRatingPhoto");
-  if (photoEl) {
-    photoEl.src = artistModalArtist.photo || "";
-    photoEl.style.visibility = artistModalArtist.photo ? "visible" : "hidden";
+  // Шапка-карточка артиста
+  const cardEl = document.getElementById("artistRatingCard");
+  if (cardEl) {
+    cardEl.innerHTML =
+      '<div class="bg-blur" style="background-image:url(\'' + escapeHtml(artistModalArtist.photo || "") + '\')"></div>' +
+      (artistModalArtist.photo
+        ? '<img class="cover" src="' + escapeHtml(artistModalArtist.photo) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+        : '<div class="cover cover-noimg">🎤</div>') +
+      '<div class="info">' +
+        '<div class="title">' + escapeHtml(artistModalArtist.name) + '</div>' +
+        '<div class="artist">' +
+          (artistModalArtist.genres && artistModalArtist.genres.length
+            ? artistModalArtist.genres.slice(0, 3).map(g => escapeHtml(g)).join(", ")
+            : "Артист") +
+        '</div>' +
+      '</div>';
   }
-  document.getElementById("artistRatingName").textContent = artistModalArtist.name;
-  document.getElementById("artistRatingGenres").textContent =
-    (artistModalArtist.genres && artistModalArtist.genres.length
-      ? artistModalArtist.genres.slice(0, 3).join(", ")
-      : "Артист");
 
-  // Загружаем существующую оценку (если есть)
+  // Загружаем существующую оценку
   const existing = await loadMyArtistRating(artistId);
+  artistModalExisting = existing;
 
   artistModalValues = {};
   ARTIST_CRITERIA.forEach(c => { artistModalValues[c.key] = 7; });
-
   if (existing && existing.values) {
     Object.keys(existing.values).forEach(k => {
       if (artistModalValues[k] !== undefined) artistModalValues[k] = existing.values[k];
     });
   }
 
+  // Вайб
+  const vibeVal = artistModalValues[ARTIST_VIBE_KEY] != null ? artistModalValues[ARTIST_VIBE_KEY] : 7;
+  const vibeSlider = document.getElementById("artistVibeSlider");
+  const vibeValueEl = document.getElementById("artistVibeValue");
+  if (vibeSlider) {
+    vibeSlider.value = vibeVal;
+    updateSliderFill(vibeSlider);
+    vibeSlider.oninput = () => {
+      const v = parseInt(vibeSlider.value);
+      artistModalValues[ARTIST_VIBE_KEY] = v;
+      if (vibeValueEl) vibeValueEl.textContent = v;
+      updateSliderFill(vibeSlider);
+      updateArtistModalTotal();
+    };
+  }
+  if (vibeValueEl) vibeValueEl.textContent = vibeVal;
+
   // Рецензия
   const reviewInput = document.getElementById("artistReviewInput");
-  if (reviewInput) {
-    reviewInput.value = (existing && existing.review) || "";
-  }
+  if (reviewInput) reviewInput.value = (existing && existing.review) || "";
+
+  // Скрываем help по умолчанию
+  const helpBox = document.getElementById("artistHelpBox");
+  if (helpBox) helpBox.classList.add("hidden");
 
   renderArtistCriteria();
   updateArtistModalTotal();
-
-  modal.classList.add("open");
-  document.body.style.overflow = "hidden";
+  _setArtistResultExpanded(_getArtistResultExpanded());
 }
 
-// Закрыть
+// Закрыть — вернуться на страницу артиста
 export function closeArtistRatingForm() {
-  const modal = document.getElementById("artistRatingBackdrop");
-  if (modal) modal.classList.remove("open");
-  document.body.style.overflow = "";
+  const ratingView = document.getElementById("artistRatingView");
+  const artistView = document.getElementById("artistPageView");
+  const mainDefault = document.getElementById("mainDefaultContent");
+  if (ratingView) ratingView.classList.add("hidden");
+  if (artistView) artistView.classList.remove("hidden");
+  if (mainDefault) mainDefault.classList.add("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 // Хелп
@@ -584,24 +630,23 @@ export function toggleArtistHelp() {
   if (box) box.classList.toggle("hidden");
 }
 
-// Рендер критериев
+// Рендер критериев (без вайба — он отдельным блоком)
 function renderArtistCriteria() {
   const wrap = document.getElementById("artistCriteriaList");
   if (!wrap) return;
   wrap.innerHTML = "";
 
   ARTIST_CRITERIA.forEach(c => {
-    const isVibe = c.key === ARTIST_VIBE_KEY;
+    if (c.key === ARTIST_VIBE_KEY) return;
     const block = document.createElement("div");
-    block.className = "criterion" + (isVibe ? " vibe-criterion" : "");
+    block.className = "criterion";
 
     const head = document.createElement("div");
     head.className = "criterion-head";
-    const multBadge = isVibe ? '<span class="mult-badge">×Множитель</span>' : "";
     head.innerHTML =
       '<div class="criterion-name">' +
         '<span class="criterion-emoji">' + c.emoji + '</span>' +
-        '<span>' + c.name + multBadge + '</span>' +
+        '<span>' + c.name + '</span>' +
       '</div>' +
       '<div class="criterion-val" data-key="' + c.key + '">' + artistModalValues[c.key] + '</div>';
     block.appendChild(head);
@@ -630,7 +675,7 @@ function renderArtistCriteria() {
   });
 }
 
-// Обновить общую оценку
+// Обновить общую оценку, чипы, кольцо, тир
 function updateArtistModalTotal() {
   let sum = 0;
   ARTIST_MAIN_CRITERIA.forEach(c => { sum += artistModalValues[c.key] || 7; });
@@ -641,23 +686,88 @@ function updateArtistModalTotal() {
 
   const vibe = artistModalValues[ARTIST_VIBE_KEY] || 7;
   const final = computeFinalScore([base], vibe);
+  const tier = getTier(final);
 
-  const totalEl = document.getElementById("artistModalTotal");
-  const hintEl = document.getElementById("artistModalHint");
-  if (totalEl) totalEl.textContent = final;
-  if (hintEl) {
-    const tier = getTier(final);
-    const verdict = VERDICTS_ARTIST[tier.name] || "";
-    hintEl.innerHTML = 'из 360 · <b>' + tier.emoji + ' ' + tier.name + '</b><br><span style="opacity:.7">' + verdict + '</span>';
+  // Тир + вердикт
+  const tierEmojiEl = document.getElementById("artistTierEmoji");
+  const tierNameEl = document.getElementById("artistTierName");
+  const tierRowEl = document.getElementById("artistTierRow");
+  const verdictEl = document.getElementById("artistVerdict");
+  if (tierEmojiEl) {
+    tierEmojiEl.className = "tier-medal " + tier.medal;
+    tierEmojiEl.textContent = tier.emoji;
+    tierEmojiEl.title = tier.name;
+  }
+  if (tierNameEl) tierNameEl.textContent = tier.name;
+  if (tierRowEl) tierRowEl.style.color = tier.color;
+  if (verdictEl) verdictEl.textContent = VERDICTS_ARTIST[tier.name] || "";
+
+  // Кольцо
+  const finalScoreEl = document.getElementById("artistFinalScore");
+  if (finalScoreEl) finalScoreEl.textContent = final;
+  const ring = document.getElementById("artistRingFg");
+  if (ring) {
+    const C = 2 * Math.PI * 50;
+    const pct = Math.max(0, Math.min(1, final / FINAL_MAX));
+    ring.setAttribute("stroke-dashoffset", C * (1 - pct));
+  }
+
+  // Цвет фона result box
+  const resultBox = document.getElementById("artistResultBox");
+  if (resultBox) {
+    TIERS.forEach(t => resultBox.classList.remove(t.cssClass));
+    resultBox.classList.add(tier.cssClass);
+  }
+
+  // Прогресс до следующего тира
+  const nextTier = getNextTier(final);
+  const progEl = document.getElementById("artistTierProgress");
+  if (progEl) {
+    if (nextTier) {
+      const minNeeded = Math.round(nextTier.min * FINAL_MAX);
+      const diff = minNeeded - final;
+      const curMin = Math.round(tier.min * FINAL_MAX);
+      const span = Math.max(1, minNeeded - curMin);
+      const pct = Math.max(0, Math.min(100, ((final - curMin) / span) * 100));
+      progEl.innerHTML = 'До <b style="color:' + nextTier.color + '">' + nextTier.emoji + ' ' + nextTier.name + '</b>: +' + diff +
+        ' · след. тир на ' + minNeeded +
+        '<div class="bar"><div class="fill" style="width:' + pct + '%"></div></div>';
+    } else {
+      progEl.innerHTML = "🌟 Максимум достигнут";
+    }
+  }
+
+  // Формула
+  const detailsEl = document.getElementById("artistDetails");
+  if (detailsEl) {
+    const vibeFactor = 0.5 + (vibe / 10) * 0.5;
+    detailsEl.innerHTML =
+      'Среднее по 5 критериям: <b>' + avgMain.toFixed(2) + '</b> / 10<br>' +
+      'Атмосфера / вайб: <b>' + vibe + '</b> / 10 · Множитель: <b>×' + vibeFactor.toFixed(2) + '</b><br>' +
+      '<span style="opacity:.7">' + base.toFixed(2) + ' × 36 × ' + vibeFactor.toFixed(2) + ' = <b>' + final + '</b></span>';
+  }
+
+  // Чипы
+  const chipsEl = document.getElementById("artistResultChips");
+  if (chipsEl) {
+    const chip = (emoji, label, value, cls) =>
+      '<div class="rc-chip ' + (cls || "") + '">' +
+        '<span class="rc-chip-emoji">' + emoji + '</span>' +
+        '<span class="rc-chip-body">' +
+          '<span class="rc-chip-label">' + escapeHtml(label) + '</span>' +
+          '<span class="rc-chip-value">' + escapeHtml(String(value)) + '</span>' +
+        '</span>' +
+      '</div>';
+    chipsEl.innerHTML =
+      chip(tier.emoji, "Тир", tier.name, "rc-chip-tier") +
+      chip("🎼", "Средний", avgMain.toFixed(1), "") +
+      chip("🌌", "Вайб", vibe, "");
   }
 }
 
-// Применить оценку (сохранить)
+// Сохранить оценку
 export async function applyArtistRating() {
-  if (!currentUser) {
-    alert("Нужно войти");
-    return;
-  }
+  if (!currentUser) { showToast("Нужно войти"); return; }
   if (!artistModalArtist) return;
 
   const reviewText = (document.getElementById("artistReviewInput")?.value || "").trim();
@@ -665,7 +775,6 @@ export async function applyArtistRating() {
   try {
     const res = await saveArtistRating(artistModalArtist, artistModalValues, reviewText);
 
-    // Сохраняем в activity
     try {
       if (callbacks.onPushActivity && res.isNew) {
         await callbacks.onPushActivity({
@@ -685,21 +794,21 @@ export async function applyArtistRating() {
     if (callbacks.onAfterArtistRating) callbacks.onAfterArtistRating(artistModalArtist.id);
 
     closeArtistRatingForm();
-    showToast && showToast("Оценка артиста сохранена: " + res.final, { success: true });
+    showToast("Оценка артиста сохранена: " + res.final, { success: true });
   } catch (e) {
     console.error(e);
-    alert("Ошибка: " + e.message);
+    showToast("Ошибка: " + e.message);
   }
 }
 
-// Обёртка updateSliderFill (если её нет в artists.js)
+// Обёртка updateSliderFill
 function updateSliderFill(slider) {
   const min = +slider.min, max = +slider.max, val = +slider.value;
   const pct = ((val - min) / (max - min)) * 100;
   slider.style.background = "linear-gradient(90deg, var(--accent) 0%, var(--accent-3) " + pct + "%, var(--border) " + pct + "%, var(--border) 100%)";
 }
 
-// Тогл «В избранное» для артиста
+// Тогл «В избранное»
 export async function toggleArtistFavorite(artistId, artistName, artistPhoto) {
   if (!currentUser) { showToast("Нужно войти"); return; }
   const btn = document.getElementById("artistFavBtn");
@@ -709,7 +818,6 @@ export async function toggleArtistFavorite(artistId, artistName, artistPhoto) {
   const fav = await isFavorite("artist", artistId);
 
   if (fav) {
-    // Удаляем
     const list = await loadFavorites();
     const item = list.find(f => f.kind === "artist" && f.itemId === artistId);
     if (item) await removeFromFavorites(item._id);
@@ -728,11 +836,15 @@ export async function toggleArtistFavorite(artistId, artistName, artistPhoto) {
   }
 }
 
-// Экспорт в window для onclick
 if (typeof window !== "undefined") {
   window.toggleArtistFavorite = toggleArtistFavorite;
   window.openArtist = openArtist;
   window.closeArtistPage = closeArtistPage;
   window.openAlbumFromArtist = openAlbumFromArtist;
   window.openArtistRatingForm = openArtistRatingForm;
+  window.closeArtistRatingForm = closeArtistRatingForm;
+  window.applyArtistRating = applyArtistRating;
+  window.toggleArtistResultDetails = toggleArtistResultDetails;
+  window.toggleArtistHelp = toggleArtistHelp;
 }
+

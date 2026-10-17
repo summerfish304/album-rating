@@ -6176,3 +6176,461 @@ body.theme-season-active .scheme-grid:hover {
   .feed-tabs { margin: 6px 0 0 0; }
   .home-feed-title { flex-wrap: wrap; }
 }
+
+/* ============================================================
+   КАРТОЧКА РЕЗУЛЬТАТА — чипы, «Подробнее», единый блок ползунков
+   ============================================================ */
+
+/* Чипы под кольцом */
+.result-chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 14px 0 10px;
+}
+.rc-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 6px;
+  background: rgba(0,0,0,.18);
+  border-radius: 10px;
+  min-width: 0;
+}
+.rc-chip-emoji { font-size: 1.1rem; flex-shrink: 0; }
+.rc-chip-body { display: flex; flex-direction: column; min-width: 0; }
+.rc-chip-label {
+  font-size: .6rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--text-dim); font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rc-chip-value {
+  font-size: .85rem; font-weight: 800; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rc-chip-tier .rc-chip-value { color: var(--accent-3); }
+
+@media (max-width: 420px) {
+  .result-chips { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Кнопка «Подробнее» */
+.result-toggle-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; width: 100%; padding: 9px 14px; margin: 8px 0 10px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border, rgba(255,255,255,.1));
+  border-radius: 10px; color: var(--text-mid);
+  font-size: .85rem; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.result-toggle-btn:hover { background: rgba(255,255,255,.09); color: var(--text); }
+.rt-arrow { font-size: .75rem; transition: transform .2s; }
+
+/* Сворачиваемый контейнер деталей */
+.result-details-wrap {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height .35s ease, opacity .25s ease, margin-top .25s ease;
+  margin-top: 0;
+}
+.result-details-wrap.open {
+  max-height: 3000px;
+  opacity: 1;
+  margin-top: 4px;
+}
+
+/* ЕДИНЫЙ БЛОК ПОЛЗУНКОВ (Обложка / Вайб) */
+.rating-controls-block {
+  margin: 14px 0; padding: 14px 16px;
+  background: rgba(0,0,0,.18);
+  border: 1px solid var(--border, rgba(255,255,255,.08));
+  border-radius: 12px;
+}
+.rcb-title {
+  font-size: .8rem; text-transform: uppercase; letter-spacing: .04em;
+  font-weight: 800; color: var(--text); margin-bottom: 12px;
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+}
+.rcb-title-hint {
+  font-size: .68rem; text-transform: none; letter-spacing: 0;
+  font-weight: 500; color: var(--text-dim); opacity: .8;
+}
+.rcb-row-single {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.rcb-slider {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.rcb-slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent, #7c6cf0);
+}
+.rcb-slider .overall-body {
+  width: 100%;
+  display: flex;
+  gap: 4px;
+}
+.rcb-slider .overall-body > * {
+  flex: 1;
+}
+.rcb-value {
+  min-width: 36px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text);
+  padding: 6px 8px;
+  background: rgba(255,255,255,.06);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.rcb-value-vibe {
+  color: var(--vibe-1, #7ee0d4);
+}
+.rcb-divider {
+  height: 1px;
+  background: var(--border-soft, rgba(255,255,255,.06));
+  margin: 16px 0;
+}
+
+/* ============================================================
+   КРАСИВЫЙ БЕЙДЖ ОБЛОЖКИ (в блоке «Настройки релиза»)
+   ============================================================ */
+.cover-badge-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0 4px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(0,0,0,.2);
+  font-size: .82rem;
+  transition: background .2s, border-color .2s;
+}
+.cover-badge-slot.hidden { display: none; }
+.cover-badge-slot .badge-label {
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-size: .68rem;
+}
+.cover-badge-slot .badge-score {
+  font-weight: 800;
+  font-size: .92rem;
+  color: var(--text);
+}
+.cover-badge-slot .badge-note {
+  color: var(--text-mid);
+  font-size: .78rem;
+  font-style: italic;
+  margin-left: auto;
+}
+
+/* Цветовые варианты */
+.cover-badge-slot.tier-perfect {
+  border-color: rgba(245,196,81,.55);
+  background: linear-gradient(135deg, rgba(245,196,81,.18), rgba(224,165,44,.08));
+}
+.cover-badge-slot.tier-perfect .badge-score { color: #f5c451; }
+
+.cover-badge-slot.tier-good {
+  border-color: rgba(126,224,212,.5);
+  background: linear-gradient(135deg, rgba(126,224,212,.14), rgba(130,200,255,.06));
+}
+.cover-badge-slot.tier-good .badge-score { color: #7ee0d4; }
+
+.cover-badge-slot.tier-mid {
+  border-color: rgba(255,255,255,.15);
+  background: rgba(255,255,255,.04);
+}
+
+.cover-badge-slot.tier-poor {
+  border-color: rgba(255,94,94,.45);
+  background: linear-gradient(135deg, rgba(255,94,94,.12), rgba(180,50,50,.05));
+}
+.cover-badge-slot.tier-poor .badge-score { color: #ff5e5e; }
+
+@media (max-width: 520px) {
+  .cover-badge-slot {
+    padding: 7px 10px;
+    font-size: .78rem;
+  }
+  .cover-badge-slot .badge-note {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+}
+
+/* ============================================================
+   ДОСКА — панель фильтров
+   ============================================================ */
+.board-filters-panel {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: rgba(0,0,0,.15);
+  border: 1px solid var(--border, rgba(255,255,255,.08));
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bf-view-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: rgba(0,0,0,.25);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.bf-view-btn {
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  font-family: inherit;
+  line-height: 1;
+}
+.bf-view-btn:hover { color: var(--text-mid); }
+.bf-view-btn.active {
+  background: var(--accent, #7c6cf0);
+  color: #fff;
+}
+.bf-label {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-weight: 800;
+  color: var(--text-dim);
+  min-width: 60px;
+}
+.bf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.bf-chip {
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border, rgba(255,255,255,.1));
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.bf-chip:hover {
+  background: rgba(255,255,255,.09);
+  color: var(--text);
+}
+.bf-chip.active {
+  background: var(--accent, #7c6cf0);
+  border-color: var(--accent, #7c6cf0);
+  color: #fff;
+}
+.bf-chip-tier {
+  padding: 5px 8px;
+  font-size: .9rem;
+}
+.bf-select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(255,255,255,.1));
+  background: var(--panel-2, rgba(0,0,0,.25));
+  color: var(--text);
+  font-family: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+}
+.bf-reset {
+  background: transparent;
+  border: 1px solid var(--danger, #ff5e5e);
+  color: var(--danger, #ff5e5e);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s;
+}
+.bf-reset:hover {
+  background: rgba(255,94,94,.12);
+}
+.bf-reset.hidden { display: none; }
+
+/* ============================================================
+   ДОСКА — плитки
+   ============================================================ */
+/* Плиточная сетка */
+.board-list.board-tiles {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 0;
+}
+
+/* Перебиваем .board-item для плиток — ВЫСОКАЯ СПЕЦИФИЧНОСТЬ */
+.board-list.board-tiles .board-item.board-tile {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: transform .15s, box-shadow .15s;
+  background: var(--panel, rgba(0,0,0,.25));
+  min-height: 0;
+  height: auto;
+  width: auto;
+}
+.board-list.board-tiles .board-item.board-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,.3);
+}
+/* Прячем старые .info / .numbers, если вдруг попадут */
+.board-list.board-tiles .board-item.board-tile > .info,
+.board-list.board-tiles .board-item.board-tile > .numbers {
+  display: none !important;
+}
+/* Обложка на всю ширину плитки */
+.board-list.board-tiles .board-item.board-tile .bt-cover-wrap {
+  position: relative;
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: rgba(0,0,0,.3);
+  flex-shrink: 0;
+}
+.board-list.board-tiles .board-item.board-tile .bt-cover {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover;
+  border-radius: 0 !important;
+}
+.board-list.board-tiles .board-item.board-tile .bt-tier-badge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  font-size: 1.3rem;
+  background: rgba(0,0,0,.65);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+.board-list.board-tiles .board-item.board-tile .bt-info {
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.bt-title {
+  font-size: .82rem;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bt-artist {
+  font-size: .7rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bt-score {
+  font-size: 1.2rem;
+  font-weight: 900;
+  margin-top: 4px;
+  line-height: 1;
+}
+.bt-of {
+  font-size: .65rem;
+  font-weight: 500;
+  opacity: .6;
+  margin-left: 2px;
+}
+.bt-meta {
+  font-size: .65rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* Кнопка «Ещё N» для артистов */
+.bf-chip-more {
+  background: transparent;
+  border-style: dashed;
+  color: var(--text-dim);
+}
+.bf-chip-more:hover {
+  color: var(--text);
+  border-color: var(--text-mid);
+}
+
+@media (max-width: 420px) {
+  .board-list.board-tiles {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .bt-title { font-size: .75rem; }
+  .bt-score { font-size: 1.05rem; }
+}
+
+/* ============================================================
+   СТРАНИЦА ОЦЕНКИ АРТИСТА
+   ============================================================ */
+#artistRatingView {
+  animation: fadeUp .35s ease;
+}
+.artist-rating-card .cover {
+  border-radius: 50% !important;
+}
+.artist-rating-card .cover-noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  background: var(--panel-3);
+}

@@ -224,6 +224,9 @@ export function renderAlbum() {
   updateScore();
   // Подгружаем существующую рецензию в textarea
   initReviewInput(currentAlbum, currentAlbum.source, currentAlbum.id);
+  // Состояние свёрнутости и чипы
+  applyResultExpandedState();
+  renderResultChips();
 }
 
 function renderSingleCriteria() {
@@ -446,7 +449,7 @@ function renderOverall(value) {
         if (currentTracks.length === 1) singleValues[VIBE_KEY] = s;
         else overallValue = s;
         previewStars(stars, s);
-        document.getElementById("overallBadge").textContent = s + " / 10";
+        document.getElementById("overallBadge").textContent = s;
         updateScore(); saveDraft();
       };
       stars.appendChild(star);
@@ -460,18 +463,13 @@ function renderOverall(value) {
       const v = parseInt(slider.value);
       if (currentTracks.length === 1) singleValues[VIBE_KEY] = v;
       else overallValue = v;
-      document.getElementById("overallBadge").textContent = v + " / 10";
+      document.getElementById("overallBadge").textContent = v;
       updateSliderFill(slider);
       updateScore(); saveDraft();
     };
     control.appendChild(slider);
   }
-  document.getElementById("overallBadge").textContent = value + " / 10";
-  const autoBtn = document.createElement("button");
-  autoBtn.className = "btn-secondary auto-btn";
-  autoBtn.textContent = "= средняя";
-  autoBtn.onclick = setOverallToAvg;
-  wrap.appendChild(autoBtn);
+  document.getElementById("overallBadge").textContent = value;
 }
 
 function setOverallToAvg() {
@@ -494,9 +492,12 @@ function setOverallToAvg() {
 
 export function onCoverRatingChange(v) {
   coverRating = parseInt(v);
-  document.getElementById("coverRatingVal").textContent = v;
-  updateSliderFill(document.getElementById("coverRating"));
+  const valEl = document.getElementById("coverRatingVal");
+  if (valEl) valEl.textContent = v;
+  const sliderEl = document.getElementById("coverRating");
+  if (sliderEl) updateSliderFill(sliderEl);
   updateCoverBadge();
+  renderResultChips();
   saveDraft();
 }
 
@@ -504,7 +505,7 @@ function updateCoverBadge() {
   const el = document.getElementById("coverBadge");
   if (!el) return;
   const v = coverRating;
-  el.className = "cover-badge";
+  el.className = "cover-badge-slot";
   let tierClass, note;
   if (v >= 10) { tierClass = "tier-perfect"; note = "Идеальная обложка ✨"; }
   else if (v >= 8) { tierClass = "tier-good"; note = "Отличный визуал"; }
@@ -591,6 +592,7 @@ export function updateScore() {
   ring.setAttribute("stroke-dashoffset", C * (1 - pct));
   lastFinalScore = final;
   renderHistogram(scores);
+  renderResultChips();
 }
 
 function renderHistogram(scores) {
@@ -617,10 +619,7 @@ function renderHistogram(scores) {
     col.appendChild(lbl);
     barsEl.appendChild(col);
   }
-  const box = document.getElementById("histogramBox");
-  if (scores.length > 10 && currentTracks.length > 10) {
-    if (!box.dataset.userToggled) box.classList.add("collapsed");
-  }
+
   const n = scores.length;
   if (n === 0) { summaryEl.textContent = ""; return; }
   const min = Math.min(...scores), max = Math.max(...scores);
@@ -638,9 +637,8 @@ function renderHistogram(scores) {
 }
 
 export function toggleHistogram() {
-  const box = document.getElementById("histogramBox");
-  box.classList.toggle("collapsed");
-  box.dataset.userToggled = "1";
+  // Гистограмма теперь всегда открыта, когда открыто «Подробнее».
+  // Функция оставлена для обратной совместимости — ничего не делает.
 }
 
 // ============================================================
@@ -1265,4 +1263,98 @@ async function saveReview(source, releaseId, album) {
     console.warn("Ошибка сохранения рецензии:", e.message);
     return { action: "error", error: e.message };
   }
+}
+// ============================================================
+// СВОРАЧИВАНИЕ КАРТОЧКИ РЕЗУЛЬТАТА
+// ============================================================
+const RESULT_EXPANDED_KEY = "albumRating_resultExpanded_v1";
+
+function _getResultExpanded() {
+  try {
+    const v = localStorage.getItem(RESULT_EXPANDED_KEY);
+    if (v === "1") return true;
+    if (v === "0") return false;
+  } catch (e) {}
+  return false; // по умолчанию свёрнуто
+}
+
+function _setResultExpanded(val) {
+  try { localStorage.setItem(RESULT_EXPANDED_KEY, val ? "1" : "0"); } catch (e) {}
+}
+
+export function applyResultExpandedState() {
+  const details = document.getElementById("resultDetails");
+  const btn = document.getElementById("resultToggleBtn");
+  const arrow = document.getElementById("resultToggleArrow");
+  const label = document.getElementById("resultToggleLabel");
+  if (!details || !btn) return;
+  const expanded = _getResultExpanded();
+  details.classList.toggle("open", expanded);
+  if (arrow) arrow.textContent = expanded ? "▴" : "▾";
+  if (label) label.textContent = expanded ? "📊 Свернуть" : "📊 Подробнее";
+}
+
+export function toggleResultDetails() {
+  const next = !_getResultExpanded();
+  _setResultExpanded(next);
+  applyResultExpandedState();
+}
+
+// ============================================================
+// ЧИПЫ ПОД КОЛЬЦОМ (Тир · Средняя · Вайб · Обложка)
+// ============================================================
+export function renderResultChips() {
+  const el = document.getElementById("resultChips");
+  if (!el) return;
+  if (!currentAlbum) { el.innerHTML = ""; return; }
+
+  // Тир — из DOM (его уже отрисовал updateScore)
+  const tierEmoji = (document.getElementById("tierEmoji")?.textContent || "").trim();
+  const tierName = (document.getElementById("tierName")?.textContent || "").trim();
+
+  // Средняя треков и вайб — считаем из текущего состояния
+  let avgTracks = null;
+  let vibe = null;
+  const isSingle = currentTracks.length === 1;
+
+  if (isSingle) {
+    let sum = 0;
+    MAIN_CRITERIA.forEach(c => { sum += (singleValues[c.key] || 7); });
+    avgTracks = (sum / MAIN_CRITERIA.length).toFixed(1);
+    vibe = singleValues[VIBE_KEY] != null ? singleValues[VIBE_KEY] : overallValue;
+  } else {
+    const rows = document.querySelectorAll("#tracksList .track-row");
+    if (rows.length) {
+      const nonSkit = [];
+      currentTracks.forEach((t, i) => {
+        if (!t.isSkit) {
+          const row = rows[i];
+          if (row) nonSkit.push(parseInt(row.dataset.value) || 7);
+        }
+      });
+      if (nonSkit.length) {
+        avgTracks = (nonSkit.reduce((a, b) => a + b, 0) / nonSkit.length).toFixed(1);
+      }
+    }
+    vibe = overallValue;
+  }
+
+  const cover = coverRating;
+
+  const chip = (emoji, label, value, cls) =>
+    '<div class="rc-chip ' + (cls || "") + '">' +
+      '<span class="rc-chip-emoji">' + emoji + '</span>' +
+      '<span class="rc-chip-body">' +
+        '<span class="rc-chip-label">' + escapeHtml(label) + '</span>' +
+        '<span class="rc-chip-value">' + escapeHtml(String(value)) + '</span>' +
+      '</span>' +
+    '</div>';
+
+  let html = "";
+  if (tierName) html += chip(tierEmoji || "🏅", "Тир", tierName, "rc-chip-tier");
+  if (avgTracks != null) html += chip("🎼", "Средняя", avgTracks, "");
+  if (vibe != null) html += chip("🌌", "Вайб", vibe, "");
+  if (cover != null) html += chip("🎨", "Обложка", cover, "");
+
+  el.innerHTML = html;
 }

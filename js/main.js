@@ -64,7 +64,7 @@ import {
   rateTrackAsSingle, applyModalRating,
   submitRating, deleteMyRating, loadMyRatings, renderHistory, restoreFromMyRatings,
   saveDraft, clearDraft, checkDraftBanner, continueDraft, dismissDraft,
-  reset, clearReviewInput
+  reset, clearReviewInput, toggleResultDetails
 } from './ratings.js';
 
 import {
@@ -75,7 +75,9 @@ import {
   loadReviews, formatReviewText,
   switchTopTab, renderTops,
   subscribeFeed, refreshFeed, renderFeed, renderHotToday,
-  loadMySubscriptions, subscribeToUser, unsubscribeFromUser
+  loadMySubscriptions, subscribeToUser, unsubscribeFromUser,
+  setBoardView, toggleBoardTier, setBoardYearFilter, toggleBoardArtist,
+  resetBoardFilters, resetBoardTierOnly
 } from './board.js';
 
 import {
@@ -123,7 +125,7 @@ import {
   setArtistsContext,
   openArtist, closeArtistPage, openAlbumFromArtist,
   openArtistRatingForm, closeArtistRatingForm, applyArtistRating,
-  toggleArtistHelp, searchArtists
+  toggleArtistHelp, searchArtists, toggleArtistResultDetails
 } from './artists.js';
 
 import {
@@ -901,6 +903,12 @@ window.onBoardSearchInput = onBoardSearchInput;
 window.renderHistory = renderHistory;
 window.switchTopTab = switchTopTab;
 window.switchAdminTab = switchAdminTab;
+window.setBoardView = setBoardView;
+window.toggleBoardTier = toggleBoardTier;
+window.setBoardYearFilter = setBoardYearFilter;
+window.toggleBoardArtist = toggleBoardArtist;
+window.resetBoardFilters = resetBoardFilters;
+window.resetBoardTierOnly = resetBoardTierOnly;
 
 window.clearReviewInput = clearReviewInput;
 
@@ -937,6 +945,7 @@ window.openArtistRatingForm = openArtistRatingForm;
 window.closeArtistRatingForm = closeArtistRatingForm;
 window.applyArtistRating = applyArtistRating;
 window.toggleArtistHelp = toggleArtistHelp;
+window.toggleArtistResultDetails = toggleArtistResultDetails;
 
 window.openArtistFromBoard = (artistId) => {
   switchNav("main");
@@ -973,6 +982,7 @@ window.reset = () => {
 };
 window.toggleHistogram = toggleHistogram;
 window.onCoverRatingChange = onCoverRatingChange;
+window.toggleResultDetails = toggleResultDetails;
 
 window.addToWishlist = () => addToWishlist(currentUser, getCurrentAlbum());
 window.rateFromWishlist = rateFromWishlist;
@@ -1139,3 +1149,5 @@ loadThemePreferenceFromLocal();
 window._db = db;
 window._auth = auth;
 window._adminUid = ADMIN_UID;
+window._collection = collection;
+window._getDocs = getDocs;

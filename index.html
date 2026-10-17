@@ -181,6 +181,96 @@
       <div id="artistPageContent"></div>
     </div>
 
+    <!-- СТРАНИЦА ОЦЕНКИ АРТИСТА -->
+    <div id="artistRatingView" class="hidden">
+      <button class="btn-secondary btn-sm" onclick="closeArtistRatingForm()" style="margin-bottom:14px;">← Назад к артисту</button>
+
+      <div class="album-card artist-rating-card" id="artistRatingCard"></div>
+
+      <div class="divider"></div>
+
+      <button class="help-toggle" onclick="toggleArtistHelp()">
+        <span>ℹ️</span><span>Что означают критерии?</span>
+      </button>
+
+      <div class="criteria-help hidden" id="artistHelpBox">
+        <div class="row"><b>🎤 Вокал / техника</b> — диапазон, подача, чистота интонаций, техника. Умеет ли артист управлять голосом.</div>
+        <div class="row"><b>🖋 Тексты / смысл</b> — качество текстов: метафоры, идеи, лирика. Насколько осмысленно то, что поёт артист.</div>
+        <div class="row"><b>🎼 Музыка / композиция</b> — как устроена музыка: мелодии, гармонии, аранжировки. Насколько интересно слушать с точки зрения музыкальной фактуры.</div>
+        <div class="row"><b>🌟 Уникальность / стиль</b> — отличие от других, узнаваемость, свой почерк. Можно ли спутать с кем-то.</div>
+        <div class="row"><b>🎭 Харизма / образ</b> — личность, сценический образ, обаяние. Тянет ли артист на себя внимание.</div>
+        <div class="row"><b>🌌 Атмосфера / вайб</b> — общее настроение и погружение. Работает как <b>множитель</b>.</div>
+        <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
+          <b>Итог (1–360):</b> как у релизов — база × 36 × множитель вайба.
+        </div>
+      </div>
+
+      <div id="artistCriteriaList"></div>
+
+      <!-- ЕДИНЫЙ БЛОК ВАЙБА -->
+      <div class="rating-controls-block" id="artistVibeBlock" style="margin-top:14px;">
+        <div class="rcb-title">🌌 Атмосфера / вайб <span class="rcb-title-hint">множитель</span></div>
+        <div class="rcb-row-single">
+          <div class="rcb-slider">
+            <input type="range" id="artistVibeSlider" min="1" max="10" step="1" value="7">
+          </div>
+          <div class="rcb-value rcb-value-vibe" id="artistVibeValue">7</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ИТОГОВАЯ КАРТОЧКА (аналог #resultBox) -->
+      <div class="result artist-result" id="artistResultBox">
+        <div class="tier-row" id="artistTierRow">
+          <span class="tier-medal tier-medal-bronze" id="artistTierEmoji">🥉</span>
+          <span id="artistTierName">Бронза</span>
+        </div>
+        <div class="score-block">
+          <div class="ring-wrap" id="artistRingWrap">
+            <svg class="ring" viewBox="0 0 120 120">
+              <circle class="bg" cx="60" cy="60" r="50"/>
+              <circle class="fg" id="artistRingFg" cx="60" cy="60" r="50"
+                      stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+            </svg>
+            <div class="ring-text">
+              <div class="num" id="artistFinalScore">—</div>
+              <div class="of">из 360</div>
+            </div>
+          </div>
+          <div class="side">
+            <div class="verdict" id="artistVerdict"></div>
+          </div>
+        </div>
+
+        <div class="result-chips" id="artistResultChips"></div>
+
+        <button class="result-toggle-btn" id="artistResultToggleBtn" onclick="toggleArtistResultDetails()">
+          <span id="artistResultToggleLabel">📊 Подробнее</span>
+          <span class="rt-arrow" id="artistResultToggleArrow">▾</span>
+        </button>
+
+        <div class="result-details-wrap" id="artistResultDetails">
+          <div class="tier-progress" id="artistTierProgress"></div>
+          <div class="details" id="artistDetails"></div>
+        </div>
+
+        <!-- РЕЦЕНЗИЯ (всегда видна) -->
+        <div class="review-input-block">
+          <div class="review-input-header">
+            <span>📝 Рецензия на артиста</span>
+            <span class="review-input-hint">опционально</span>
+          </div>
+          <textarea id="artistReviewInput" class="review-input" rows="5" maxlength="5000" placeholder="Ваше мнение об артисте… Поддерживается **жирный**, *курсив* и переносы строк."></textarea>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <button id="artistRateBtn" onclick="applyArtistRating()">⭐ Сохранить оценку артиста</button>
+        <button class="btn-secondary" onclick="closeArtistRatingForm()">Отмена</button>
+      </div>
+    </div>
+
     <!-- ОБЫЧНОЕ СОДЕРЖИМОЕ ГЛАВНОЙ -->
     <div id="mainDefaultContent">
 
@@ -315,39 +405,55 @@
           </div>
         </div>
 
-        <div class="tier-progress" id="tierProgress"></div>
+        <!-- КОМПАКТНЫЕ ЧИПЫ (видны всегда) -->
+        <div class="result-chips" id="resultChips"></div>
 
-        <div class="details" id="details"></div>
-
-        <div class="compare-line hidden" id="compareLine"></div>
-        <div class="cover-badge hidden" id="coverBadge"></div>
-
-        <div class="cover-rating-row">
-          <div class="lbl">🎨 Оценка обложки <span style="font-size:.72rem;color:var(--text-dim)">(не влияет на итог)</span></div>
-          <div class="control" style="flex:1; min-width:100px; display:flex; align-items:center;">
-            <input type="range" id="coverRating" min="1" max="10" value="7" step="1" oninput="onCoverRatingChange(this.value)">
+        <!-- ЕДИНЫЙ БЛОК ПОЛЗУНКОВ -->
+        <div class="rating-controls-block">
+          <div class="rcb-title">🎨 Оценка обложки <span class="rcb-title-hint">не влияет на итог</span></div>
+          <div class="rcb-row-single">
+            <div class="rcb-slider">
+              <input type="range" id="coverRating" min="1" max="10" value="7" step="1" oninput="onCoverRatingChange(this.value)">
+            </div>
+            <div class="rcb-value" id="coverRatingVal">7</div>
           </div>
-          <div class="val" id="coverRatingVal">7</div>
+          <div class="cover-badge-slot hidden" id="coverBadge"></div>
+
+          <div class="rcb-divider"></div>
+
+          <div class="rcb-title">🌌 Атмосфера / вайб <span class="rcb-title-hint">множитель</span></div>
+          <div class="rcb-row-single">
+            <div class="rcb-slider">
+              <div class="overall-body" id="overallRow"></div>
+            </div>
+            <div class="rcb-value rcb-value-vibe" id="overallBadge">7</div>
+          </div>
         </div>
 
-        <div class="overall-inline" id="overallInline">
-          <div class="overall-inline-head">
-            <div class="lbl">🌌 Атмосфера / вайб <span style="font-size:.72rem;color:var(--text-dim);font-weight:500">(множитель)</span></div>
-            <div class="badge" id="overallBadge">7 / 10</div>
+        <!-- КНОПКА «ПОДРОБНЕЕ» -->
+        <button class="result-toggle-btn" id="resultToggleBtn" onclick="toggleResultDetails()">
+          <span id="resultToggleLabel">📊 Подробнее</span>
+          <span class="rt-arrow" id="resultToggleArrow">▾</span>
+        </button>
+
+        <!-- ДЕТАЛИ (сворачиваемые) -->
+        <div class="result-details-wrap" id="resultDetails">
+          <div class="tier-progress" id="tierProgress"></div>
+
+          <div class="details" id="details"></div>
+
+          <div class="compare-line hidden" id="compareLine"></div>
+
+          <div class="histogram" id="histogramBox">
+            <div class="histogram-title">
+              <span>Распределение оценок</span>
+            </div>
+            <div class="hist-bars" id="histBars"></div>
+            <div class="hist-summary" id="histSummary"></div>
           </div>
-          <div class="overall-body" id="overallRow"></div>
         </div>
 
-        <div class="histogram" id="histogramBox">
-          <div class="histogram-title" onclick="toggleHistogram()">
-            <span>Распределение оценок</span>
-            <span class="toggle">▾</span>
-          </div>
-          <div class="hist-bars" id="histBars"></div>
-          <div class="hist-summary" id="histSummary"></div>
-        </div>
-
-        <!-- РЕЦЕНЗИЯ -->
+        <!-- РЕЦЕНЗИЯ (всегда видна) -->
         <div class="review-input-block">
           <div class="review-input-header">
             <span>📝 Рецензия</span>
@@ -453,19 +559,46 @@
              oninput="onBoardSearchInput()">
     </div>
 
-    <div class="sort-bar">
-      <label for="boardSort">Сортировка:</label>
-      <select id="boardSort" onchange="renderBoard()">
-        <option value="date_desc">По дате (новые)</option>
-        <option value="date_asc">По дате (старые)</option>
-        <option value="score_desc">По средней ↓</option>
-        <option value="score_asc">По средней ↑</option>
-        <option value="admin_desc">По оценке админа ↓</option>
-        <option value="admin_asc">По оценке админа ↑</option>
-        <option value="title_asc">По названию (А–Я)</option>
-        <option value="artist_asc">По артисту (А–Я)</option>
-      </select>
-      <span class="hint" id="boardStats" style="margin:0;"></span>
+    <!-- ПАНЕЛЬ ФИЛЬТРОВ -->
+    <div class="board-filters-panel">
+      <div class="bf-row">
+        <div class="bf-view-switch">
+          <button class="bf-view-btn active" data-view="list" onclick="setBoardView('list')" title="Список">☰</button>
+          <button class="bf-view-btn" data-view="tiles" onclick="setBoardView('tiles')" title="Плитки">▦</button>
+        </div>
+        <div class="sort-bar" style="margin:0; flex:1; min-width:0;">
+          <label for="boardSort">Сортировка:</label>
+          <select id="boardSort" onchange="renderBoard()">
+            <option value="date_desc">По дате (новые)</option>
+            <option value="date_asc">По дате (старые)</option>
+            <option value="score_desc">По средней ↓</option>
+            <option value="score_asc">По средней ↑</option>
+            <option value="admin_desc">По оценке админа ↓</option>
+            <option value="admin_asc">По оценке админа ↑</option>
+            <option value="title_asc">По названию (А–Я)</option>
+            <option value="artist_asc">По артисту (А–Я)</option>
+          </select>
+          <span class="hint" id="boardStats" style="margin:0;"></span>
+        </div>
+      </div>
+
+      <div class="bf-row bf-row-tiers">
+        <div class="bf-label">Тиры:</div>
+        <div class="bf-chips" id="boardTierChips"></div>
+      </div>
+
+      <div class="bf-row">
+        <div class="bf-label">Год выхода:</div>
+        <select id="boardYearFilter" class="bf-select" onchange="setBoardYearFilter(this.value)">
+          <option value="all">Все годы</option>
+        </select>
+        <button class="bf-reset hidden" id="boardResetBtn" onclick="resetBoardFilters()">✕ Сбросить</button>
+      </div>
+
+      <div class="bf-row bf-row-artists hidden" id="boardArtistRow">
+        <div class="bf-label">Артисты:</div>
+        <div class="bf-chips" id="boardArtistChips"></div>
+      </div>
     </div>
 
     <div class="board-list" id="boardList"></div>
@@ -1033,55 +1166,7 @@
 <!-- КОНТЕЙНЕР ДОСТИЖЕНИЙ -->
 <div id="achievementToasts"></div>
 
-<!-- МОДАЛКА ОЦЕНКИ АРТИСТА -->
-<div class="modal-backdrop" id="artistRatingBackdrop" onclick="if(event.target===this) closeArtistRatingForm()">
-  <div class="modal" id="artistRatingModal">
-    <button class="close-btn" onclick="closeArtistRatingForm()" title="Закрыть">✕</button>
-    <div class="track-header">
-      <img id="artistRatingPhoto" alt="" onerror="this.style.visibility='hidden'">
-      <div class="info">
-        <div class="track-title" id="artistRatingName">—</div>
-        <div class="track-artist" id="artistRatingGenres">—</div>
-      </div>
-    </div>
 
-    <button class="help-toggle" onclick="toggleArtistHelp()">
-      <span>ℹ️</span><span>Что означают критерии?</span>
-    </button>
-
-    <div class="criteria-help hidden" id="artistHelpBox">
-      <div class="row"><b>🎤 Вокал / техника</b> — диапазон, подача, чистота интонаций, техника. Умеет ли артист управлять голосом.</div>
-      <div class="row"><b>🖋 Тексты / смысл</b> — качество текстов: метафоры, идеи, лирика. Насколько осмысленно то, что поёт артист.</div>
-      <div class="row"><b>🎼 Музыка / композиция</b> — как устроена музыка: мелодии, гармонии, аранжировки. Насколько интересно слушать с точки зрения музыкальной фактуры.</div>
-      <div class="row"><b>🌟 Уникальность / стиль</b> — отличие от других, узнаваемость, свой почерк. Можно ли спутать с кем-то.</div>
-      <div class="row"><b>🎭 Харизма / образ</b> — личность, сценический образ, обаяние. Тянет ли артист на себя внимание.</div>
-      <div class="row"><b>🌌 Атмосфера / вайб</b> — общее настроение и погружение. Работает как <b>множитель</b>.</div>
-      <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft);">
-        <b>Итог (1–360):</b> как у релизов — база × 36 × множитель вайба.
-      </div>
-    </div>
-
-    <div id="artistCriteriaList"></div>
-
-    <div class="modal-total">
-      <div>
-        <div class="label">Итоговая оценка артиста</div>
-        <div class="value" id="artistModalTotal">—</div>
-        <div class="hint" id="artistModalHint">из 360</div>
-      </div>
-      <button onclick="applyArtistRating()">✓ Сохранить</button>
-    </div>
-
-    <!-- Рецензия на артиста -->
-    <div class="review-input-block" style="margin-top:14px;">
-      <div class="review-input-header">
-        <span>📝 Рецензия на артиста</span>
-        <span class="review-input-hint">опционально</span>
-      </div>
-      <textarea id="artistReviewInput" class="review-input" rows="4" maxlength="5000" placeholder="Ваше мнение об артисте… Поддерживается **жирный**, *курсив* и переносы строк."></textarea>
-    </div>
-  </div>
-</div>
 
 <!-- МОДАЛКА ЗАПУСКА СЕЗОНА (АДМИН) -->
 <div class="modal-backdrop" id="startSeasonBackdrop" onclick="if(event.target===this) adminCloseStartSeasonModal()">
