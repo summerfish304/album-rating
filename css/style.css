@@ -5730,3 +5730,185 @@ body.theme-season-active .scheme-grid:hover {
   .reco-card { flex: 0 0 120px; width: 120px; }
   .reco-title { font-size: .9rem; }
 }
+
+/* ============================================================
+   АДМИНКА — СЕЗОНЫ: превью наград + кнопка завершения
+   ============================================================ */
+
+/* Карточка сезона в истории */
+.season-admin-history-card {
+  background: var(--bg-2, rgba(255,255,255,.04));
+  border: 1px solid var(--border, rgba(255,255,255,.08));
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: border-color .2s;
+}
+.season-admin-history-card:hover {
+  border-color: var(--accent, #7c6cf0);
+}
+
+.sahc-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.sahc-emoji { font-size: 1.6rem; line-height: 1; }
+.sahc-info { flex: 1; min-width: 0; }
+.sahc-title {
+  font-size: .95rem;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sahc-meta {
+  font-size: .75rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.sahc-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sahc-actions .btn-secondary,
+.sahc-actions .btn-danger {
+  font-size: .75rem;
+  padding: 6px 10px;
+}
+
+/* Сетка мини-наград */
+.season-admin-awards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, rgba(255,255,255,.08));
+}
+.season-admin-awards-empty {
+  margin-top: 10px;
+  padding: 10px;
+  text-align: center;
+  font-size: .8rem;
+  color: var(--text-dim);
+  background: rgba(0,0,0,.15);
+  border-radius: 8px;
+}
+
+.saa-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
+  background: rgba(0,0,0,.2);
+  border-radius: 8px;
+  text-align: center;
+  min-width: 0;
+}
+.saa-item-empty { opacity: .45; }
+.saa-label {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.saa-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.saa-cover-artist {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  background: rgba(255,255,255,.06);
+}
+.saa-cover-noart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: rgba(255,255,255,.06);
+}
+.saa-name {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--text);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.saa-artist {
+  font-size: .65rem;
+  color: var(--text-dim);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.saa-score {
+  font-size: .8rem;
+  font-weight: 800;
+  margin-top: 2px;
+}
+.saa-empty {
+  font-size: .9rem;
+  color: var(--text-dim);
+  padding: 12px 0;
+}
+
+/* Зона «Завершить сезон» */
+.season-finish-zone {
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(0,0,0,.18);
+  border: 1px dashed rgba(255,215,0,.35);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.season-finish-hint {
+  font-size: .78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.btn-finish-season {
+  background: linear-gradient(135deg, #f6c945, #e8a91c);
+  color: #2a1f00;
+  font-weight: 800;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: .9rem;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, filter .15s;
+  box-shadow: 0 4px 14px rgba(232,169,28,.35);
+}
+.btn-finish-season:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: 0 6px 18px rgba(232,169,28,.5);
+}
+.btn-finish-season:active {
+  transform: translateY(0);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 640px) {
+  .sahc-actions { width: 100%; }
+  .sahc-actions button { flex: 1; }
+  .season-admin-awards { grid-template-columns: repeat(2, 1fr); }
+  .season-finish-zone { align-items: stretch; }
+  .btn-finish-season { width: 100%; }
+}

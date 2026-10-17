@@ -807,8 +807,9 @@ export function renderAdminSeasons() {
         '<div style="height:6px; background:rgba(0,0,0,.25); border-radius:3px; overflow:hidden; margin-bottom:16px;">' +
           '<div style="height:100%; width:' + pct.toFixed(1) + '%; background:linear-gradient(90deg, var(--accent), var(--accent-3)); border-radius:3px; transition:width .4s;"></div>' +
         '</div>' +
-        '<div style="display:flex; gap:10px; flex-wrap:wrap;">' +
-          '<button class="btn-danger" onclick="adminFinishSeason()">🏁 Завершить сезон</button>' +
+        '<div class="season-finish-zone">' +
+          '<div class="season-finish-hint">Завершит сезон, переместит его в историю и подсчитает награды.</div>' +
+          '<button class="btn-finish-season" onclick="adminFinishSeason()">🏁 Завершить сезон</button>' +
         '</div>' +
       '</div>';
   } else {
@@ -827,29 +828,129 @@ export function renderAdminSeasons() {
   if (history.length > 0) {
     html += '<div style="margin-top:20px;">' +
       '<h3 style="font-size:.95rem; color:var(--text); margin-bottom:10px;">📜 История сезонов</h3>' +
-      '<div style="display:flex; flex-direction:column; gap:8px;">';
+      '<div style="display:flex; flex-direction:column; gap:10px;">';
     history.slice().reverse().forEach(h => {
       const startMs = h.startedAt?.seconds ? h.startedAt.seconds * 1000 : new Date(h.startedAt).getTime();
       const endMs = h.endsAt?.seconds ? h.endsAt.seconds * 1000 : new Date(h.endsAt).getTime();
       const startStr = new Date(startMs).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
       const endStr = new Date(endMs).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+      const seasonIdSafe = escapeHtml(h.id || "");
+      const awards = h.awards || {};
+      const hasAwards = awards && (awards.albumOfSeason || awards.singleOfSeason || awards.artistOfSeason || awards.criticsChoice || awards.communityChoice);
+      const awardsHtml = hasAwards
+        ? '<div class="season-admin-awards hidden" id="saa-' + seasonIdSafe + '">' +
+            renderAdminAwardMini("🏆 Альбом", awards.albumOfSeason, false) +
+            renderAdminAwardMini("💿 Сингл", awards.singleOfSeason, false) +
+            renderAdminAwardMini("🎤 Артист", awards.artistOfSeason, true) +
+            renderAdminAwardMini("⭐ Критики", awards.criticsChoice, false) +
+            renderAdminAwardMini("🌍 Сообщество", awards.communityChoice, false) +
+          '</div>'
+        : '<div class="season-admin-awards-empty hidden" id="saa-' + seasonIdSafe + '">Награды ещё не подсчитаны</div>';
+      const toggleBtn = hasAwards
+        ? '<button class="btn-secondary" onclick="toggleSeasonAwards(\'' + seasonIdSafe + '\')">👁 Награды ▾</button>'
+        : '';
       html +=
-        '<div class="admin-user-row">' +
-          '<div style="font-size:1.5rem;">' + (h.emoji || "🎵") + '</div>' +
-          '<div class="info">' +
-            '<div class="nick">' + escapeHtml((h.name || "Сезон") + " " + (h.year || "")) + '</div>' +
-            '<div class="meta">' + escapeHtml(startStr) + ' — ' + escapeHtml(endStr) + '</div>' +
+        '<div class="season-admin-history-card">' +
+          '<div class="sahc-head">' +
+            '<div class="sahc-emoji">' + (h.emoji || "🎵") + '</div>' +
+            '<div class="sahc-info">' +
+              '<div class="sahc-title">' + escapeHtml((h.name || "Сезон") + " " + (h.year || "")) + '</div>' +
+              '<div class="sahc-meta">' + escapeHtml(startStr) + ' — ' + escapeHtml(endStr) + '</div>' +
+            '</div>' +
+            '<div class="sahc-actions">' +
+              toggleBtn +
+              '<button class="btn-secondary" onclick="adminRecountAwards(\'' + seasonIdSafe + '\')">🔄 Пересчитать</button>' +
+              '<button class="btn-danger" onclick="adminDeleteSeasonFromHistory(\'' + seasonIdSafe + '\')">🗑 Удалить</button>' +
+            '</div>' +
           '</div>' +
-          '<div class="actions">' +
-            '<button class="btn-secondary" onclick="adminRecountAwards(\'' + escapeHtml(h.id || "") + '\')">🔄 Пересчитать</button>' +
-            '<button class="btn-danger" onclick="adminDeleteSeasonFromHistory(\'' + escapeHtml(h.id || "") + '\')">🗑 Удалить</button>' +
-          '</div>' +
+          awardsHtml +
         '</div>';
     });
     html += '</div></div>';
   }
 
   el.innerHTML = html;
+
+  // Восстанавливаем открытые состояния превью наград
+  const openSet = _getOpenSet();
+  openSet.forEach(sid => {
+    const panel = document.getElementById("saa-" + sid);
+    if (panel && panel.classList.contains("hidden")) {
+      panel.classList.remove("hidden");
+      const btn = panel.parentElement?.querySelector(".sahc-actions button");
+      if (btn && btn.textContent.includes("Награды")) btn.textContent = "👁 Скрыть ▴";
+    }
+  });
+}
+
+// ============================================================
+// Превью наград в истории сезонов (компактное)
+// ============================================================
+function renderAdminAwardMini(label, item, isArtist) {
+  if (!item) {
+    return '<div class="saa-item saa-item-empty">' +
+      '<div class="saa-label">' + label + '</div>' +
+      '<div class="saa-empty">—</div>' +
+    '</div>';
+  }
+  // getTier импортировать не нужно — берём цвет через простой порог
+  // (или можно вытащить getTier, но чтобы не трогать импорты — свой мини-маппинг)
+  const avg = item.avg || 0;
+  const tierColor = avg >= 320 ? "#ffd700"
+    : avg >= 270 ? "#b9f2ff"
+    : avg >= 220 ? "#ff5e5e"
+    : avg >= 170 ? "#e5e4e2"
+    : avg >= 120 ? "#c07a4b"
+    : avg >= 70  ? "#9e9e9e"
+    : "#4a4a4a";
+
+  if (isArtist) {
+    return '<div class="saa-item">' +
+      '<div class="saa-label">' + label + '</div>' +
+      '<div class="saa-cover saa-cover-artist">🎤</div>' +
+      '<div class="saa-name">' + escapeHtml(item.name || "—") + '</div>' +
+      '<div class="saa-score" style="color:' + tierColor + '">' + avg + '</div>' +
+    '</div>';
+  }
+  return '<div class="saa-item">' +
+    '<div class="saa-label">' + label + '</div>' +
+    (item.album?.artwork
+      ? '<img class="saa-cover" src="' + escapeHtml(item.album.artwork) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+      : '<div class="saa-cover saa-cover-noart">💿</div>') +
+    '<div class="saa-name">' + escapeHtml(item.album?.title || "—") + '</div>' +
+    '<div class="saa-artist">' + escapeHtml(item.album?.artist || "") + '</div>' +
+    '<div class="saa-score" style="color:' + tierColor + '">' + avg + '</div>' +
+  '</div>';
+}
+
+// Тоггл показа наград (с сохранением в localStorage)
+const SEASON_AWARDS_OPEN_KEY = "albumRating_adminSeasonAwardsOpen_v1";
+function _getOpenSet() {
+  try {
+    const raw = localStorage.getItem(SEASON_AWARDS_OPEN_KEY);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch (e) {}
+  return new Set();
+}
+function _saveOpenSet(set) {
+  try { localStorage.setItem(SEASON_AWARDS_OPEN_KEY, JSON.stringify([...set])); } catch (e) {}
+}
+export function toggleSeasonAwards(seasonId) {
+  const el = document.getElementById("saa-" + seasonId);
+  if (!el) return;
+  const willOpen = el.classList.contains("hidden");
+  el.classList.toggle("hidden", !willOpen);
+  const set = _getOpenSet();
+  if (willOpen) set.add(seasonId); else set.delete(seasonId);
+  _saveOpenSet(set);
+  // Синхронизируем кнопку
+  const card = el.parentElement;
+  if (card) {
+    const btn = card.querySelector(".sahc-actions button");
+    if (btn && btn.textContent.includes("Награды")) {
+      btn.textContent = willOpen ? "👁 Скрыть ▴" : "👁 Награды ▾";
+    }
+  }
 }
 
 // ============================================================
