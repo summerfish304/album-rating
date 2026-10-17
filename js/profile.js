@@ -51,16 +51,25 @@ export function renderProfile() {
   const achievementsHeader = document.getElementById("achievementsHeader");
   const achievementsGrid = document.getElementById("achievementsGrid");
   const adminBadgeBox = document.getElementById("adminBadgeBox");
+  const achievementsTab = document.querySelector('.profile-tab[data-tab="achievements"]');
 
   if (isAdmin) {
     if (levelCard) levelCard.classList.add("hidden");
     if (achievementsHeader) achievementsHeader.classList.add("hidden");
     if (achievementsGrid) achievementsGrid.classList.add("hidden");
+    if (achievementsTab) achievementsTab.classList.add("hidden");
     if (adminBadgeBox) adminBadgeBox.classList.remove("hidden");
+
+    // Если админ оказался на вкладке «Достижения» — принудительно переключаем на «Профиль»
+    const activeTab = document.querySelector(".profile-tab.active");
+    if (activeTab && activeTab.dataset.tab === "achievements") {
+      switchProfileTab("main");
+    }
   } else {
     if (levelCard) levelCard.classList.remove("hidden");
     if (achievementsHeader) achievementsHeader.classList.remove("hidden");
     if (achievementsGrid) achievementsGrid.classList.remove("hidden");
+    if (achievementsTab) achievementsTab.classList.remove("hidden");
     if (adminBadgeBox) adminBadgeBox.classList.add("hidden");
   }
 
