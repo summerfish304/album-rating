@@ -200,19 +200,37 @@
     <!-- ШАГ 1: ПОИСК -->
     <div id="step1">
       <div class="source-block" style="padding: 12px 16px;">
-        <div class="source-label" style="margin-bottom: 0;">🔍 Поиск релиза</div>
+        <div class="source-label" style="margin-bottom: 0;">🔍 Поиск релиза или артиста</div>
       </div>
 
       <div id="tab-search">
         <div class="autocomplete-wrap">
           <input type="text" id="searchInput" autocomplete="off" spellcheck="false"
-                 placeholder="Например: Radiohead In Rainbows"
+                 placeholder="Например: Radiohead или In Rainbows"
                  oninput="onSearchInput()"
                  onkeydown="onSearchKeydown(event)"
                  onfocus="checkShowSuggestions()">
           <div class="autocomplete-list" id="suggestionList"></div>
         </div>
         <p class="hint">↑/↓ — навигация, Enter — выбрать, Esc — закрыть · <b>/</b> — фокус в поиск</p>
+      </div>
+
+      <!-- ИСТОРИЯ ПОИСКА -->
+      <div id="searchHistoryBlock" class="search-history-block hidden">
+        <div class="search-history-head">
+          <span class="search-history-title">🕓 История поиска</span>
+          <button class="search-history-clear" onclick="clearSearchHistory()">Очистить</button>
+        </div>
+        <div class="search-history-list" id="searchHistoryList"></div>
+      </div>
+
+      <!-- ИЗБРАННОЕ -->
+      <div id="favoritesBlock" class="favorites-block hidden">
+        <div class="favorites-head">
+          <span class="favorites-title">⭐ Избранное</span>
+          <button class="favorites-toggle" id="favoritesToggleBtn" onclick="toggleFavoritesCollapse()">Свернуть</button>
+        </div>
+        <div class="favorites-list" id="favoritesList"></div>
       </div>
 
       <div id="errorBox" class="error"></div>
@@ -349,6 +367,50 @@
       <div class="result-actions">
         <button id="rateBtn" onclick="submitRating()">⭐ Поставить оценку</button>
         <button id="shareBtn" class="btn-share" onclick="openShareDialog()">📤 Поделиться</button>
+      </div>
+    </div>
+    <!-- РЕКОМЕНДАЦИИ -->
+    <div id="recommendationsSection" class="recommendations-section">
+      <!-- В тренде -->
+      <div class="reco-block" id="recoTrending">
+        <div class="reco-header">
+          <span class="reco-title">🔥 В тренде за неделю</span>
+          <button class="reco-refresh" onclick="refreshRecommendations()" title="Обновить">↻</button>
+        </div>
+        <div class="reco-carousel" id="recoTrendingList"></div>
+      </div>
+
+      <!-- Новинки -->
+      <div class="reco-block" id="recoNew">
+        <div class="reco-header">
+          <span class="reco-title">🆕 Новинки</span>
+        </div>
+        <div class="reco-carousel" id="recoNewList"></div>
+      </div>
+
+      <!-- Рекомендации для вас -->
+      <div class="reco-block hidden" id="recoPersonal">
+        <div class="reco-header">
+          <span class="reco-title">⭐ Рекомендации для вас</span>
+        </div>
+        <div class="reco-carousel" id="recoPersonalList"></div>
+      </div>
+
+      <!-- Случайное из базы -->
+      <div class="reco-block hidden" id="recoRandom">
+        <div class="reco-header">
+          <span class="reco-title">🎲 Случайное из базы</span>
+          <button class="reco-refresh" onclick="refreshRandomReco()" title="Другие случайные">↻</button>
+        </div>
+        <div class="reco-carousel" id="recoRandomList"></div>
+      </div>
+
+      <!-- Популярное на сайте -->
+      <div class="reco-block hidden" id="recoPopular">
+        <div class="reco-header">
+          <span class="reco-title">📈 Популярное на сайте</span>
+        </div>
+        <div class="reco-carousel" id="recoPopularList"></div>
       </div>
     </div>
 

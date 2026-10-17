@@ -2,7 +2,7 @@ import { ITUNES_PROXY, DEBOUNCE_MS, LS_SEARCH_CACHE, LS_RELEASE_CACHE } from './
 import { escapeHtml } from './utils.js';
 import { mapSpotifyArtist, mapSpotifyArtistAlbum } from './artists.js';
 import { cacheGet, cacheSet } from './cache.js';
-import { showWarning, hideWarning } from './ui.js';
+import { showWarning, hideWarning, showToast } from './ui.js';
 
 let lastSuggestions = [];
 let activeIndex = -1;
@@ -50,7 +50,13 @@ export async function spotifySearchAlbums(query, limit) {
     "/search?q=" + encodeURIComponent(query) + "&type=album"
   );
   const items = (data.albums && data.albums.items) || [];
-  return items.slice(0, Math.max(1, Math.min(50, limit)));
+  // Фильтр: без компиляций и мульти-артистов
+  const filtered = items.filter(a =>
+    a.album_type !== "compilation" &&
+    (a.artists || []).length === 1 &&
+    !/various/i.test(a.artists?.[0]?.name || "")
+  );
+  return filtered.slice(0, Math.max(1, Math.min(50, limit)));
 }
 
 // ============================================================
@@ -65,10 +71,17 @@ export async function searchAll(query, limit) {
   const albumsRaw = (data.albums && data.albums.items) || [];
   const artistsRaw = (data.artists && data.artists.items) || [];
 
-  const albums = albumsRaw.map(mapSpotifyAlbum).map(a => ({
-    kind: "release",
-    ...a
-  }));
+  const albums = albumsRaw
+    .filter(a => a.album_type !== "compilation")
+    .filter(a => (a.artists || []).length === 1)
+    .filter(a => !/various|v\.a\.|сборник/i.test((a.artists?.[0]?.name || "")))
+    .filter(a => !/^(top|best|greatest|hits|collection|playlist|compilation|хіт|лучшие|сборник|now that)/i.test(a.name || ""))
+    .filter(a => !/\b(hits|antolog|anthology|collection|compilation)\b/i.test(a.name || ""))
+    .map(mapSpotifyAlbum)
+    .map(a => ({
+      kind: "release",
+      ...a
+    }));
 
   const artists = artistsRaw.map(mapSpotifyArtist).map(a => ({
     kind: "artist",
@@ -250,6 +263,7 @@ export function chooseSuggestion(i, onChoose, onChooseArtist) {
 
   if (item.kind === "artist") {
     document.getElementById("searchInput").value = "🎤 " + item.title;
+    addToSearchHistory(item.title, "artist");
     lastSuggestions = [];
     activeIndex = -1;
     if (onChooseArtist) onChooseArtist(item.id);
@@ -258,9 +272,206 @@ export function chooseSuggestion(i, onChoose, onChooseArtist) {
 
   // Релиз
   document.getElementById("searchInput").value = item.title + " — " + item.artist;
+  addToSearchHistory(item.title + " " + item.artist, "release");
   lastSuggestions = [];
   activeIndex = -1;
   if (onChoose) onChoose({ id: item.id, title: item.title, cover: item.cover, source: "spotify" });
+}
+
+// ============================================================
+// ИСТОРИЯ ПОИСКА
+// ============================================================
+export function getSearchHistory() {
+  try {
+    const raw = localStorage.getItem("albumRating_searchHistory_v1");
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+
+export function addToSearchHistory(query, kind) {
+  if (!query || query.trim().length < 2) return;
+  const q = query.trim();
+  try {
+    let arr = getSearchHistory();
+    // Убираем дубли
+    arr = arr.filter(item => item.q.toLowerCase() !== q.toLowerCase());
+    // Добавляем в начало
+    arr.unshift({ q: q, kind: kind || "all", ts: Date.now() });
+    // Обрезаем до 10
+    arr = arr.slice(0, 10);
+    localStorage.setItem("albumRating_searchHistory_v1", JSON.stringify(arr));
+    renderSearchHistory();
+  } catch (e) {}
+}
+
+export function clearSearchHistory() {
+  try { localStorage.removeItem("albumRating_searchHistory_v1"); } catch (e) {}
+  renderSearchHistory();
+}
+
+export function renderSearchHistory() {
+  const block = document.getElementById("searchHistoryBlock");
+  const list = document.getElementById("searchHistoryList");
+  if (!block || !list) return;
+
+  const history = getSearchHistory();
+  if (history.length === 0) {
+    block.classList.add("hidden");
+    return;
+  }
+
+  block.classList.remove("hidden");
+  list.innerHTML = "";
+  history.forEach(item => {
+    const btn = document.createElement("button");
+    btn.className = "search-history-chip";
+    btn.innerHTML = '<span class="shc-icon">🔍</span><span class="shc-text">' + escapeHtml(item.q) + '</span>';
+    btn.onclick = () => {
+      const inp = document.getElementById("searchInput");
+      if (inp) {
+        inp.value = item.q;
+        // Триггерим поиск
+        const evt = new Event("input", { bubbles: true });
+        inp.dispatchEvent(evt);
+        inp.focus();
+      }
+    };
+    list.appendChild(btn);
+  });
+}
+
+// ============================================================
+// ИЗБРАННОЕ
+// ============================================================
+import { db, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, serverTimestamp } from './firebase.js';
+
+let currentUserFav = null;
+
+export function setSearchContext(opts) {
+  if (opts.currentUser !== undefined) currentUserFav = opts.currentUser;
+}
+
+// Загрузить избранное юзера
+export async function loadFavorites() {
+  if (!currentUserFav) return [];
+  try {
+    const q = query(collection(db, "favorites"), where("uid", "==", currentUserFav.uid));
+    const snap = await getDocs(q);
+    const items = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    items.sort((a, b) => (b.ts?.seconds || 0) - (a.ts?.seconds || 0));
+    return items;
+  } catch (e) { return []; }
+}
+
+// Добавить в избранное
+export async function addToFavorites(item) {
+  if (!currentUserFav) { showToast("Нужно войти"); return; }
+  if (!item || !item.id || !item.kind) return;
+
+  const docId = currentUserFav.uid + "_" + item.kind + "_" + item.id;
+  try {
+    const existing = await getDoc(doc(db, "favorites", docId));
+    if (existing.exists()) { showToast("Уже в избранном"); return; }
+
+    await setDoc(doc(db, "favorites", docId), {
+      uid: currentUserFav.uid,
+      kind: item.kind,           // "release" | "artist"
+      itemId: item.id,
+      title: item.title || "",
+      artist: item.artist || "",
+      cover: item.cover || "",
+      genres: item.genres || [],
+      ts: serverTimestamp()
+    });
+    showToast("Добавлено в избранное", { success: true });
+    renderFavorites();
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+  }
+}
+
+// Удалить из избранного
+export async function removeFromFavorites(favId) {
+  try {
+    await deleteDoc(doc(db, "favorites", favId));
+    showToast("Удалено из избранного");
+    renderFavorites();
+  } catch (e) { showToast("Ошибка: " + e.message); }
+}
+
+// Проверить, в избранном ли
+export async function isFavorite(kind, itemId) {
+  if (!currentUserFav) return false;
+  const docId = currentUserFav.uid + "_" + kind + "_" + itemId;
+  try {
+    const snap = await getDoc(doc(db, "favorites", docId));
+    return snap.exists();
+  } catch (e) { return false; }
+}
+
+// Рендер избранного
+export async function renderFavorites() {
+  const block = document.getElementById("favoritesBlock");
+  const list = document.getElementById("favoritesList");
+  if (!block || !list) return;
+  if (!currentUserFav) { block.classList.add("hidden"); return; }
+
+  const items = await loadFavorites();
+  if (items.length === 0) {
+    block.classList.add("hidden");
+    return;
+  }
+
+  block.classList.remove("hidden");
+  list.innerHTML = "";
+  items.forEach(fav => {
+    const el = document.createElement("div");
+    el.className = "favorites-item";
+    const icon = fav.kind === "artist" ? "🎤" : "💿";
+    el.innerHTML =
+      (fav.cover
+        ? '<img class="fav-cover" src="' + escapeHtml(fav.cover) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+        : '<div class="fav-cover fav-noimg">' + icon + '</div>') +
+      '<div class="fav-info">' +
+        '<div class="fav-title">' + escapeHtml(fav.title) + '</div>' +
+        '<div class="fav-sub">' + icon + ' ' + escapeHtml(fav.artist || "") + '</div>' +
+      '</div>' +
+      '<button class="fav-del" title="Убрать из избранного">✕</button>';
+    el.onclick = (e) => {
+      if (e.target.classList.contains("fav-del")) return;
+      if (fav.kind === "artist") {
+        if (window.openArtist) window.openArtist(fav.itemId);
+      } else {
+        if (window.openBoardModal) {
+          // Открываем через доску, если релиз есть; иначе — оценка
+          const group = (window._boardData && window._boardData()) ? window._boardData().find(b => b.releaseId === fav.itemId) : null;
+          if (group) {
+            window.switchNav("board");
+            setTimeout(() => window.openBoardModal(group), 250);
+          } else if (window.switchNav) {
+            window.switchNav("main");
+            if (window._loadAlbum) window._loadAlbum({ id: fav.itemId, title: "", cover: "", source: "spotify" });
+          }
+        }
+      }
+    };
+    el.querySelector(".fav-del").onclick = (e) => {
+      e.stopPropagation();
+      removeFromFavorites(fav._id);
+    };
+    list.appendChild(el);
+  });
+}
+
+// Свернуть/развернуть блок избранного
+export function toggleFavoritesCollapse() {
+  const list = document.getElementById("favoritesList");
+  const btn = document.getElementById("favoritesToggleBtn");
+  if (!list || !btn) return;
+  const collapsed = list.classList.toggle("collapsed");
+  btn.textContent = collapsed ? "Развернуть" : "Свернуть";
 }
 
 export function resetSearchState() {

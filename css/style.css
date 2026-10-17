@@ -5369,3 +5369,364 @@ body.theme-season-active .scheme-grid:hover {
   color: var(--accent-3);
   text-decoration-color: var(--accent-3);
 }
+
+/* ============================================================
+   ИСТОРИЯ ПОИСКА
+   ============================================================ */
+.search-history-block {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  animation: fadeUp .25s ease;
+}
+.search-history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.search-history-title {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.search-history-clear {
+  padding: 5px 10px;
+  font-size: .72rem;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.search-history-clear:hover { color: var(--danger); border-color: var(--danger); }
+.search-history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.search-history-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+  font-size: .78rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: none;
+  font-family: inherit;
+  transition: border-color .15s, color .15s;
+}
+.search-history-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  transform: none;
+}
+.search-history-chip .shc-icon { font-size: .9em; opacity: .7; }
+
+/* ============================================================
+   ИЗБРАННОЕ
+   ============================================================ */
+.favorites-block {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  animation: fadeUp .25s ease;
+}
+.favorites-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.favorites-title {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.favorites-toggle {
+  padding: 5px 10px;
+  font-size: .72rem;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.favorites-toggle:hover { color: var(--accent-3); border-color: var(--accent); }
+.favorites-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.favorites-list.collapsed { display: none; }
+.favorites-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  cursor: pointer;
+  transition: border-color .15s, transform .15s;
+  position: relative;
+}
+.favorites-item:hover { border-color: var(--accent); transform: translateY(-1px); }
+.fav-cover {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--panel-3);
+}
+.fav-noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+.fav-info { flex: 1; min-width: 0; }
+.fav-title {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fav-sub {
+  font-size: .72rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fav-del {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: .85rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fav-del:hover { color: var(--danger); border-color: var(--danger); }
+
+@media (max-width: 500px) {
+  .favorites-list { grid-template-columns: 1fr; }
+}
+
+/* Кнопка «⭐ В избранное» на странице артиста и в форме релиза */
+.fav-toggle-btn {
+  padding: 7px 12px;
+  font-size: .8rem;
+  border-radius: 10px;
+  background: var(--panel-2);
+  color: var(--text-mid);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.fav-toggle-btn:hover { border-color: var(--gold-lvl); color: var(--gold-1); }
+.fav-toggle-btn.active {
+  background: linear-gradient(135deg, rgba(245,196,81,.15), rgba(224,165,44,.08));
+  border-color: var(--gold-lvl);
+  color: var(--gold-1);
+}
+
+/* ============================================================
+   РЕКОМЕНДАЦИИ НА ГЛАВНОЙ
+   ============================================================ */
+.recommendations-section {
+  margin-top: 22px;
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.reco-block {
+  animation: fadeUp .4s ease;
+}
+.reco-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.reco-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.01em;
+}
+.reco-refresh {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--panel-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .3s, color .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.reco-refresh:hover {
+  color: var(--accent-3);
+  border-color: var(--accent);
+  transform: rotate(180deg);
+}
+
+/* Карусель */
+.reco-carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 4px 12px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.reco-carousel::-webkit-scrollbar { height: 6px; }
+.reco-carousel::-webkit-scrollbar-track { background: transparent; }
+.reco-carousel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.reco-carousel::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* Карточка */
+.reco-card {
+  flex: 0 0 140px;
+  width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform .2s;
+  animation: fadeUp .3s ease both;
+}
+.reco-card:hover {
+  transform: translateY(-4px);
+}
+.reco-card-cover-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--panel-3);
+  box-shadow: 0 8px 20px rgba(0,0,0,.3);
+}
+.reco-card-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.reco-noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  width: 100%;
+  height: 100%;
+}
+.reco-card-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: .65rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.reco-card-count {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: var(--gold-1);
+  font-size: .65rem;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 8px;
+}
+.reco-card-info {
+  min-width: 0;
+}
+.reco-card-title {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.reco-card-artist {
+  font-size: .72rem;
+  color: var(--text-dim);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 700px) {
+  .reco-card { flex: 0 0 120px; width: 120px; }
+  .reco-title { font-size: .9rem; }
+}

@@ -50,7 +50,10 @@ import {
 
 import {
   onSearchInput, onSearchKeydown,
-  showSuggestions, closeSuggestions
+  showSuggestions, closeSuggestions,
+  renderSearchHistory, addToSearchHistory, clearSearchHistory,
+  setSearchContext, renderFavorites, addToFavorites, removeFromFavorites,
+  toggleFavoritesCollapse
 } from './search.js';
 
 import {
@@ -121,6 +124,14 @@ import {
   openArtistRatingForm, closeArtistRatingForm, applyArtistRating,
   toggleArtistHelp, searchArtists
 } from './artists.js';
+
+import {
+  setRecommendationsContext,
+  loadRecommendations,
+  refreshRecommendations,
+  refreshRandomReco,
+  setRecommendationsVisible
+} from './recommendations.js';
 
 import { isParticlesOff, setParticlesOff } from './season-particles.js';
 
@@ -382,11 +393,21 @@ onAuthStateChanged(auth, async (user) => {
         onCloseArtistPage: () => closeArtistPage(),
         onPushActivity: pushActivity,
         onAfterArtistRating: (artistId) => {
-          // Перерисовываем страницу артиста
           if (artistId) openArtist(artistId);
         }
       }
     });
+      setRecommendationsContext({
+      currentUser,
+      userProfile,
+      callbacks: {
+        onLoadAlbum: (album) => loadAlbum(album)
+      }
+    });
+    loadRecommendations();
+    setSearchContext({ currentUser });
+    renderSearchHistory();
+    renderFavorites();
 
     updateWishlistBadge();
     updateNotifDot();
@@ -848,10 +869,15 @@ window.switchNav = switchNav;
 window.goHome = goHome;
 
 window.setRatingMode = setRatingMode;
-window.onSearchInput = () => onSearchInput(
-  (album) => loadAlbum(album),
-  (artistId) => openArtist(artistId)
-);
+window.onSearchInput = () => {
+  const inp = document.getElementById("searchInput");
+  const q = inp ? inp.value.trim() : "";
+  setRecommendationsVisible(q.length < 2);
+  onSearchInput(
+    (album) => loadAlbum(album),
+    (artistId) => openArtist(artistId)
+  );
+};
 window.onSearchKeydown = (e) => onSearchKeydown(
   e,
   (album) => loadAlbum(album),
@@ -899,6 +925,12 @@ window.adminConfirmStartSeason = adminConfirmStartSeason;
 window.adminFinishSeason = adminFinishSeason;
 window.adminDeleteSeasonFromHistory = adminDeleteSeasonFromHistory;
 
+window.clearSearchHistory = clearSearchHistory;
+window.toggleFavoritesCollapse = toggleFavoritesCollapse;
+window.addToFavorites = addToFavorites;
+
+window.toggleArtistFavorite = toggleArtistFavorite;
+
 window.openArtistRatingForm = openArtistRatingForm;
 window.closeArtistRatingForm = closeArtistRatingForm;
 window.applyArtistRating = applyArtistRating;
@@ -933,7 +965,10 @@ window.rateTrackAsSingle = () => rateTrackAsSingle((album) => {
   loadAlbum({ id: album.id, title: album.title, cover: album.artwork, source: album.source });
 });
 window.submitRating = () => submitRating();
-window.reset = reset;
+window.reset = () => {
+  reset();
+  setRecommendationsVisible(true);
+};
 window.toggleHistogram = toggleHistogram;
 window.onCoverRatingChange = onCoverRatingChange;
 
@@ -946,6 +981,9 @@ window.openCompareSelector = openCompareSelector;
 window.compareGo = () => compareGo({ onAddXp: addXp });
 window.compareBack = compareBack;
 window.closeCompareModal = closeCompareModal;
+
+window.refreshRecommendations = refreshRecommendations;
+window.refreshRandomReco = refreshRandomReco;
 
 window.openNotifications = openNotifications;
 window.closeNotifications = closeNotifications;

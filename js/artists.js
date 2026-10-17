@@ -405,6 +405,7 @@ function renderArtistPage(artist, albums, tracks, myRating) {
               })()
             : '<button onclick="openArtistRatingForm(\'' + artist.id + '\')">⭐ Оценить артиста</button>'
           ) +
+          '<button class="fav-toggle-btn" id="artistFavBtn" onclick="toggleArtistFavorite(\'' + artist.id + '\', \'' + escapeHtml(artist.name).replace(/'/g, "\\'") + '\', \'' + escapeHtml(artist.photo || "").replace(/'/g, "\\'") + '\')">⭐ В избранное</button>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -698,8 +699,38 @@ function updateSliderFill(slider) {
   slider.style.background = "linear-gradient(90deg, var(--accent) 0%, var(--accent-3) " + pct + "%, var(--border) " + pct + "%, var(--border) 100%)";
 }
 
+// Тогл «В избранное» для артиста
+export async function toggleArtistFavorite(artistId, artistName, artistPhoto) {
+  if (!currentUser) { showToast("Нужно войти"); return; }
+  const btn = document.getElementById("artistFavBtn");
+  if (!btn) return;
+
+  const { isFavorite, addToFavorites, removeFromFavorites, loadFavorites } = await import('./search.js');
+  const fav = await isFavorite("artist", artistId);
+
+  if (fav) {
+    // Удаляем
+    const list = await loadFavorites();
+    const item = list.find(f => f.kind === "artist" && f.itemId === artistId);
+    if (item) await removeFromFavorites(item._id);
+    btn.classList.remove("active");
+    btn.innerHTML = "⭐ В избранное";
+  } else {
+    await addToFavorites({
+      kind: "artist",
+      id: artistId,
+      title: artistName,
+      artist: (currentArtist && currentArtist.genres) ? currentArtist.genres.slice(0, 2).join(", ") : "Артист",
+      cover: artistPhoto
+    });
+    btn.classList.add("active");
+    btn.innerHTML = "★ В избранном";
+  }
+}
+
 // Экспорт в window для onclick
 if (typeof window !== "undefined") {
+  window.toggleArtistFavorite = toggleArtistFavorite;
   window.openArtist = openArtist;
   window.closeArtistPage = closeArtistPage;
   window.openAlbumFromArtist = openAlbumFromArtist;
