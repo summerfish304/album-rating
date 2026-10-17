@@ -15,6 +15,9 @@ import {
   loadMyArtistRatings,
   deleteMyArtistRating
 } from './artists.js';
+import {
+  subscribeToUser, unsubscribeFromUser, isFollowing, getSubscriptionCounts
+} from './board.js';
 // ============================================================
 // Контекст (устанавливается из main.js)
 // ============================================================
@@ -106,8 +109,6 @@ export function renderProfile() {
 
   if (callbacks.onUpdateLevelUI) callbacks.onUpdateLevelUI();
   renderNowPlayingSection();
-  renderTopArtists();
-  renderTop10();
   renderAchievements();
 }
 
@@ -302,52 +303,7 @@ export async function clearNowPlaying() {
   } catch (e) { showToast("Ошибка: " + e.message); }
 }
 
-// ============================================================
-// Топ-5 артистов
-// ============================================================
-function renderTopArtists() {
-  const el = document.getElementById("topArtists");
-  if (!el) return;
-  if (!myRatings.length) { el.innerHTML = '<div class="empty-msg" style="padding:20px;">Пока нет оценок</div>'; return; }
-  const byArtist = {};
-  myRatings.forEach(r => {
-    const a = r.album && r.album.artist;
-    if (!a) return;
-    if (!byArtist[a]) byArtist[a] = { count: 0, sum: 0 };
-    byArtist[a].count++;
-    byArtist[a].sum += r.final;
-  });
-  const list = Object.entries(byArtist)
-    .map(([artist, v]) => ({ artist, count: v.count, avg: Math.round(v.sum / v.count) }))
-    .sort((a, b) => b.count - a.count || b.avg - a.avg)
-    .slice(0, 5);
-  if (list.length === 0) { el.innerHTML = '<div class="empty-msg" style="padding:20px;">Пока нет данных</div>'; return; }
-  let html = '<div class="top10-list">';
-  list.forEach((a, i) => {
-    const tier = getTier(a.avg);
-    html += '<div class="top10-item">' +
-      '<div class="t10-num">' + (i + 1) + '</div>' +
-      '<div class="t10-info"><div class="t10-title">' + escapeHtml(a.artist) + '</div>' +
-      '<div class="t10-artist">' + a.count + ' ' + plural(a.count, "релиз", "релиза", "релизов") + ' · средняя ' + a.avg + '</div></div>' +
-      '<div class="t10-score" style="color:' + tier.color + '">' + tier.emoji + '</div>' +
-    '</div>';
-  });
-  html += '</div>';
-  el.innerHTML = html;
-}
 
-// ============================================================
-// Топ-10 / антитоп-10
-// ============================================================
-function renderTop10() {
-  const el = document.getElementById("top10Grid");
-  if (!el) return;
-  if (myRatings.length < 2) { el.innerHTML = '<div class="empty-msg" style="padding:20px;">Оцените хотя бы 2 релиза</div>'; return; }
-  const sorted = [...myRatings].sort((a, b) => b.final - a.final);
-  const top10 = sorted.slice(0, 10);
-  const anti10 = sorted.slice(-10).reverse();
-  el.innerHTML = buildTop10Column("🏆 Топ-10 лучших", top10) + buildTop10Column("💀 Антитоп-10", anti10);
-}
 
 function buildTop10Column(title, list) {
   let html = '<div class="top10-col"><h4>' + title + '</h4><div class="top10-list">';
@@ -756,16 +712,64 @@ export async function openUserProfile(uid, cb) {
       html += '</div></div>';
     }
 
+    // Подписки: счётчики + кнопка
+    const counts = await getSubscriptionCounts(uid);
+    const alreadyFollowing = isFollowing(uid);
+    html += '<div class="user-profile-stats" style="margin-top:12px;">' +
+      '<div class="user-profile-stat">' +
+        '<div class="ups-num">' + counts.followers + '</div>' +
+        '<div class="ups-lbl">Подписчики</div>' +
+      '</div>' +
+      '<div class="user-profile-stat">' +
+        '<div class="ups-num">' + counts.following + '</div>' +
+        '<div class="ups-lbl">Подписки</div>' +
+      '</div>' +
+    '</div>';
+
     html += '<div class="user-profile-actions" style="margin-top:16px;">';
     if (isMe) {
       html += '<button class="btn-secondary" onclick="closeUserProfile();switchNav(\'profile\')">👤 Открыть мой профиль</button>';
     } else {
+      html += '<button class="' + (alreadyFollowing ? 'btn-secondary' : '') + '" data-follow-uid="' + escapeHtml(uid) + '" data-following="' + (alreadyFollowing ? '1' : '0') + '">' +
+        (alreadyFollowing ? '✓ Вы подписаны' : '➕ Подписаться') +
+      '</button>';
       html += '<button class="btn-secondary" onclick="closeUserProfile();openCompareWithUser(\'' + uid + '\')">⚖ Сравнить с моими</button>';
     }
     html += '<button class="btn-secondary" onclick="closeUserProfile()">Закрыть</button>';
     html += '</div>';
 
     content.innerHTML = html;
+
+    // Обработчик кнопки подписки
+    const followBtn = content.querySelector('[data-follow-uid]');
+    if (followBtn) {
+      followBtn.onclick = async () => {
+        const targetUid = followBtn.dataset.followUid;
+        const isFollowingNow = followBtn.dataset.following === "1";
+        followBtn.disabled = true;
+        if (isFollowingNow) {
+          const ok = await unsubscribeFromUser(targetUid);
+          if (ok) {
+            followBtn.dataset.following = "0";
+            followBtn.classList.add("btn-secondary");
+            followBtn.textContent = "➕ Подписаться";
+            // обновим счётчик подписчиков
+            const statsEls = content.querySelectorAll(".user-profile-stat .ups-num");
+            if (statsEls[0]) statsEls[0].textContent = Math.max(0, (parseInt(statsEls[0].textContent) || 1) - 1);
+          }
+        } else {
+          const ok = await subscribeToUser(targetUid);
+          if (ok) {
+            followBtn.dataset.following = "1";
+            followBtn.classList.remove("btn-secondary");
+            followBtn.textContent = "✓ Вы подписаны";
+            const statsEls = content.querySelectorAll(".user-profile-stat .ups-num");
+            if (statsEls[0]) statsEls[0].textContent = (parseInt(statsEls[0].textContent) || 0) + 1;
+          }
+        }
+        followBtn.disabled = false;
+      };
+    }
 
     content.querySelectorAll(".user-top-item").forEach(el => {
       el.onclick = () => {
@@ -784,6 +788,19 @@ export function closeUserProfile() {
   document.getElementById("userProfileBackdrop").classList.remove("open");
   document.body.style.overflow = "";
   _userProfileViewUid = null;
+}
+
+// Перерисовка открытой модалки профиля (вызывается из board.js после подписки)
+if (typeof window !== "undefined") {
+  window.__refreshOpenUserProfile = () => {
+    const uid = _userProfileViewUid;
+    if (uid) {
+      const backdrop = document.getElementById("userProfileBackdrop");
+      if (backdrop && backdrop.classList.contains("open")) {
+        openUserProfile(uid, callbacks.onOpenRelease ? { onOpenRelease: callbacks.onOpenRelease } : {});
+      }
+    }
+  };
 }
 
 // ============================================================
@@ -873,12 +890,400 @@ export function switchProfileTab(tab) {
 }
 
 // ============================================================
-// Вкладка СТАТИСТИКА — используем существующие блоки
+// Вкладка СТАТИСТИКА — расширенная аналитика
 // ============================================================
 function renderProfileStatsTab() {
-  renderTopArtists();
-  renderTop10();
-  renderNowPlayingSection();
+  const el = document.getElementById("profileStatsTab");
+  if (!el) return;
+
+  if (!myRatings || myRatings.length === 0) {
+    el.innerHTML = '<div class="empty-msg" style="padding:24px 14px;">' +
+      '<div style="font-size:2rem; margin-bottom:8px; opacity:.6;">📊</div>' +
+      'Пока нет оценок.<br>' +
+      '<span style="font-size:.8rem; color:var(--text-dim);">Оцените первый релиз — и здесь появится аналитика.</span>' +
+    '</div>';
+    return;
+  }
+
+  let html = '';
+
+  // 1. Ваш стиль (5 чипов) — идёт первым, это самое интересное
+  html += renderMyStyleBlock();
+
+  // 2. Гистограмма по тирам
+  html += renderTierHistogram();
+
+  // 3. Динамика по месяцам
+  html += renderMonthlyDynamics();
+
+  // 4. Дополнительные цифры
+  html += renderFunFacts();
+
+  // 5. Топ-20 артистов
+  html += renderTopArtistsExpanded();
+
+  // 6. Топ-10 / антитоп-10
+  html += renderTop10Block();
+
+  el.innerHTML = html;
+
+  // Навешиваем кнопку «Показать все 20»
+  const expandBtn = document.getElementById("topArtistsExpandBtn");
+  if (expandBtn) {
+    expandBtn.onclick = () => {
+      const hidden = document.querySelectorAll("#topArtistsList .top10-item.extra-item");
+      const isHidden = hidden.length > 0 && hidden[0].classList.contains("hidden");
+      hidden.forEach(it => it.classList.toggle("hidden", !isHidden));
+      expandBtn.textContent = isHidden ? "Скрыть ▴" : "Показать все 20 ▾";
+    };
+  }
+
+  // Клики по релизам в топ-10
+  el.querySelectorAll(".top10-item[data-release-id]").forEach(item => {
+    item.onclick = () => {
+      const src = item.dataset.source;
+      const rid = item.dataset.releaseId;
+      if (callbacks.onSwitchNav) callbacks.onSwitchNav("board");
+      const group = callbacks.onGetBoardData
+        ? callbacks.onGetBoardData().find(b => b.source === src && b.releaseId === String(rid))
+        : null;
+      if (group && callbacks.onOpenBoardModal) {
+        setTimeout(() => callbacks.onOpenBoardModal(group), 250);
+      }
+    };
+  });
+}
+
+// ============================================================
+// 1. «Ваш стиль» — 5 чипов
+// ============================================================
+function renderMyStyleBlock() {
+  const ratings = myRatings;
+  const n = ratings.length;
+  const avgFinal = Math.round(ratings.reduce((a, r) => a + r.final, 0) / n);
+
+  // Строгость
+  let strictness, strictnessEmoji, strictnessColor;
+  if (avgFinal >= 240) { strictness = "Щедрый"; strictnessEmoji = "🎁"; strictnessColor = "var(--accent-3)"; }
+  else if (avgFinal >= 170) { strictness = "Сбалансированный"; strictnessEmoji = "⚖️"; strictnessColor = "var(--text)"; }
+  else { strictness = "Строгий"; strictnessEmoji = "🔍"; strictnessColor = "var(--vibe-1)"; }
+
+  // Широта
+  const artistCounts = {};
+  ratings.forEach(r => {
+    const a = r.album && r.album.artist;
+    if (a) artistCounts[a] = (artistCounts[a] || 0) + 1;
+  });
+  const uniqueArtists = Object.keys(artistCounts).length;
+  const diversityRatio = uniqueArtists / n;
+  let breadth, breadthEmoji;
+  if (diversityRatio >= 0.85) { breadth = "Эклектик"; breadthEmoji = "🌍"; }
+  else if (diversityRatio >= 0.5) { breadth = "Исследователь"; breadthEmoji = "🧭"; }
+  else { breadth = "Фанат"; breadthEmoji = "❤️"; }
+
+  // Глубина: альбомы vs синглы
+  const albumsCount = ratings.filter(r => !r.isSingle).length;
+  const singlesCount = ratings.filter(r => r.isSingle).length;
+  const albumShare = n ? albumsCount / n : 0;
+  let depth, depthEmoji;
+  if (albumShare >= 0.65) { depth = "Альбомщик"; depthEmoji = "💿"; }
+  else if (albumShare >= 0.3) { depth = "Универсал"; depthEmoji = "🎵"; }
+  else { depth = "Сингловый"; depthEmoji = "🎼"; }
+
+  // Тщательность: доля оценок с details
+  const detailedCount = ratings.filter(r => r.details && Object.keys(r.details).length > 0).length;
+  const detailedShare = detailedCount / n;
+  let thoroughness, thoroughnessEmoji;
+  if (detailedShare >= 0.5) { thoroughness = "Детальный"; thoroughnessEmoji = "📝"; }
+  else if (detailedShare >= 0.2) { thoroughness = "Средний"; thoroughnessEmoji = "✏️"; }
+  else { thoroughness = "Быстрый"; thoroughnessEmoji = "⚡"; }
+
+  // Вайб-ориентированность: средний overall
+  const withVibe = ratings.filter(r => r.overall != null);
+  const avgVibe = withVibe.length
+    ? (withVibe.reduce((a, r) => a + r.overall, 0) / withVibe.length).toFixed(1)
+    : null;
+  let vibeTrait, vibeEmoji;
+  if (avgVibe == null) { vibeTrait = "—"; vibeEmoji = "🌌"; }
+  else if (avgVibe >= 7.5) { vibeTrait = "Вайб-мастер"; vibeEmoji = "🌌"; }
+  else if (avgVibe >= 5) { vibeTrait = "Сбалансированный"; vibeEmoji = "🌗"; }
+  else { vibeTrait = "Критериальный"; vibeEmoji = "📐"; }
+
+  const chip = (emoji, label, value, sub, color) =>
+    '<div class="style-chip">' +
+      '<div class="style-chip-icon">' + emoji + '</div>' +
+      '<div class="style-chip-body">' +
+        '<div class="style-chip-label">' + label + '</div>' +
+        '<div class="style-chip-value" style="color:' + (color || "var(--text)") + '">' + escapeHtml(value) + '</div>' +
+        (sub ? '<div class="style-chip-sub">' + escapeHtml(sub) + '</div>' : '') +
+      '</div>' +
+    '</div>';
+
+  return '<div class="stats-section">' +
+    '<div class="stats-section-title">✨ Ваш стиль</div>' +
+    '<div class="style-grid">' +
+      chip(strictnessEmoji, "Строгость", strictness, "средний " + avgFinal, strictnessColor) +
+      chip(breadthEmoji, "Широта", breadth, uniqueArtists + " артистов", null) +
+      chip(depthEmoji, "Глубина", depth, albumsCount + " альб / " + singlesCount + " сингл", null) +
+      chip(thoroughnessEmoji, "Тщательность", thoroughness, detailedCount + " подробных", null) +
+      '<div class="style-chip style-chip-wide">' +
+        '<div class="style-chip-icon">' + vibeEmoji + '</div>' +
+        '<div class="style-chip-body">' +
+          '<div class="style-chip-label">Вайб-ориентированность</div>' +
+          '<div class="style-chip-value">' + escapeHtml(vibeTrait) + '</div>' +
+          (avgVibe != null ? '<div class="style-chip-sub">средний вайб ' + avgVibe + ' / 10</div>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// ============================================================
+// 2. Гистограмма по тирам
+// ============================================================
+function renderTierHistogram() {
+  const bins = [
+    { name: "Уголь",   emoji: "⚫", cssClass: "tier-coal",    min: 0,   max: 45,  color: "#4a4a4a" },
+    { name: "Бронза",  emoji: "🥉", cssClass: "tier-bronze",  min: 45,  max: 90,  color: "#c07a4b" },
+    { name: "Серебро", emoji: "⚪", cssClass: "tier-silver",  min: 90,  max: 135, color: "#9e9e9e" },
+    { name: "Золото",  emoji: "🏅", cssClass: "tier-gold",    min: 135, max: 180, color: "#e8a91c" },
+    { name: "Платина", emoji: "💠", cssClass: "tier-plat",    min: 180, max: 225, color: "#a8d8ea" },
+    { name: "Рубин",   emoji: "🔴", cssClass: "tier-ruby",    min: 225, max: 270, color: "#ff5e5e" },
+    { name: "Алмаз",   emoji: "💎", cssClass: "tier-diamond", min: 270, max: 315, color: "#b9f2ff" },
+    { name: "Бриллиант", emoji: "👑", cssClass: "tier-brill", min: 315, max: 361, color: "#ffd700" }
+  ];
+
+  const counts = bins.map(b => ({
+    ...b,
+    count: myRatings.filter(r => r.final >= b.min && r.final < b.max).length
+  }));
+  const maxCount = Math.max(...counts.map(c => c.count), 1);
+  const total = myRatings.length;
+
+  let barsHtml = '<div class="tier-histogram">';
+  counts.forEach(b => {
+    const h = b.count === 0 ? 4 : Math.max(10, (b.count / maxCount) * 100);
+    barsHtml += '<div class="th-col" title="' + escapeHtml(b.name) + ': ' + b.count + '">' +
+      '<div class="th-count">' + (b.count || "") + '</div>' +
+      '<div class="th-bar" style="height:' + h + 'px; background:' + b.color + ';"></div>' +
+      '<div class="th-label">' + b.emoji + '</div>' +
+    '</div>';
+  });
+  barsHtml += '</div>';
+
+  return '<div class="stats-section">' +
+    '<div class="stats-section-title">📊 Распределение по тирам</div>' +
+    '<div class="stats-section-sub">Всего ' + total + ' ' + plural(total, "оценка", "оценки", "оценок") + '</div>' +
+    barsHtml +
+  '</div>';
+}
+
+// ============================================================
+// 3. Динамика по месяцам
+// ============================================================
+function renderMonthlyDynamics() {
+  const months = [];
+  const now = new Date();
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      key: d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"),
+      label: d.toLocaleDateString("ru-RU", { month: "short" }),
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      count: 0,
+      sumFinal: 0
+    });
+  }
+  const map = {};
+  months.forEach(m => map[m.key] = m);
+
+  myRatings.forEach(r => {
+    if (!r.ts?.seconds) return;
+    const d = new Date(r.ts.seconds * 1000);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    if (map[key]) {
+      map[key].count++;
+      map[key].sumFinal += r.final;
+    }
+  });
+
+  const maxCount = Math.max(...months.map(m => m.count), 1);
+  let barsHtml = '<div class="month-bars">';
+  months.forEach(m => {
+    const h = m.count === 0 ? 4 : Math.max(10, (m.count / maxCount) * 100);
+    const avg = m.count ? Math.round(m.sumFinal / m.count) : 0;
+    barsHtml += '<div class="mb-col" title="' + escapeHtml(m.label) + ' ' + m.year + ': ' + m.count + ' оценок, средний ' + (avg || "—") + '">' +
+      '<div class="mb-count">' + (m.count || "") + '</div>' +
+      '<div class="mb-bar" style="height:' + h + 'px;"></div>' +
+      '<div class="mb-label">' + escapeHtml(m.label) + '</div>' +
+    '</div>';
+  });
+  barsHtml += '</div>';
+
+  const totalInYear = months.reduce((a, m) => a + m.count, 0);
+  return '<div class="stats-section">' +
+    '<div class="stats-section-title">📈 Динамика за год</div>' +
+    '<div class="stats-section-sub">' + totalInYear + ' ' + plural(totalInYear, "оценка", "оценки", "оценок") + ' за 12 месяцев</div>' +
+    barsHtml +
+  '</div>';
+}
+
+// ============================================================
+// 4. Дополнительные цифры (fun facts)
+// ============================================================
+function renderFunFacts() {
+  const facts = [];
+
+  // Любимый год
+  const yearCounts = {};
+  myRatings.forEach(r => {
+    const rd = r.album && r.album.releaseDate;
+    if (rd) {
+      const y = parseInt(rd.slice(0, 4));
+      if (!isNaN(y)) yearCounts[y] = (yearCounts[y] || 0) + 1;
+    }
+  });
+  const favYear = Object.entries(yearCounts).sort((a, b) => b[1] - a[1])[0];
+  if (favYear) facts.push({ emoji: "📅", label: "Любимый год", value: favYear[0], sub: favYear[1] + " релизов" });
+
+  // Артист с наибольшей средней (мин 2 релиза)
+  const artistStats = {};
+  myRatings.forEach(r => {
+    const a = r.album && r.album.artist;
+    if (!a) return;
+    if (!artistStats[a]) artistStats[a] = { count: 0, sum: 0 };
+    artistStats[a].count++;
+    artistStats[a].sum += r.final;
+  });
+  const bestArtist = Object.entries(artistStats)
+    .filter(([_, v]) => v.count >= 2)
+    .map(([name, v]) => ({ name, avg: Math.round(v.sum / v.count), count: v.count }))
+    .sort((a, b) => b.avg - a.avg)[0];
+  if (bestArtist) facts.push({ emoji: "🎤", label: "Лучший артист", value: bestArtist.name, sub: "средняя " + bestArtist.avg });
+
+  // Самый «щедрый» месяц (по средней)
+  const monthAvg = {};
+  myRatings.forEach(r => {
+    if (!r.ts?.seconds) return;
+    const d = new Date(r.ts.seconds * 1000);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    if (!monthAvg[key]) monthAvg[key] = { count: 0, sum: 0 };
+    monthAvg[key].count++;
+    monthAvg[key].sum += r.final;
+  });
+  const generous = Object.entries(monthAvg)
+    .filter(([_, v]) => v.count >= 3)
+    .map(([key, v]) => ({ key, avg: Math.round(v.sum / v.count), count: v.count }))
+    .sort((a, b) => b.avg - a.avg)[0];
+  if (generous) {
+    const [y, m] = generous.key.split("-");
+    const monthName = new Date(parseInt(y), parseInt(m) - 1, 1)
+      .toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
+    facts.push({ emoji: "💝", label: "Щедрый месяц", value: monthName, sub: "средняя " + generous.avg });
+  }
+
+  // Самый частый трек-балл 10
+  let tens = 0;
+  myRatings.forEach(r => { if (r.scores) r.scores.forEach(s => { if (s === 10) tens++; }); });
+  if (tens > 0) facts.push({ emoji: "🔟", label: "Идеальных треков", value: String(tens), sub: "поставлено десяток" });
+
+  if (facts.length === 0) return "";
+
+  let html = '<div class="stats-section">' +
+    '<div class="stats-section-title">💡 Забавные цифры</div>' +
+    '<div class="fun-facts-grid">';
+  facts.forEach(f => {
+    html += '<div class="fun-fact">' +
+      '<div class="ff-icon">' + f.emoji + '</div>' +
+      '<div class="ff-body">' +
+        '<div class="ff-label">' + escapeHtml(f.label) + '</div>' +
+        '<div class="ff-value">' + escapeHtml(f.value) + '</div>' +
+        '<div class="ff-sub">' + escapeHtml(f.sub) + '</div>' +
+      '</div>' +
+    '</div>';
+  });
+  html += '</div></div>';
+  return html;
+}
+
+// ============================================================
+// 5. Топ-20 артистов (расширенный)
+// ============================================================
+function renderTopArtistsExpanded() {
+  const byArtist = {};
+  myRatings.forEach(r => {
+    const a = r.album && r.album.artist;
+    if (!a) return;
+    if (!byArtist[a]) byArtist[a] = { count: 0, sum: 0, best: null };
+    byArtist[a].count++;
+    byArtist[a].sum += r.final;
+    if (!byArtist[a].best || r.final > byArtist[a].best.final) byArtist[a].best = r;
+  });
+
+  const list = Object.entries(byArtist)
+    .map(([name, v]) => ({
+      name,
+      count: v.count,
+      avg: Math.round(v.sum / v.count),
+      best: v.best
+    }))
+    .sort((a, b) => b.count - a.count || b.avg - a.avg)
+    .slice(0, 20);
+
+  if (list.length === 0) {
+    return '<div class="stats-section">' +
+      '<div class="stats-section-title">🎤 Топ артистов</div>' +
+      '<div class="empty-msg" style="padding:16px;">Пока нет данных</div>' +
+    '</div>';
+  }
+
+  let html = '<div class="stats-section">' +
+    '<div class="stats-section-title">🎤 Топ артистов</div>' +
+    '<div class="stats-section-sub">' + list.length + ' ' + plural(list.length, "артист", "артиста", "артистов") + ', отсортировано по количеству</div>' +
+    '<div class="top10-list" id="topArtistsList">';
+
+  list.forEach((a, i) => {
+    const tier = getTier(a.avg);
+    const coverUrl = a.best && a.best.album && a.best.album.artwork ? a.best.album.artwork : "";
+    const isExtra = i >= 10;
+    html += '<div class="top10-item' + (isExtra ? ' extra-item hidden' : '') + '">' +
+      '<div class="t10-num">' + (i + 1) + '</div>' +
+      (coverUrl
+        ? '<img src="' + escapeHtml(coverUrl) + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+        : '<div class="t10-noart">🎤</div>') +
+      '<div class="t10-info">' +
+        '<div class="t10-title">' + escapeHtml(a.name) + '</div>' +
+        '<div class="t10-artist">' + a.count + ' ' + plural(a.count, "релиз", "релиза", "релизов") + ' · средняя ' + a.avg + '</div>' +
+      '</div>' +
+      '<div class="t10-score" style="color:' + tier.color + '">' + tier.emoji + '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+
+  if (list.length > 10) {
+    html += '<button class="btn-secondary btn-sm" id="topArtistsExpandBtn" style="margin-top:10px;">Показать все ' + list.length + ' ▾</button>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+// ============================================================
+// 6. Топ-10 / антитоп-10
+// ============================================================
+function renderTop10Block() {
+  if (myRatings.length < 2) return "";
+  const sorted = [...myRatings].sort((a, b) => b.final - a.final);
+  const top10 = sorted.slice(0, 10);
+  const anti10 = sorted.slice(-10).reverse();
+  return '<div class="stats-section">' +
+    '<div class="stats-section-title">🏆 Лучшие и худшие</div>' +
+    '<div class="top10-grid">' +
+      buildTop10Column("🏆 Топ-10 лучших", top10) +
+      buildTop10Column("💀 Антитоп-10", anti10) +
+    '</div>' +
+  '</div>';
 }
 
 // ============================================================

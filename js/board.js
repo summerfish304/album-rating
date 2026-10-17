@@ -1,4 +1,4 @@
-import { db, collection, doc, getDoc, getDocs, addDoc, query, where, deleteDoc, serverTimestamp, onSnapshot, orderBy, fbLimit } from './firebase.js';
+import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, query, where, deleteDoc, serverTimestamp, onSnapshot, orderBy, fbLimit } from './firebase.js';
 import {
   ADMIN_UID, FINAL_MAX, BOARD_PAGE_SIZE, FEED_PAGE_SIZE, FEED_MAX_ITEMS,
   LS_REPORTS, MAIN_CRITERIA
@@ -29,6 +29,8 @@ let feedData = [];
 let _feedObserver = null;
 let _feedUnsub = null;
 let _boardSentinelObserver = null;
+let _myFollowing = new Set();   // uid, на которые подписан текущий юзер
+let _followingLoaded = false;
 
 // ============================================================
 // Геттеры/сеттеры
@@ -45,6 +47,8 @@ export function getCompareSelection() { return compareSelection; }
 export function setCompareSelection(val) { compareSelection = val; }
 export function getBoardModalRelease() { return boardModalRelease; }
 export function getMyReportedComments() { return myReportedComments; }
+export function getMyFollowing() { return _myFollowing; }
+export function getCurrentFeedTab() { return currentFeedTab; }
 export function loadLocalReported() {
   try {
     const raw = localStorage.getItem(LS_REPORTS);
@@ -596,6 +600,90 @@ export async function renderTops() {
 }
 
 // ============================================================
+// ПОДПИСКИ
+// ============================================================
+function subDocId(followerUid, followingUid) {
+  return followerUid + "_" + followingUid;
+}
+
+export async function loadMySubscriptions() {
+  if (!currentUser) { _myFollowing = new Set(); _followingLoaded = true; return; }
+  try {
+    const q = query(collection(db, "subscriptions"), where("followerUid", "==", currentUser.uid));
+    const snap = await getDocs(q);
+    _myFollowing = new Set(snap.docs.map(d => d.data().followingUid));
+    _followingLoaded = true;
+  } catch (e) {
+    console.warn("loadMySubscriptions error:", e.message);
+    _myFollowing = new Set();
+    _followingLoaded = true;
+  }
+}
+
+export function isFollowing(uid) {
+  return _myFollowing.has(uid);
+}
+
+export async function subscribeToUser(uid) {
+  if (!currentUser) { showToast("Нужно войти"); return false; }
+  if (!uid || uid === currentUser.uid) return false;
+  try {
+    await setDoc(doc(db, "subscriptions", subDocId(currentUser.uid, uid)), {
+      followerUid: currentUser.uid,
+      followingUid: uid,
+      ts: serverTimestamp()
+    });
+    _myFollowing.add(uid);
+    showToast("Вы подписались", { success: true });
+    if (typeof window !== "undefined" && window.__refreshOpenUserProfile) {
+      window.__refreshOpenUserProfile();
+    }
+    return true;
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+    return false;
+  }
+}
+
+export async function unsubscribeFromUser(uid) {
+  if (!currentUser) return false;
+  if (!uid) return false;
+  try {
+    await deleteDoc(doc(db, "subscriptions", subDocId(currentUser.uid, uid)));
+    _myFollowing.delete(uid);
+    showToast("Вы отписались");
+    if (typeof window !== "undefined" && window.__refreshOpenUserProfile) {
+      window.__refreshOpenUserProfile();
+    }
+    return true;
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+    return false;
+  }
+}
+
+export async function getSubscriptionCounts(uid) {
+  if (!uid) return { followers: 0, following: 0 };
+  try {
+    const [followersSnap, followingSnap] = await Promise.all([
+      getDocs(query(collection(db, "subscriptions"), where("followingUid", "==", uid))),
+      getDocs(query(collection(db, "subscriptions"), where("followerUid", "==", uid)))
+    ]);
+    return { followers: followersSnap.size, following: followingSnap.size };
+  } catch (e) {
+    return { followers: 0, following: 0 };
+  }
+}
+
+export function switchFeedTab(tab) {
+  currentFeedTab = (tab === "subs") ? "subs" : "all";
+  document.querySelectorAll(".feed-tab").forEach(t => {
+    t.classList.toggle("active", t.dataset.feed === currentFeedTab);
+  });
+  renderFeed(callbacks || {});
+}
+
+// ============================================================
 // Лента активности
 // ============================================================
 export function subscribeFeed(callbacks) {
@@ -634,11 +722,28 @@ export function renderFeed(callbacks) {
   const dayAgo = (Date.now() / 1000) - 86400;
   let recent = feedData.filter(item => (item._tsSec || 0) >= dayAgo);
   recent = recent.filter(item => item.type !== "achievement");
+
+  // Фильтр по подпискам
+  if (currentFeedTab === "subs") {
+    if (!_followingLoaded && currentUser) {
+      // подгрузка ещё идёт — покажем пусто с намёком
+      loadMySubscriptions().then(() => renderFeed(callbacks));
+    }
+    recent = recent.filter(item => item.uid && _myFollowing.has(item.uid));
+  }
+
   const collapsed = collapseRatings(recent);
   const shown = collapsed.slice(0, 8);
   listEl.innerHTML = "";
   if (shown.length === 0) {
-    listEl.innerHTML = '<div class="empty-msg">Пока ничего не произошло.<br>Будьте первым!</div>';
+    if (currentFeedTab === "subs") {
+      listEl.innerHTML = '<div class="empty-msg">' +
+        'В подписках пока тихо.<br>' +
+        '<span style="font-size:.8rem;color:var(--text-dim);">Подпишитесь на кого-нибудь из профиля — и здесь появится их активность.</span>' +
+      '</div>';
+    } else {
+      listEl.innerHTML = '<div class="empty-msg">Пока ничего не произошло.<br>Будьте первым!</div>';
+    }
     return;
   }
   shown.forEach(item => {

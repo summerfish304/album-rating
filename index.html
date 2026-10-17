@@ -418,6 +418,10 @@
     <div class="home-feed-section">
       <div class="home-feed-title">
         <h3>📡 Что нового</h3>
+        <div class="feed-tabs">
+          <button class="feed-tab active" data-feed="all" onclick="switchFeedTab('all')">Все</button>
+          <button class="feed-tab" data-feed="subs" onclick="switchFeedTab('subs')">Подписки</button>
+        </div>
         <button class="btn-secondary btn-sm" onclick="refreshFeed()">↻ Обновить</button>
       </div>
       <div class="mini-feed-list" id="feedList"></div>
@@ -605,37 +609,12 @@
     <!-- СЛУШАЮ СЕЙЧАС -->
     <div id="nowPlayingSection"></div>
 
-    <!-- ТОП-5 АРТИСТОВ -->
-    <div class="history-header" style="margin-top: 20px;">
-      <h2>🎤 Любимые артисты</h2>
-    </div>
-    <div id="topArtists"></div>
-
-    <!-- ТОП-10 / АНТИТОП-10 -->
-    <div class="history-header" style="margin-top: 20px;">
-      <h2>🏆 Личные топы</h2>
-    </div>
-    <div class="top10-grid" id="top10Grid"></div>
-
     </div>
     <!-- /СЕКЦИЯ main -->
 
     <!-- СЕКЦИЯ: СТАТИСТИКА -->
     <div class="profile-section hidden" data-section="stats">
-      <div class="history-header" style="margin-top: 20px;">
-        <h2>🎤 Любимые артисты</h2>
-      </div>
-      <div id="topArtists"></div>
-
-      <div class="history-header" style="margin-top: 20px;">
-        <h2>🏆 Личные топы</h2>
-      </div>
-      <div class="top10-grid" id="top10Grid"></div>
-
-      <div class="history-header" style="margin-top: 20px;">
-        <h2>🎧 Сейчас слушаю</h2>
-      </div>
-      <div id="nowPlayingSection"></div>
+      <div id="profileStatsTab"></div>
     </div>
 
     <!-- СЕКЦИЯ: МОИ АРТИСТЫ -->

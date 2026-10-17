@@ -5912,3 +5912,267 @@ body.theme-season-active .scheme-grid:hover {
   .season-finish-zone { align-items: stretch; }
   .btn-finish-season { width: 100%; }
 }
+
+/* ============================================================
+   ПРОФИЛЬ → СТАТИСТИКА (расширенная)
+   ============================================================ */
+
+.stats-section {
+  margin-bottom: 22px;
+  padding: 14px;
+  background: var(--panel, rgba(255,255,255,.03));
+  border: 1px solid var(--border, rgba(255,255,255,.07));
+  border-radius: 12px;
+}
+.stats-section-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.stats-section-sub {
+  font-size: .75rem;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+/* «Ваш стиль» — чипы */
+.style-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.style-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(0,0,0,.18);
+  border-radius: 10px;
+  min-width: 0;
+}
+.style-chip-wide {
+  grid-column: 1 / -1;
+}
+.style-chip-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.style-chip-body {
+  min-width: 0;
+  flex: 1;
+}
+.style-chip-label {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-dim);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.style-chip-value {
+  font-size: .9rem;
+  font-weight: 800;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.style-chip-sub {
+  font-size: .68rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Гистограмма по тирам */
+.tier-histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 130px;
+  padding: 8px 0;
+  margin-top: 8px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,.1));
+}
+.th-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+}
+.th-count {
+  font-size: .68rem;
+  color: var(--text-dim);
+  font-weight: 700;
+  margin-bottom: 3px;
+  min-height: 12px;
+}
+.th-bar {
+  width: 100%;
+  max-width: 40px;
+  border-radius: 4px 4px 0 0;
+  transition: height .3s;
+}
+.th-label {
+  font-size: .7rem;
+  margin-top: 6px;
+  opacity: .8;
+  white-space: nowrap;
+}
+
+/* Динамика по месяцам */
+.month-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 120px;
+  padding: 8px 0;
+  margin-top: 8px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,.1));
+}
+.mb-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+}
+.mb-count {
+  font-size: .6rem;
+  color: var(--text-dim);
+  font-weight: 700;
+  margin-bottom: 2px;
+  min-height: 10px;
+}
+.mb-bar {
+  width: 100%;
+  max-width: 22px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-3));
+  border-radius: 3px 3px 0 0;
+  transition: height .3s;
+}
+.mb-label {
+  font-size: .6rem;
+  color: var(--text-dim);
+  margin-top: 5px;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+/* Fun facts */
+.fun-facts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.fun-fact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(0,0,0,.18);
+  border-radius: 10px;
+  min-width: 0;
+}
+.ff-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.ff-body {
+  min-width: 0;
+  flex: 1;
+}
+.ff-label {
+  font-size: .62rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.ff-value {
+  font-size: .85rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ff-sub {
+  font-size: .68rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* Топ-10-совместимые стили для артистов */
+.t10-noart {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.06);
+  border-radius: 6px;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 520px) {
+  .style-grid { grid-template-columns: 1fr; }
+  .fun-facts-grid { grid-template-columns: 1fr; }
+  .tier-histogram { height: 110px; }
+  .th-label { font-size: .6rem; }
+  .th-count { font-size: .6rem; }
+  .month-bars { height: 100px; }
+  .mb-label { font-size: .55rem; }
+  .mb-count { font-size: .55rem; }
+  .top10-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   ЛЕНТА АКТИВНОСТИ — табы Все / Подписки
+   ============================================================ */
+.feed-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: rgba(0,0,0,.2);
+  border-radius: 8px;
+  margin: 0 8px;
+}
+.feed-tab {
+  background: transparent;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  font-family: inherit;
+}
+.feed-tab:hover {
+  color: var(--text-mid);
+}
+.feed-tab.active {
+  background: var(--accent, #7c6cf0);
+  color: #fff;
+}
+@media (max-width: 520px) {
+  .feed-tabs { margin: 6px 0 0 0; }
+  .home-feed-title { flex-wrap: wrap; }
+}

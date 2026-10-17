@@ -74,7 +74,8 @@ import {
   openBoardModal, closeBoardModal,
   loadReviews, formatReviewText,
   switchTopTab, renderTops,
-  subscribeFeed, refreshFeed, renderFeed, renderHotToday
+  subscribeFeed, refreshFeed, renderFeed, renderHotToday,
+  loadMySubscriptions, subscribeToUser, unsubscribeFromUser
 } from './board.js';
 
 import {
@@ -321,6 +322,7 @@ onAuthStateChanged(auth, async (user) => {
     }
     userAchievements = new Set(userProfile.achievements || []);
     loadLocalReported();
+    loadMySubscriptions();     // не await — пусть грузится параллельно
     await registerLoginDay();
     await loadSiteSettingsOnce(user);
     subscribeSiteSettings(user);
@@ -1017,6 +1019,24 @@ window.publishAnnouncement = publishAnnouncement;
 window.deleteAnnouncement = deleteAnnouncement;
 
 window.refreshFeed = () => refreshFeed(getFeedCallbacks());
+window.switchFeedTab = (tab) => {
+  // ленивая подгрузка подписок при первом входе в «Подписки»
+  if (tab === "subs") {
+    loadMySubscriptions().then(() => {
+      document.querySelectorAll(".feed-tab").forEach(t => {
+        t.classList.toggle("active", t.dataset.feed === tab);
+      });
+      renderFeed(getFeedCallbacks());
+    });
+  } else {
+    document.querySelectorAll(".feed-tab").forEach(t => {
+      t.classList.toggle("active", t.dataset.feed === tab);
+    });
+    renderFeed(getFeedCallbacks());
+  }
+};
+window.subscribeToUser = subscribeToUser;
+window.unsubscribeFromUser = unsubscribeFromUser;
 window.openUserProfile = (uid) => openUserProfile(uid, {
   onOpenRelease: (src, rid) => {
     const group = getBoardData().find(b => b.source === src && b.releaseId === String(rid));
