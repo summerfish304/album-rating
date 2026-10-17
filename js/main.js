@@ -108,7 +108,9 @@ import {
   adminSelectSeasonType, adminUpdateSeasonYear,
   adminConfirmStartSeason, adminFinishSeason,
   adminDeleteSeasonFromHistory, renderAdminSeasons,
-  adminRecountAwards
+  adminRecountAwards, openClearBoardModal, closeClearBoardModal,
+  checkClearBoardInput, confirmClearBoard,
+  adminPauseSeason, adminResumeSeason
 } from './admin.js';
 
 import {
@@ -805,7 +807,20 @@ function getFeedCallbacks() {
   return {
     onSwitchNav: (nav) => switchNav(nav),
     onLoadAlbum: (album) => loadAlbum(album),
-    onOpenBoardModal: (group) => openBoardModal(group)
+    onOpenBoardModal: (group) => openBoardModal(group),
+    onOpenUserProfile: (uid) => {
+      if (typeof window.openUserProfile === "function") {
+        window.openUserProfile(uid);
+      } else {
+        openUserProfile(uid, {
+          onOpenRelease: (src, rid) => {
+            const group = getBoardData().find(b => b.source === src && b.releaseId === String(rid));
+            if (group) { switchNav("board"); setTimeout(() => openBoardModal(group), 250); }
+            else { switchNav("main"); loadAlbum({ id: rid, title: "", cover: "", source: src }); }
+          }
+        });
+      }
+    }
   };
 }
 
@@ -1016,6 +1031,12 @@ window.closeSuggest = closeSuggest;
 window.submitSuggestion = submitSuggestion;
 
 window.adminRecountAwards = adminRecountAwards;
+window.openClearBoardModal = openClearBoardModal;
+window.closeClearBoardModal = closeClearBoardModal;
+window.checkClearBoardInput = checkClearBoardInput;
+window.confirmClearBoard = confirmClearBoard;
+window.adminPauseSeason = adminPauseSeason;
+window.adminResumeSeason = adminResumeSeason;
 
 window.showConfirm = showConfirm;
 window.closeConfirm = closeConfirm;

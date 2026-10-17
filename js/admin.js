@@ -1,6 +1,6 @@
 import {
   db, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
-  addDoc, query, where, serverTimestamp
+  addDoc, query, where, serverTimestamp, writeBatch
 } from './firebase.js';
 import { ADMIN_UID, FINAL_MAX } from './config.js';
 import {
@@ -146,7 +146,14 @@ export async function renderAdminDashboard() {
       '<div style="margin-top:20px;"><h3 style="font-size:.95rem;color:var(--text);margin-bottom:10px;">🎤 Топ-5 артистов</h3>' +
       (Object.entries(artistCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n, c]) =>
         '<div style="padding:6px 0;font-size:.85rem;color:var(--text-mid);">' + escapeHtml(n) + ' — <b>' + c + '</b> оценок</div>').join("") ||
-        '<div style="color:var(--text-dim);font-size:.85rem;">Нет данных</div>') + '</div>';
+        '<div style="color:var(--text-dim);font-size:.85rem;">Нет данных</div>') + '</div>' +
+      
+      // ОПАСНАЯ ЗОНА
+      '<div class="admin-danger-zone">' +
+        '<div class="adz-title">⚠️ Опасная зона</div>' +
+        '<div class="adz-hint">Действия необратимы. Делайте резервную копию данных перед очисткой.</div>' +
+        '<button class="btn-danger" onclick="openClearBoardModal()">🗑 Очистить доску оценок</button>' +
+      '</div>';
   } catch (e) {
     el.innerHTML = '<div class="error">Ошибка: ' + escapeHtml(e.message) + '</div>';
   }
@@ -807,9 +814,18 @@ export function renderAdminSeasons() {
         '<div style="height:6px; background:rgba(0,0,0,.25); border-radius:3px; overflow:hidden; margin-bottom:16px;">' +
           '<div style="height:100%; width:' + pct.toFixed(1) + '%; background:linear-gradient(90deg, var(--accent), var(--accent-3)); border-radius:3px; transition:width .4s;"></div>' +
         '</div>' +
-        '<div class="season-finish-zone">' +
+        '<div class="season-finish-zone" style="display:flex; flex-direction:column; gap:10px;">' +
+          '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">' +
+            (season.isPaused
+              ? '<div style="font-size:.85rem; color:var(--danger); font-weight:700;">⏸ Сезон на паузе</div>' +
+                '<button class="btn-secondary" onclick="adminResumeSeason()">▶ Возобновить</button>'
+              : '<div class="season-finish-hint" style="flex:1;">Сезон идёт. Оценки учитываются.</div>' +
+                '<button class="btn-secondary" onclick="adminPauseSeason()" style="padding:8px 14px; font-size:.82rem;">⏸ Поставить на паузу</button>'
+            ) +
+          '</div>' +
+          '<div style="height:1px; background:var(--border-soft); margin:4px 0;"></div>' +
           '<div class="season-finish-hint">Завершит сезон, переместит его в историю и подсчитает награды.</div>' +
-          '<button class="btn-finish-season" onclick="adminFinishSeason()">🏁 Завершить сезон</button>' +
+          '<button class="btn-finish-season" onclick="adminFinishSeason()" style="align-self:flex-start;">🏁 Завершить сезон</button>' +
         '</div>' +
       '</div>';
   } else {
@@ -1365,4 +1381,137 @@ export async function adminDeleteReviewManually(reviewId) {
     showToast("Рецензия удалена", { success: true });
     renderAdminReviews();
   } catch (e) { showToast("Ошибка: " + e.message); }
+}
+// ============================================================
+// ОЧИСТКА ДОСКИ (ВСЕ ОЦЕНКИ)
+// ============================================================
+export function openClearBoardModal() {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) return;
+  document.getElementById("clearBoardBackdrop").classList.add("open");
+  document.body.style.overflow = "hidden";
+  document.getElementById("clearBoardInput").value = "";
+  document.getElementById("clearBoardBtn").disabled = true;
+}
+
+export function closeClearBoardModal() {
+  document.getElementById("clearBoardBackdrop").classList.remove("open");
+  document.body.style.overflow = "";
+  document.getElementById("clearBoardInput").value = "";
+}
+
+export function checkClearBoardInput() {
+  const input = document.getElementById("clearBoardInput");
+  const btn = document.getElementById("clearBoardBtn");
+  if (!input || !btn) return;
+  const isMatch = input.value.trim().toUpperCase() === "УДАЛИТЬ";
+  btn.disabled = !isMatch;
+}
+
+export async function confirmClearBoard() {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) return;
+  const input = document.getElementById("clearBoardInput");
+  if (!input || input.value.trim().toUpperCase() !== "УДАЛИТЬ") return;
+
+  const btn = document.getElementById("clearBoardBtn");
+  btn.disabled = true;
+  btn.textContent = "Удаление...";
+  showFloatingLoader(true);
+
+  try {
+    // Список коллекций для очистки
+    const collectionsToClear = ["ratings", "reviews", "artist_ratings", "activity", "comments", "reports"];
+    
+    for (const colName of collectionsToClear) {
+      const snap = await getDocs(collection(db, colName));
+      const docs = snap.docs;
+      
+      // Удаляем батчами по 400 (лимит Firestore — 500)
+      for (let i = 0; i < docs.length; i += 400) {
+        const batch = writeBatch(db);
+        const chunk = docs.slice(i, i + 400);
+        chunk.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+    }
+
+    showToast("Доска и связанные данные очищены", { success: true });
+    closeClearBoardModal();
+    
+    // Перерисовываем дашборд и доску, если открыта
+    renderAdminDashboard();
+    if (callbacks.onAfterDeleteRelease) callbacks.onAfterDeleteRelease();
+    if (typeof window.refreshBoard === "function") window.refreshBoard();
+    
+  } catch (e) {
+    showToast("Ошибка очистки: " + e.message);
+  } finally {
+    showFloatingLoader(false);
+    btn.disabled = false;
+    btn.textContent = "🗑 Да, удалить всё";
+  }
+}
+
+// ============================================================
+// ПАУЗА СЕЗОНА
+// ============================================================
+export async function adminPauseSeason() {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) return;
+  const season = callbacks.getCurrentSeason ? callbacks.getCurrentSeason() : null;
+  if (!season) { showToast("Нет активного сезона"); return; }
+
+  const ok = await showConfirm({
+    icon: "⏸",
+    title: "Поставить сезон на паузу?",
+    text: "Сезон останется текущим, но юзеры увидят, что он приостановлен. Награды и итоги не будут подсчитаны.",
+    okText: "На паузу",
+    okClass: "btn-secondary"
+  });
+  if (!ok) return;
+
+  showFloatingLoader(true);
+  try {
+    const { doc, setDoc, getDoc, serverTimestamp } = await import('./firebase.js');
+    const { db: _db } = await import('./firebase.js');
+    const seasonRef = doc(_db, "settings", "seasons");
+    const snap = await getDoc(seasonRef);
+    const existing = snap.exists() ? snap.data() : {};
+    
+    await setDoc(seasonRef, {
+      ...existing,
+      isPaused: true,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    showToast("Сезон приостановлен", { success: true });
+    renderAdminSeasons();
+    if (callbacks.onSeasonChanged) callbacks.onSeasonChanged();
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+  } finally {
+    showFloatingLoader(false);
+  }
+}
+
+export async function adminResumeSeason() {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) return;
+  
+  showFloatingLoader(true);
+  try {
+    const { doc, setDoc, serverTimestamp } = await import('./firebase.js');
+    const { db: _db } = await import('./firebase.js');
+    const seasonRef = doc(_db, "settings", "seasons");
+    
+    await setDoc(seasonRef, {
+      isPaused: false,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    showToast("Сезон возобновлён", { success: true });
+    renderAdminSeasons();
+    if (callbacks.onSeasonChanged) callbacks.onSeasonChanged();
+  } catch (e) {
+    showToast("Ошибка: " + e.message);
+  } finally {
+    showFloatingLoader(false);
+  }
 }

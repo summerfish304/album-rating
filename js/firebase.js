@@ -6,7 +6,8 @@ import {
 import {
   getFirestore, collection, doc, setDoc, getDoc, getDocs,
   query, where, deleteDoc, serverTimestamp, addDoc, updateDoc,
-  onSnapshot, enableIndexedDbPersistence, orderBy, limit as fbLimit
+  onSnapshot, enableIndexedDbPersistence, orderBy, limit as fbLimit,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from './config.js';
 
@@ -29,5 +30,5 @@ export {
   signOut, onAuthStateChanged,
   collection, doc, setDoc, getDoc, getDocs,
   query, where, deleteDoc, serverTimestamp, addDoc, updateDoc,
-  onSnapshot, orderBy, fbLimit
+  onSnapshot, orderBy, fbLimit, writeBatch
 };

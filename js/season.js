@@ -73,6 +73,7 @@ export async function loadSeasonOnce() {
       if (snap.exists()) {
         const data = snap.data();
         currentSeason = data.current || null;
+        if (data.isPaused) currentSeason.isPaused = true;
         seasonHistory = data.history || [];
       } else {
         currentSeason = null;
@@ -104,6 +105,7 @@ export function subscribeSeason() {
       if (snap.exists()) {
         const data = snap.data();
         currentSeason = data.current || null;
+        if (data.isPaused) currentSeason.isPaused = true;
         seasonHistory = data.history || [];
       } else {
         currentSeason = null;
@@ -164,12 +166,21 @@ export function renderSeasonBanner() {
   const emoji = currentSeason.emoji || SEASON_TYPES[currentSeason.type]?.emoji || "🎵";
   const name = currentSeason.name || SEASON_TYPES[currentSeason.type]?.name || "Сезон";
   const year = currentSeason.year || "";
+  const isPaused = currentSeason.isPaused;
 
   el.innerHTML =
     '<span class="season-banner-emoji">' + escapeHtml(emoji) + '</span>' +
     '<span class="season-banner-title">' + escapeHtml(name) + ' ' + escapeHtml(String(year)) + '</span>' +
     '<span class="season-banner-sep">·</span>' +
-    '<span class="season-banner-countdown" id="seasonCountdown">—</span>';
+    (isPaused 
+      ? '<span class="season-banner-countdown" style="color:var(--gold-1);font-weight:700;">⏸ сезон на паузе</span>'
+      : '<span class="season-banner-countdown" id="seasonCountdown">—</span>');
+  
+  if (isPaused) {
+    el.classList.remove("hidden");
+    if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+    return;
+  }
 
   el.classList.remove("hidden");
   updateSeasonCountdown();

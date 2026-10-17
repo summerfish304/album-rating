@@ -1206,7 +1206,23 @@
     </div>
   </div>
 </div>
-
+<!-- МОДАЛКА ОЧИСТКИ ДОСКИ -->
+<div class="modal-backdrop" id="clearBoardBackdrop" onclick="if(event.target===this) closeClearBoardModal()">
+  <div class="modal confirm-modal" id="clearBoardModal">
+    <button class="close-btn" onclick="closeClearBoardModal()" title="Закрыть">✕</button>
+    <div class="confirm-icon" style="color:var(--danger);">⚠️</div>
+    <div class="confirm-title">Очистить всю доску?</div>
+    <div class="confirm-text">
+      Это удалит <b>ВСЕ оценки, рецензии, оценки артистов и ленту активности</b> всех пользователей. Действие <b>необратимо</b>.<br><br>
+      Чтобы подтвердить, введите слово <b>УДАЛИТЬ</b> в поле ниже:
+    </div>
+    <input type="text" id="clearBoardInput" oninput="checkClearBoardInput()" placeholder="УДАЛИТЬ" style="margin-bottom:16px; text-align:center; text-transform:uppercase;">
+    <div class="confirm-actions">
+      <button class="btn-secondary" onclick="closeClearBoardModal()">Отмена</button>
+      <button class="btn-danger" id="clearBoardBtn" onclick="confirmClearBoard()" disabled>🗑 Да, удалить всё</button>
+    </div>
+  </div>
+</div>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

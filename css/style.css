@@ -6634,3 +6634,25 @@ body.theme-season-active .scheme-grid:hover {
   font-size: 2rem;
   background: var(--panel-3);
 }
+
+/* ============================================================
+   АДМИНКА — опасная зона и очистка
+   ============================================================ */
+.admin-danger-zone {
+  margin-top: 30px;
+  padding: 16px;
+  border: 1px dashed var(--danger);
+  border-radius: 12px;
+  background: rgba(255, 107, 138, 0.05);
+}
+.adz-title {
+  font-size: .9rem;
+  font-weight: 800;
+  color: var(--danger);
+  margin-bottom: 6px;
+}
+.adz-hint {
+  font-size: .75rem;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
