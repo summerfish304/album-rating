@@ -1150,6 +1150,7 @@ setArtistsContext({
     }
   }
 });
+setTimeout(() => loadRecommendations(), 800);
 setSeasonContext({
   callbacks: {
     onSeasonChanged: () => {

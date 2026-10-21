@@ -6656,3 +6656,36 @@ body.theme-season-active .scheme-grid:hover {
   color: var(--text-dim);
   margin-bottom: 12px;
 }
+
+/* ============================================================
+   ЛЕГЕНДАРНЫЕ АЛЬБОМЫ — фильтр по жанрам
+   ============================================================ */
+.reco-genre-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  animation: fadeUp .3s ease;
+}
+.reco-genre-chip {
+  background: var(--panel-2, rgba(0,0,0,.2));
+  border: 1px solid var(--border, rgba(255,255,255,.1));
+  color: var(--text-dim);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+  font-family: inherit;
+}
+.reco-genre-chip:hover {
+  background: var(--panel-3);
+  color: var(--text-mid);
+}
+.reco-genre-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 10px var(--accent-glow);
+}

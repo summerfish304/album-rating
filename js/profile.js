@@ -616,7 +616,9 @@ export async function openUserProfile(uid, cb) {
     const tierAll = avgAll ? getTier(avgAll) : null;
 
     const top3 = ratings.slice(0, 3);
-    const bottom3 = ratings.length > 3 ? ratings.slice(-3).reverse() : [];
+    // "Худшие" — только те, что реально плохие (≤ 162). Остальные не показываем.
+    const badRatings = ratings.filter(r => r.final <= 162).reverse();
+    const bottom3 = badRatings.slice(0, 3);
 
     const artistCount = {};
     ratings.forEach(r => {
@@ -1285,14 +1287,24 @@ function renderTop10Block() {
   if (myRatings.length < 2) return "";
   const sorted = [...myRatings].sort((a, b) => b.final - a.final);
   const top10 = sorted.slice(0, 10);
-  const anti10 = sorted.slice(-10).reverse();
-  return '<div class="stats-section">' +
+  
+  // Антитоп — только реально плохие (до Серебра, ≤ 162)
+  const badRatings = sorted.filter(r => r.final <= 162).reverse();
+  const anti10 = badRatings.slice(0, 10);
+
+  let html = '<div class="stats-section">' +
     '<div class="stats-section-title">🏆 Лучшие и худшие</div>' +
     '<div class="top10-grid">' +
-      buildTop10Column("🏆 Топ-10 лучших", top10) +
-      buildTop10Column("💀 Антитоп-10", anti10) +
-    '</div>' +
-  '</div>';
+      buildTop10Column("🏆 Топ-10 лучших", top10);
+
+  if (anti10.length > 0) {
+    html += buildTop10Column("💀 Антитоп-10", anti10);
+  } else {
+    html += '<div class="top10-col"><h4>💀 Антитоп-10</h4><div class="top10-list"><div class="empty-msg" style="padding:20px; font-size:.85rem;">Пока нет оценок ниже Серебра (162). Это хорошо! 🎉</div></div></div>';
+  }
+
+  html += '</div></div>';
+  return html;
 }
 
 // ============================================================

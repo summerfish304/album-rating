@@ -1,20 +1,91 @@
 // ============================================================
-// recommendations.js — рекомендации на главной (v2, из базы)
+// recommendations.js — рекомендации на главной (v3, с кэшем)
 // ============================================================
 
 import { db, collection, getDocs } from './firebase.js';
-import { ITUNES_PROXY } from './config.js';
-import { escapeHtml, plural } from './utils.js';
+import { escapeHtml } from './utils.js';
 import { showToast } from './ui.js';
 
 let currentUser = null;
 let userProfile = null;
 let callbacks = {};
 
+// ============================================================
+// КОНСТАНТЫ
+// ============================================================
+const RECO_CACHE_KEY = "albumRating_recoCache_v1";
+const RECO_CACHE_TTL = 15 * 60 * 1000;   // 15 минут
+const REFRESH_COOLDOWN = 5000;            // 5 сек между кликами
+const SPOTIFY_429_COOLDOWN = 60 * 1000;   // 1 минута после 429
+
+// ============================================================
+// СОСТОЯНИЕ
+// ============================================================
+let _lastRefresh = 0;                     // timestamp последнего refresh
+let _spotifyCooldown = 0;                 // до какого времени Spotify "отдыхает"
+let _isRefreshing = false;                // защита от параллельных запросов
+
 export function setRecommendationsContext(opts) {
   if (opts.currentUser !== undefined) currentUser = opts.currentUser;
   if (opts.userProfile !== undefined) userProfile = opts.userProfile;
   if (opts.callbacks !== undefined) callbacks = opts.callbacks || {};
+}
+
+// ============================================================
+// КЭШ
+// ============================================================
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(RECO_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.ts) return null;
+    if (Date.now() - parsed.ts > RECO_CACHE_TTL) return null;
+    return parsed.data;
+  } catch (e) { return null; }
+}
+
+function saveCache(data) {
+  try {
+    localStorage.setItem(RECO_CACHE_KEY, JSON.stringify({
+      ts: Date.now(),
+      data: data
+    }));
+  } catch (e) {}
+}
+
+function clearCache() {
+  try { localStorage.removeItem(RECO_CACHE_KEY); } catch (e) {}
+}
+
+// ============================================================
+// SPOTIFY FETCH (с обработкой 429)
+// ============================================================
+import { ITUNES_PROXY } from './config.js';
+
+async function spotifyFetch(path) {
+  // Проверяем cooldown после 429
+  if (Date.now() < _spotifyCooldown) {
+    throw new Error("SPOTIFY_COOLDOWN");
+  }
+
+  const target = "https://api.spotify.com/v1" + path;
+  const res = await fetch(ITUNES_PROXY + "?u=" + encodeURIComponent(target));
+
+  if (res.status === 429) {
+    // Spotify сказал "слишком много"
+    _spotifyCooldown = Date.now() + SPOTIFY_429_COOLDOWN;
+    // Пытаемся получить Retry-After (в секундах)
+    const retryAfter = parseInt(res.headers.get("Retry-After") || "60");
+    _spotifyCooldown = Date.now() + Math.max(retryAfter * 1000, SPOTIFY_429_COOLDOWN);
+    throw new Error("SPOTIFY_429");
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error("Spotify HTTP " + res.status + ": " + text.slice(0, 120));
+  }
+  return res.json();
 }
 
 // ============================================================
@@ -30,7 +101,6 @@ function parseDate(releaseDateStr) {
   return isNaN(t) ? 0 : t;
 }
 
-// Загружаем все оценки и группируем по релизам
 async function loadAllRatingsGrouped() {
   try {
     const snap = await getDocs(collection(db, "ratings"));
@@ -59,77 +129,74 @@ async function loadAllRatingsGrouped() {
 }
 
 // ============================================================
-// ИСТОЧНИКИ РЕКОМЕНДАЦИЙ
+// ИСТОЧНИКИ
 // ============================================================
 
-// 1. В тренде — релизы с наибольшим числом оценок за 7 дней
-async function getTrending() {
-  const groups = await loadAllRatingsGrouped();
+async function getTrending(groups) {
   const now = Math.floor(Date.now() / 1000);
   const weekAgo = now - 7 * 86400;
-
-  const recent = groups
-    .map(g => {
-      const recentRatings = g.ratings.filter(r => (r.ts?.seconds || 0) >= weekAgo);
-      return { ...g, recentCount: recentRatings.length };
-    })
+  return groups
+    .map(g => ({ ...g, recentCount: g.ratings.filter(r => (r.ts?.seconds || 0) >= weekAgo).length }))
     .filter(g => g.recentCount > 0)
-    .sort((a, b) => b.recentCount - a.recentCount);
-
-  return recent.slice(0, 10).map(g => ({
-    id: g.id,
-    source: g.source,
-    title: g.album.title,
-    artist: g.album.artist,
-    cover: g.album.artwork,
-    year: (g.album.releaseDate || "").slice(0, 4),
-    count: g.recentCount,
-    isSingle: g.album.isSingleFromAlbum || false
-  }));
+    .sort((a, b) => b.recentCount - a.recentCount)
+    .slice(0, 10)
+    .map(g => ({
+      id: g.id, source: g.source,
+      title: g.album.title, artist: g.album.artist,
+      cover: g.album.artwork, year: (g.album.releaseDate || "").slice(0, 4),
+      count: g.recentCount
+    }));
 }
 
-// 2. Новинки — релизы из базы, вышедшие в этом году
-async function getNewReleases() {
-  const groups = await loadAllRatingsGrouped();
+async function getNewReleases(groups) {
   const thisYear = new Date().getFullYear();
-
-  const fresh = groups
+  return groups
     .filter(g => {
-      const releaseMs = parseDate(g.album.releaseDate);
-      if (!releaseMs) return false;
-      const releaseYear = new Date(releaseMs).getFullYear();
-      return releaseYear === thisYear || releaseYear === thisYear - 1;
+      const ms = parseDate(g.album.releaseDate);
+      if (!ms) return false;
+      const y = new Date(ms).getFullYear();
+      return y === thisYear || y === thisYear - 1;
     })
-    .sort((a, b) => {
-      const da = parseDate(a.album.releaseDate);
-      const db_ = parseDate(b.album.releaseDate);
-      return db_ - da;
-    });
+    .sort((a, b) => parseDate(b.album.releaseDate) - parseDate(a.album.releaseDate))
+    .slice(0, 10)
+    .map(g => ({
+      id: g.id, source: g.source,
+      title: g.album.title, artist: g.album.artist,
+      cover: g.album.artwork, year: (g.album.releaseDate || "").slice(0, 4),
+      count: g.ratings.length
+    }));
+}
 
-  return fresh.slice(0, 10).map(g => ({
-    id: g.id,
-    source: g.source,
-    title: g.album.title,
-    artist: g.album.artist,
-    cover: g.album.artwork,
-    year: (g.album.releaseDate || "").slice(0, 4),
-    count: g.ratings.length,
-    isSingle: g.album.isSingleFromAlbum || false
+async function getPopularOnSite(groups) {
+  return [...groups]
+    .sort((a, b) => b.ratings.length - a.ratings.length)
+    .slice(0, 10)
+    .map(g => ({
+      id: g.id, source: g.source,
+      title: g.album.title, artist: g.album.artist,
+      cover: g.album.artwork, year: (g.album.releaseDate || "").slice(0, 4),
+      count: g.ratings.length
+    }));
+}
+
+async function getRandomFromBase(groups) {
+  if (groups.length === 0) return [];
+  return [...groups].sort(() => Math.random() - 0.5).slice(0, 5).map(g => ({
+    id: g.id, source: g.source,
+    title: g.album.title, artist: g.album.artist,
+    cover: g.album.artwork, year: (g.album.releaseDate || "").slice(0, 4),
+    count: g.ratings.length
   }));
 }
 
-// 3. Для вас — релизы любимых артистов юзера из базы
 async function getPersonalRecommendations() {
   if (!currentUser) return [];
   try {
-    // Мои оценки
     const snap = await getDocs(collection(db, "ratings"));
     const all = snap.docs.map(d => d.data()).filter(r => !r.hidden && r.album);
     const myRatings = all.filter(r => r.uid === currentUser.uid);
-
     if (myRatings.length === 0) return [];
 
-    // Топ-3 любимых артиста
     const artistCount = {};
     myRatings.forEach(r => {
       const a = r.album.artist;
@@ -139,24 +206,16 @@ async function getPersonalRecommendations() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(e => e[0]);
-
     if (favArtists.length === 0) return [];
 
-    // Релизы этих артистов, которые я ещё не оценил
     const ratedKeys = new Set(myRatings.map(r => r.source + "_" + r.releaseId));
-
     const byRelease = {};
     all.forEach(r => {
       const key = r.source + "_" + r.releaseId;
       if (ratedKeys.has(key)) return;
       if (!favArtists.some(a => r.album.artist && r.album.artist.includes(a))) return;
       if (!byRelease[key]) {
-        byRelease[key] = {
-          id: r.releaseId,
-          source: r.source,
-          album: r.album,
-          count: 0
-        };
+        byRelease[key] = { id: r.releaseId, source: r.source, album: r.album, count: 0 };
       }
       byRelease[key].count++;
     });
@@ -165,14 +224,10 @@ async function getPersonalRecommendations() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
       .map(g => ({
-        id: g.id,
-        source: g.source,
-        title: g.album.title,
-        artist: g.album.artist,
-        cover: g.album.artwork,
-        year: (g.album.releaseDate || "").slice(0, 4),
-        count: g.count,
-        isSingle: g.album.isSingleFromAlbum || false
+        id: g.id, source: g.source,
+        title: g.album.title, artist: g.album.artist,
+        cover: g.album.artwork, year: (g.album.releaseDate || "").slice(0, 4),
+        count: g.count
       }));
   } catch (e) {
     console.warn("Personal reco error:", e.message);
@@ -180,53 +235,18 @@ async function getPersonalRecommendations() {
   }
 }
 
-// 4. Случайное из базы
-async function getRandomFromBase() {
-  const groups = await loadAllRatingsGrouped();
-  if (groups.length === 0) return [];
-  const shuffled = [...groups].sort(() => Math.random() - 0.5).slice(0, 5);
-  return shuffled.map(g => ({
-    id: g.id,
-    source: g.source,
-    title: g.album.title,
-    artist: g.album.artist,
-    cover: g.album.artwork,
-    year: (g.album.releaseDate || "").slice(0, 4),
-    count: g.ratings.length,
-    isSingle: g.album.isSingleFromAlbum || false
-  }));
-}
-
-// 5. Популярное на сайте — топ по числу оценок за всё время
-async function getPopularOnSite() {
-  const groups = await loadAllRatingsGrouped();
-  const popular = [...groups].sort((a, b) => b.ratings.length - a.ratings.length);
-  return popular.slice(0, 10).map(g => ({
-    id: g.id,
-    source: g.source,
-    title: g.album.title,
-    artist: g.album.artist,
-    cover: g.album.artwork,
-    year: (g.album.releaseDate || "").slice(0, 4),
-    count: g.ratings.length,
-    isSingle: g.album.isSingleFromAlbum || false
-  }));
-}
-
 // ============================================================
 // РЕНДЕР
 // ============================================================
-function renderRecoBlock(blockId, listId, items, emptyText) {
+function renderRecoBlock(blockId, listId, items) {
   const block = document.getElementById(blockId);
   const list = document.getElementById(listId);
   if (!block || !list) return;
-
   if (!items || items.length === 0) {
     block.classList.add("hidden");
     return;
   }
   block.classList.remove("hidden");
-
   list.innerHTML = "";
   items.forEach(item => {
     const card = document.createElement("div");
@@ -256,77 +276,90 @@ function renderRecoBlock(blockId, listId, items, emptyText) {
 // ============================================================
 // ГЛАВНАЯ ФУНКЦИЯ
 // ============================================================
-export async function loadRecommendations() {
-  // Загружаем один раз — общие данные, потом распределяем
-  const groups = await loadAllRatingsGrouped();
+export async function loadRecommendations(forceRefresh) {
+  // Защита от параллельных вызовов
+  if (_isRefreshing) return;
 
-  // Тренды
-  const now = Math.floor(Date.now() / 1000);
-  const weekAgo = now - 7 * 86400;
-  const trending = groups
-    .map(g => ({
-      ...g,
-      recentCount: g.ratings.filter(r => (r.ts?.seconds || 0) >= weekAgo).length
-    }))
-    .filter(g => g.recentCount > 0)
-    .sort((a, b) => b.recentCount - a.recentCount)
-    .slice(0, 10)
-    .map(g => ({
-      id: g.id, source: g.source,
-      title: g.album.title, artist: g.album.artist,
-      cover: g.album.artwork, year: (g.album.releaseDate || "").slice(0, 4),
-      count: g.recentCount
-    }));
-  renderRecoBlock("recoTrending", "recoTrendingList", trending);
+  // Проверяем кэш (если не forceRefresh)
+  if (!forceRefresh) {
+    const cached = loadCache();
+    if (cached) {
+      renderAllFromData(cached);
+      return;
+    }
+  }
 
-  // Новинки
-  const thisYear = new Date().getFullYear();
-  const fresh = groups
-    .filter(g => {
-      const ms = parseDate(g.album.releaseDate);
-      if (!ms) return false;
-      const y = new Date(ms).getFullYear();
-      return y === thisYear || y === thisYear - 1;
-    })
-    .sort((a, b) => parseDate(b.album.releaseDate) - parseDate(a.album.releaseDate))
-    .slice(0, 10)
-    .map(g => ({
-      id: g.id, source: g.source,
-      title: g.album.title, artist: g.album.artist,
-      cover: g.album.artwork, year: (g.album.releaseDate || "").slice(0, 4),
-      count: g.ratings.length
-    }));
-  renderRecoBlock("recoNew", "recoNewList", fresh);
+  _isRefreshing = true;
+  try {
+    // Загружаем данные из Firestore (это не Spotify, кэш не нужен)
+    const groups = await loadAllRatingsGrouped();
 
-  // Популярное
-  const popular = [...groups]
-    .sort((a, b) => b.ratings.length - a.ratings.length)
-    .slice(0, 10)
-    .map(g => ({
-      id: g.id, source: g.source,
-      title: g.album.title, artist: g.album.artist,
-      cover: g.album.artwork, year: (g.album.releaseDate || "").slice(0, 4),
-      count: g.ratings.length
-    }));
-  renderRecoBlock("recoPopular", "recoPopularList", popular);
+    // Считаем все рекомендации
+    const data = {
+      trending: await getTrending(groups),
+      fresh: await getNewReleases(groups),
+      popular: await getPopularOnSite(groups),
+      random: await getRandomFromBase(groups),
+      personal: await getPersonalRecommendations()
+    };
 
-  // Персональные
-  const personal = await getPersonalRecommendations();
-  renderRecoBlock("recoPersonal", "recoPersonalList", personal);
+    // Сохраняем в кэш
+    saveCache(data);
 
-  // Случайное
-  const random = await getRandomFromBase();
-  renderRecoBlock("recoRandom", "recoRandomList", random);
+    // Рисуем
+    renderAllFromData(data);
+  } catch (e) {
+    console.warn("Recommendations error:", e);
+    // Пробуем показать кэш, даже если он старый
+    const cached = loadCache();
+    if (cached) {
+      renderAllFromData(cached);
+    }
+  } finally {
+    _isRefreshing = false;
+  }
 }
 
-export function refreshRecommendations() {
-  loadRecommendations();
+function renderAllFromData(data) {
+  renderRecoBlock("recoTrending", "recoTrendingList", data.trending);
+  renderRecoBlock("recoNew", "recoNewList", data.fresh);
+  renderRecoBlock("recoPopular", "recoPopularList", data.popular);
+  renderRecoBlock("recoRandom", "recoRandomList", data.random);
+  renderRecoBlock("recoPersonal", "recoPersonalList", data.personal);
+}
+
+// ============================================================
+// ОБНОВЛЕНИЕ (с защитой от спама)
+// ============================================================
+export async function refreshRecommendations() {
+  // Проверка cooldown после 429
+  if (Date.now() < _spotifyCooldown) {
+    const sec = Math.ceil((_spotifyCooldown - Date.now()) / 1000);
+    showToast("Спотифай отдыхает. Подождите " + sec + " сек", { gold: true });
+    return;
+  }
+
+  // Проверка "заморозки" кнопки
+  const now = Date.now();
+  if (now - _lastRefresh < REFRESH_COOLDOWN) {
+    const sec = Math.ceil((REFRESH_COOLDOWN - (now - _lastRefresh)) / 1000);
+    showToast("Подождите " + sec + " сек", { gold: true });
+    return;
+  }
+  _lastRefresh = now;
+
+  // Сбрасываем кэш (только при refresh)
+  clearCache();
+
+  // Загружаем заново, принудительно
+  await loadRecommendations(true);
   showToast("Обновлено");
 }
 
 export async function refreshRandomReco() {
-  const items = await getRandomFromBase();
-  renderRecoBlock("recoRandom", "recoRandomList", items);
+  const groups = await loadAllRatingsGrouped();
+  const random = await getRandomFromBase(groups);
+  renderRecoBlock("recoRandom", "recoRandomList", random);
 }
 
 export function setRecommendationsVisible(visible) {
@@ -336,6 +369,7 @@ export function setRecommendationsVisible(visible) {
   else section.classList.add("hidden");
 }
 
+// Экспорт в window
 if (typeof window !== "undefined") {
   window.loadRecommendations = loadRecommendations;
   window.refreshRecommendations = refreshRecommendations;

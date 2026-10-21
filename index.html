@@ -477,13 +477,22 @@
     </div>
     <!-- РЕКОМЕНДАЦИИ -->
     <div id="recommendationsSection" class="recommendations-section">
-      <!-- В тренде -->
+      <!-- Западные релизы -->
       <div class="reco-block" id="recoTrending">
         <div class="reco-header">
-          <span class="reco-title">🔥 В тренде за неделю</span>
+          <span class="reco-title">🌍 Западные релизы</span>
           <button class="reco-refresh" onclick="refreshRecommendations()" title="Обновить">↻</button>
         </div>
         <div class="reco-carousel" id="recoTrendingList"></div>
+      </div>
+
+      <!-- Русская сцена -->
+      <div class="reco-block" id="recoRussian">
+        <div class="reco-header">
+          <span class="reco-title">🇷🇺 Русская сцена</span>
+          <button class="reco-refresh" onclick="refreshRussianReco()" title="Обновить">↻</button>
+        </div>
+        <div class="reco-carousel" id="recoRussianList"></div>
       </div>
 
       <!-- Новинки -->
