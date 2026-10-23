@@ -1020,6 +1020,8 @@ window.openProfile = () => switchNav("profile");
 window.saveNickname = saveNickname;
 window.switchProfileTab = switchProfileTab;
 
+
+
 window.adminEditRelease = adminEditRelease;
 window.closeEditRelease = closeEditRelease;
 window.saveEditRelease = saveEditRelease;
