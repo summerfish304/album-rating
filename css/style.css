@@ -6689,3 +6689,51 @@ body.theme-season-active .scheme-grid:hover {
   color: #fff;
   box-shadow: 0 2px 10px var(--accent-glow);
 }
+.preview-btn {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
+  margin-right: 10px;
+  position: relative; /* Важно для круга */
+}
+
+.preview-btn.is-playing {
+  border-color: transparent; /* Круг заменит рамку */
+  color: var(--accent); /* Иконка паузы станет цветом акцента */
+  background: rgba(0,0,0,0.1);
+}
+
+.preview-btn.preview-disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
+/* Кольцо поверх */
+.preview-btn svg circle {
+  stroke: var(--accent) !important;
+  stroke-width: 2.5px !important;
+}
+
+/* Спиннер загрузки */
+.preview-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}

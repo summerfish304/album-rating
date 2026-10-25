@@ -11,6 +11,7 @@ import { cacheGet, scheduleCoverCaching, hydrateImagesFromCache } from './cache.
 import { spotifyGetAlbum } from './search.js';
 import { showToast, showFloatingLoader, renderSkeletonList } from './ui.js';
 import { showConfirm } from './confirm.js';
+import { setQueue, playPreview, stopPreview } from './preview.js';
 
 let currentUser = null;
 let userProfile = null;
@@ -489,6 +490,28 @@ export async function openBoardModal(group) {
   document.getElementById("boardModalCover").src = group.album.artwork || "";
   document.getElementById("boardModalCover").onerror = function() { this.style.visibility = "hidden"; };
   document.getElementById("boardModalTitle").textContent = group.album.title;
+  
+  // --- ДОБАВЛЯЕМ КНОПКУ СЛУШАТЬ ВСЁ ---
+  const titleContainer = document.getElementById("boardModalTitle").parentElement;
+  const oldBtn = titleContainer.querySelector(".btn-listen-all");
+  if (oldBtn) oldBtn.remove();
+  
+  const listenAllBtn = document.createElement("button");
+  listenAllBtn.className = "btn-listen-all";
+  listenAllBtn.innerHTML = "▶ Слушать отрывки";
+  listenAllBtn.onclick = () => {
+    if (!group.album.tracks || group.album.tracks.length === 0) {
+      showToast("Треки не найдены");
+      return;
+    }
+    setQueue(group.album.tracks, 0);
+    playPreview(group.album.tracks[0], listenAllBtn);
+  };
+  
+  // Вставляем кнопку под артиста
+  titleContainer.appendChild(listenAllBtn);
+  // ------------------------------------
+
   // Делаем артиста кликабельным
   const artistEl = document.getElementById("boardModalArtist");
   const artistName = group.album.artist || "";
@@ -632,6 +655,7 @@ async function showUserRatingInline(group, uid, rowEl) {
 }
 
 export function closeBoardModal() {
+  stopPreview(); // Останавливаем музыку
   document.getElementById("boardModalBackdrop").classList.remove("open");
   document.body.style.overflow = "";
 }

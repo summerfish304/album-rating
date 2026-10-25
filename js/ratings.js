@@ -14,6 +14,7 @@ import { cacheGet, cacheSet, scheduleCoverCaching, hydrateImagesFromCache } from
 import { showToast, showFloatingLoader } from './ui.js';
 import { showConfirm } from './confirm.js';
 import { spotifyGetAlbum } from './search.js';
+import { playPreview, stopPreview } from './preview.js';
 
 // ============================================================
 // Состояние
@@ -232,6 +233,30 @@ export function renderAlbum() {
 function renderSingleCriteria() {
   const wrap = document.getElementById("singleCriteriaList");
   wrap.innerHTML = "";
+  
+  // --- ДОБАВЛЯЕМ ПЛЕЕР ДЛЯ СИНГЛА ---
+  const track = currentTracks[0];
+  if (track) {
+    const singlePlayer = document.createElement("div");
+    singlePlayer.style.cssText = "display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:12px; background:var(--panel); border-radius:12px; border:1px solid var(--border);";
+    
+    const playBtn = document.createElement("button");
+    playBtn.type = "button";
+    playBtn.className = "preview-btn";
+    playBtn.innerHTML = "▶";
+    playBtn.title = "Слушать отрывок";
+    playBtn.onclick = () => playPreview({ name: track.name, artist: track.artist || currentAlbum.artist }, playBtn);
+    
+    const infoText = document.createElement("div");
+    infoText.style.cssText = "font-size:.85rem; font-weight:600; color:var(--text);";
+    infoText.textContent = "Слушать отрывок трека";
+    
+    singlePlayer.appendChild(playBtn);
+    singlePlayer.appendChild(infoText);
+    wrap.appendChild(singlePlayer);
+  }
+  // ----------------------------------
+
   MAIN_CRITERIA.forEach(c => { if (singleValues[c.key] == null) singleValues[c.key] = 7; });
   MAIN_CRITERIA.forEach(c => {
     const block = document.createElement("div");
@@ -294,6 +319,17 @@ function renderTracks(values) {
     row.className = "track-row" + (t.isSkit ? " is-skit" : "");
     row.dataset.index = i;
     row.dataset.value = values[i] != null ? values[i] : 7;
+    const playBtn = document.createElement("button");
+    playBtn.type = "button";
+    playBtn.className = "preview-btn";
+    playBtn.innerHTML = "▶";
+    playBtn.title = "Слушать отрывок";
+    playBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      playPreview({ name: t.name, artist: t.artist }, playBtn);
+    };
+    row.appendChild(playBtn);
+
     const nameBtn = document.createElement("button");
     nameBtn.type = "button";
     nameBtn.className = "track-name";
@@ -645,6 +681,7 @@ export function toggleHistogram() {
 // Модалка трека
 // ============================================================
 export function openModal(index) {
+  stopPreview(); // Останавливаем предыдущий отрывок
   const track = currentTracks[index];
   if (!track) return;
   modalTrackIndex = index;
@@ -661,6 +698,7 @@ export function openModal(index) {
 }
 
 export function closeModal() {
+  stopPreview(); // Останавливаем музыку
   document.getElementById("modalBackdrop").classList.remove("open");
   document.body.style.overflow = "";
   modalTrackIndex = -1;
