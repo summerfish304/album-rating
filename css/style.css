@@ -6827,52 +6827,77 @@ body.theme-season-active .scheme-grid:hover {
   }
 }
 @media (max-width: 600px) {
-  /* Сжимаем строку трека */
+  /* Строка трека становится сеткой */
   .track-row {
-    flex-wrap: wrap; /* Разрешаем перенос, если не влезает */
-    padding: 8px 10px;
-    gap: 6px; /* Уменьшаем отступы между элементами */
+    display: grid;
+    grid-template-columns: 1fr auto; /* Название слева, скит справа */
+    grid-template-areas: 
+      "name skit"
+      "controls controls";
+    gap: 8px;
+    padding: 10px;
+    align-items: center;
   }
 
-  /* Кнопки плеера и текста делаем меньше */
-  .preview-btn {
-    width: 24px;
-    height: 24px;
-    font-size: 10px;
-    margin-right: 4px;
-  }
-
-  /* Сжимаем кнопку скита */
-  .skit-btn {
-    width: 24px;
-    height: 24px;
-    font-size: 12px;
-    margin-left: 4px;
-  }
-
-  /* Сжимаем цифру оценки */
-  .range-val {
-    font-size: 0.8rem;
-    min-width: 16px;
-    margin-left: 4px;
-  }
-
-  /* Название трека делаем поменьше, чтобы влезало */
+  /* Название трека */
   .track-name {
-    font-size: 0.85rem;
-    flex: 1;
-    min-width: 120px; /* Чтобы не сжималось слишком сильно */
+    grid-area: name;
+    font-size: 0.9rem;
+    padding: 0;
+    text-align: left;
+    width: 100%;
   }
 
-  /* Контейнер ползунка растягиваем */
-  .track-row .control {
-    flex: 1;
-    min-width: 100%;
-    margin-top: 4px; /* Переносим ползунок на новую строку */
-  }
-
-  /* Убираем лишние отступы у ползунка */
-  .track-row input[type="range"] {
+  /* Кнопка скита */
+  .skit-btn {
+    grid-area: skit;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
     margin: 0;
+    background: var(--panel-2);
+  }
+  .skit-btn.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* Блок с кнопками плеера, текста, ползунком и цифрой */
+  .track-row .preview-btn,
+  .track-row .control,
+  .track-row .range-val {
+    grid-area: controls;
+  }
+
+  /* Выстраиваем нижнюю панель в один ряд */
+  .track-row .control {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 6px;
+  }
+
+  /* Кнопки плеера и текста делаем крупнее, чтобы легко нажимать */
+  .preview-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  /* Ползунок растягиваем */
+  .track-row input[type="range"] {
+    flex: 1;
+    margin: 0;
+  }
+
+  /* Цифра оценки */
+  .range-val {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 20px;
+    text-align: right;
   }
 }
