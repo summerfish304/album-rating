@@ -332,6 +332,7 @@ function renderTracks(values) {
     row.className = "track-row" + (t.isSkit ? " is-skit" : "");
     row.dataset.index = i;
     row.dataset.value = values[i] != null ? values[i] : 7;
+    // 1. Кнопки плеера и текста (создаем заранее, но добавим позже)
     const playBtn = document.createElement("button");
     playBtn.type = "button";
     playBtn.className = "preview-btn";
@@ -341,9 +342,7 @@ function renderTracks(values) {
       ev.stopPropagation();
       playPreview({ name: t.name, artist: t.artist }, playBtn);
     };
-    row.appendChild(playBtn);
 
-    // --- НОВАЯ КНОПКА ТЕКСТА ---
     const lyricsBtn = document.createElement("button");
     lyricsBtn.type = "button";
     lyricsBtn.className = "preview-btn";
@@ -355,9 +354,8 @@ function renderTracks(values) {
         window.openLyricsDrawerForTrack(i);
       }
     };
-    row.appendChild(lyricsBtn);
-    // ---------------------------
 
+    // 2. Название трека
     const nameBtn = document.createElement("button");
     nameBtn.type = "button";
     nameBtn.className = "track-name";
@@ -367,25 +365,39 @@ function renderTracks(values) {
     nameBtn.innerHTML = '<span class="track-num">' + (i + 1) + '.</span><span>' + escapeHtml(t.name) + '</span>' + detailBadge + skitBadge;
     nameBtn.onclick = () => openModal(i);
     row.appendChild(nameBtn);
-    const control = document.createElement("div");
-    control.className = "control";
-    row.appendChild(control);
+
+    // 3. Оценка (цифра)
     const val = document.createElement("div");
     val.className = "range-val";
+    val.textContent = row.dataset.value;
     row.appendChild(val);
+
+    // 4. Блок ползунка
+    const control = document.createElement("div");
+    control.className = "control";
     if (ratingMode === "stars") control.appendChild(buildStars(row, parseInt(row.dataset.value)));
     else control.appendChild(buildSlider(row, parseInt(row.dataset.value)));
-    val.textContent = row.dataset.value;
+    row.appendChild(control);
+
+    // 5. Нижняя панель с кнопками (для мобильной сетки)
+    const mobileBtns = document.createElement("div");
+    mobileBtns.className = "mobile-btns-left";
+    mobileBtns.appendChild(playBtn);
+    mobileBtns.appendChild(lyricsBtn);
+    row.appendChild(mobileBtns);
+
+    // 6. Кнопка скита
     const skitBtn = document.createElement("button");
     skitBtn.type = "button";
     skitBtn.className = "skit-btn" + (t.isSkit ? " active" : "");
-    skitBtn.title = t.isSkit ? "Убрать из скитов" : "Пометить как скит (не учитывается в итоге)";
+    skitBtn.title = t.isSkit ? "Убрать из скитов" : "Пометить как скит";
     skitBtn.innerHTML = "🎙";
     skitBtn.onclick = (ev) => {
       ev.stopPropagation();
       toggleSkit(i);
     };
     row.appendChild(skitBtn);
+
     list.appendChild(row);
   });
 }
