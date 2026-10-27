@@ -6826,3 +6826,53 @@ body.theme-season-active .scheme-grid:hover {
     gap: 20px;
   }
 }
+@media (max-width: 600px) {
+  /* Сжимаем строку трека */
+  .track-row {
+    flex-wrap: wrap; /* Разрешаем перенос, если не влезает */
+    padding: 8px 10px;
+    gap: 6px; /* Уменьшаем отступы между элементами */
+  }
+
+  /* Кнопки плеера и текста делаем меньше */
+  .preview-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+    margin-right: 4px;
+  }
+
+  /* Сжимаем кнопку скита */
+  .skit-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    margin-left: 4px;
+  }
+
+  /* Сжимаем цифру оценки */
+  .range-val {
+    font-size: 0.8rem;
+    min-width: 16px;
+    margin-left: 4px;
+  }
+
+  /* Название трека делаем поменьше, чтобы влезало */
+  .track-name {
+    font-size: 0.85rem;
+    flex: 1;
+    min-width: 120px; /* Чтобы не сжималось слишком сильно */
+  }
+
+  /* Контейнер ползунка растягиваем */
+  .track-row .control {
+    flex: 1;
+    min-width: 100%;
+    margin-top: 4px; /* Переносим ползунок на новую строку */
+  }
+
+  /* Убираем лишние отступы у ползунка */
+  .track-row input[type="range"] {
+    margin: 0;
+  }
+}
