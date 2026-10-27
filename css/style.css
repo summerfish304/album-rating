@@ -6830,7 +6830,7 @@ body.theme-season-active .scheme-grid:hover {
   /* Строка трека становится сеткой */
   .track-row {
     display: grid;
-    grid-template-columns: 1fr auto; /* Название слева, скит справа */
+    grid-template-columns: 1fr auto;
     grid-template-areas: 
       "name skit"
       "controls controls";
@@ -6862,33 +6862,29 @@ body.theme-season-active .scheme-grid:hover {
     color: #fff;
   }
 
-  /* Блок с кнопками плеера, текста, ползунком и цифрой */
-  .track-row .preview-btn,
-  .track-row .control,
-  .track-row .range-val {
-    grid-area: controls;
-  }
-
-  /* Выстраиваем нижнюю панель в один ряд */
+  /* Нижняя панель (кнопки + ползунок + цифра) */
   .track-row .control {
+    grid-area: controls;
     display: flex;
     align-items: center;
     width: 100%;
     gap: 6px;
+    margin: 0; /* Убираем возможные отступы */
   }
 
-  /* Кнопки плеера и текста делаем крупнее, чтобы легко нажимать */
+  /* Кнопки плеера и текста */
   .preview-btn {
     width: 32px;
     height: 32px;
     font-size: 14px;
     margin: 0;
-    flex-shrink: 0;
+    flex-shrink: 0; /* Запрещаем сжиматься */
   }
 
-  /* Ползунок растягиваем */
+  /* Ползунок сжимается под оставшееся место */
   .track-row input[type="range"] {
     flex: 1;
+    min-width: 0; /* Важно! Позволяет сжиматься */
     margin: 0;
   }
 
@@ -6897,7 +6893,8 @@ body.theme-season-active .scheme-grid:hover {
     font-size: 0.9rem;
     font-weight: 700;
     color: var(--accent);
-    min-width: 20px;
+    min-width: 24px; /* Фиксированная ширина, чтобы не прыгала */
     text-align: right;
+    flex-shrink: 0;
   }
 }
