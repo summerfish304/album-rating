@@ -135,7 +135,7 @@ export async function playPreview(track, btnEl) {
 
 async function fetchItunesPreview(trackName, artistName) {
   if (!trackName) return null;
-  const cacheKey = `itunes_v3_${artistName}_${trackName}`.replace(/\s+/g, '_').toLowerCase();
+  const cacheKey = `itunes_v4_${artistName}_${trackName}`.replace(/\s+/g, '_').toLowerCase();
   const cached = localStorage.getItem(cacheKey);
   
   if (cached) {
@@ -143,22 +143,29 @@ async function fetchItunesPreview(trackName, artistName) {
     return cached;
   }
 
-  // Добавляем attribute=artistTerm для точного поиска
   const q = encodeURIComponent(`${artistName} ${trackName}`);
-  const url = `https://itunes.apple.com/search?term=${q}&media=music&entity=song&attribute=artistTerm&limit=5`;
+  // Берем 10 результатов
+  const url = `https://itunes.apple.com/search?term=${q}&media=music&entity=song&limit=10`;
 
   try {
     const res = await fetch(url);
     const data = await res.json();
     
     let previewUrl = null;
-    if (data.results && data.results.length > 0) {
-      // Ищем совпадение по артисту (без учета регистра)
-      const searchArtist = artistName.toLowerCase().trim();
+    const searchArtist = artistName.toLowerCase().replace(/feat\.?/g, '').trim();
+    const searchTrack = trackName.toLowerCase().trim();
+
+    if (data.results) {
+      // Ищем наиболее подходящий
       const match = data.results.find(r => {
-        const rArtist = (r.artistName || "").toLowerCase();
-        // Проверяем, что имя артиста не пустое и содержит наш запрос (или наоборот)
-        return rArtist.length > 0 && (rArtist.includes(searchArtist) || searchArtist.includes(rArtist));
+        const rArtist = (r.artistName || "").toLowerCase().replace(/feat\.?/g, '').trim();
+        const rTrack = (r.trackName || "").toLowerCase().trim();
+        
+        // Артист должен совпадать (или содержать друг друга), и трек тоже
+        const artistMatch = rArtist.includes(searchArtist) || searchArtist.includes(rArtist);
+        const trackMatch = rTrack.includes(searchTrack) || searchTrack.includes(rTrack);
+        
+        return artistMatch && trackMatch;
       });
       
       if (match && match.previewUrl) {
@@ -176,7 +183,7 @@ async function fetchItunesPreview(trackName, artistName) {
 
 async function fetchDeezerPreview(trackName, artistName) {
   if (!trackName) return null;
-  const cacheKey = `deezer_v3_${artistName}_${trackName}`.replace(/\s+/g, '_').toLowerCase();
+  const cacheKey = `deezer_v4_${artistName}_${trackName}`.replace(/\s+/g, '_').toLowerCase();
   const cached = localStorage.getItem(cacheKey);
   
   if (cached) {
@@ -185,7 +192,7 @@ async function fetchDeezerPreview(trackName, artistName) {
   }
 
   const q = encodeURIComponent(`${artistName} ${trackName}`);
-  const targetUrl = `https://api.deezer.com/search?q=${q}&limit=5`;
+  const targetUrl = `https://api.deezer.com/search?q=${q}&limit=10`;
   const proxyUrl = `https://album-rating-proxy.duckdns.org/api/proxy?u=${encodeURIComponent(targetUrl)}`;
 
   try {
@@ -194,11 +201,18 @@ async function fetchDeezerPreview(trackName, artistName) {
     const data = await res.json();
     
     let previewUrl = null;
-    if (data.data && data.data.length > 0) {
-      const searchArtist = artistName.toLowerCase().trim();
+    const searchArtist = artistName.toLowerCase().replace(/feat\.?/g, '').trim();
+    const searchTrack = trackName.toLowerCase().trim();
+
+    if (data.data) {
       const match = data.data.find(r => {
-        const rArtist = (r.artist?.name || "").toLowerCase();
-        return rArtist.length > 0 && (rArtist.includes(searchArtist) || searchArtist.includes(rArtist));
+        const rArtist = (r.artist?.name || "").toLowerCase().replace(/feat\.?/g, '').trim();
+        const rTrack = (r.title || "").toLowerCase().trim();
+        
+        const artistMatch = rArtist.includes(searchArtist) || searchArtist.includes(rArtist);
+        const trackMatch = rTrack.includes(searchTrack) || searchTrack.includes(rTrack);
+        
+        return artistMatch && trackMatch;
       });
       
       if (match && match.preview) {

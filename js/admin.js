@@ -13,6 +13,7 @@ import {
   getBoardData, getBoardModalRelease, closeBoardModal,
   refreshBoard, renderBoard, renderBoardDynamicStats
 } from './board.js';
+import { spotifyGetAlbum } from './search.js';
 
 
 // ============================================================
@@ -62,7 +63,8 @@ export function switchAdminTab(tab) {
     addrelease: "adminAddRelease",
     announcement: "adminAnnouncement",
     maintenance: "adminMaintenance",
-    seasons: "adminSeasons"
+    seasons: "adminSeasons",
+    lyrics: "adminLyrics"
   };
   Object.keys(map).forEach(k => {
     const el = document.getElementById(map[k]);
@@ -77,6 +79,7 @@ export function switchAdminTab(tab) {
   if (tab === "announcement") renderAdminAnnouncement();
   if (tab === "maintenance" && callbacks.onRenderMaintenance) callbacks.onRenderMaintenance();
   if (tab === "seasons") renderAdminSeasons();
+  if (tab === "lyrics") renderAdminLyrics();
 }
 
 // ============================================================
@@ -1514,4 +1517,233 @@ export async function adminResumeSeason() {
   } finally {
     showFloatingLoader(false);
   }
+}
+
+// ============================================================
+// ВКЛАДКА «ТЕКСТЫ ПЕСЕН» (Админ) — Поиск через Spotify
+// ============================================================
+let adminLyricsSearchResults = [];
+let adminLyricsSelectedRelease = null;
+let adminLyricsTrackList = [];
+let adminLyricsExistingMap = {}; // map: trackId -> data from Firestore
+
+export function renderAdminLyrics() {
+  const el = document.getElementById("adminLyrics");
+  if (!el) return;
+  
+  el.innerHTML = 
+    '<div class="admin-lyrics-header">' +
+      '<div class="hint" style="margin-bottom:12px;">Найдите релиз в Spotify, выберите его и редактируйте тексты треков.</div>' +
+      '<div style="display:flex; gap:10px; margin-bottom:16px;">' +
+        '<input type="text" id="adminLyricsSpotifySearch" placeholder="Название релиза или артист…" style="flex:1; padding:10px; border-radius:12px; border:1px solid var(--border); background:var(--panel-2); color:var(--text);" onkeydown="if(event.key===\'Enter\') window.adminSearchLyricsSpotify()">' +
+        '<button onclick="window.adminSearchLyricsSpotify()" style="padding:10px 16px;">🔍 Найти</button>' +
+      '</div>' +
+    '</div>' +
+    '<div id="adminLyricsSearchResults" class="artist-albums" style="margin-bottom:20px;"></div>' +
+    '<div id="adminLyricsTrackList" style="display:none;">' +
+      '<button class="btn-secondary" onclick="window.adminCloseLyricsRelease()" style="margin-bottom:12px;">← Назад к поиску</button>' +
+      '<h3 id="adminLyricsReleaseTitle" style="margin-bottom:14px; color:var(--text);"></h3>' +
+      '<div id="adminLyricsTracksContainer"></div>' +
+    '</div>';
+}
+
+export async function adminSearchLyricsSpotify() {
+  const q = document.getElementById("adminLyricsSpotifySearch").value.trim();
+  if (!q) return;
+
+  const resultsEl = document.getElementById("adminLyricsSearchResults");
+  resultsEl.innerHTML = '<div class="empty-msg"><span class="spinner"></span> Ищем в Spotify…</div>';
+
+  try {
+    // Ищем альбомы через Spotify
+    const target = `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=5`;
+    const proxyUrl = `https://album-rating-proxy.duckdns.org/api/proxy?u=${encodeURIComponent(target)}`;
+    const res = await fetch(proxyUrl);
+    const data = await res.json();
+    
+    if (!data.albums || !data.albums.items || data.albums.items.length === 0) {
+      resultsEl.innerHTML = '<div class="empty-msg">Ничего не найдено.</div>';
+      return;
+    }
+
+    adminLyricsSearchResults = data.albums.items;
+    resultsEl.innerHTML = "";
+    
+    data.albums.items.forEach(album => {
+      const cover = album.images?.[0]?.url || "";
+      const artist = album.artists?.map(a => a.name).join(", ") || "";
+      
+      const card = document.createElement("div");
+      card.className = "artist-album-card";
+      card.innerHTML = 
+        (cover ? '<img class="artist-album-cover" src="' + escapeHtml(cover) + '" alt="">' : '<div class="artist-album-cover artist-album-noimg">💿</div>') +
+        '<div class="artist-album-info">' +
+          '<div class="artist-album-title">' + escapeHtml(album.name) + '</div>' +
+          '<div class="artist-album-year">' + escapeHtml(artist) + '</div>' +
+        '</div>';
+      
+      card.onclick = () => window.adminSelectLyricsRelease(album.id, album.name, cover);
+      resultsEl.appendChild(card);
+    });
+
+  } catch (e) {
+    resultsEl.innerHTML = '<div class="error">Ошибка: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+export async function adminSelectLyricsRelease(albumId, albumTitle, albumCover) {
+  document.getElementById("adminLyricsSearchResults").style.display = "none";
+  document.getElementById("adminLyricsTrackList").style.display = "block";
+  document.getElementById("adminLyricsReleaseTitle").innerHTML = '💿 ' + escapeHtml(albumTitle);
+  const container = document.getElementById("adminLyricsTracksContainer");
+  container.innerHTML = '<div class="empty-msg"><span class="spinner"></span> Загрузка треков…</div>';
+
+  try {
+    // 1. Получаем треки альбома
+    const albumData = await spotifyGetAlbum(albumId);
+    if (!albumData || !albumData.tracks || !albumData.tracks.items) throw new Error("Нет треков");
+    
+    adminLyricsTrackList = albumData.tracks.items.sort((a, b) => a.track_number - b.track_number);
+    
+    // 2. Загружаем существующие тексты из Firestore
+    const snap = await getDocs(collection(db, "lyrics"));
+    adminLyricsExistingMap = {};
+    snap.docs.forEach(d => {
+      const data = d.data();
+      adminLyricsExistingMap[data.trackId] = { _id: d.id, ...data };
+    });
+
+    // 3. Рендерим список
+    container.innerHTML = "";
+    adminLyricsTrackList.forEach((track, index) => {
+      const trackId = `${track.name}_${(track.artists || []).map(a => a.name).join(", ")}`.replace(/\s+/g, '_').toLowerCase();
+      const existing = adminLyricsExistingMap[trackId];
+      
+      const hasOrig = existing && existing.original;
+      const hasTrans = existing && (existing.manualTranslation || existing.translation);
+
+      const row = document.createElement("div");
+      row.className = "review-item";
+      row.style.marginBottom = "10px";
+      row.innerHTML = 
+        '<div class="review-body" style="flex-direction:row; align-items:center; justify-content:space-between; gap:10px;">' +
+          '<div style="flex:1; min-width:0;">' +
+            '<div style="font-weight:700; font-size:.9rem; color:var(--text); margin-bottom:4px;">' + (index + 1) + '. ' + escapeHtml(track.name) + '</div>' +
+            '<div style="font-size:.75rem; color:var(--text-dim);">' +
+              (hasOrig ? '✅ Оригинал ' : '❌ Оригинал ') + 
+              (hasTrans ? '✅ Перевод' : '❌ Перевод') +
+            '</div>' +
+          '</div>' +
+          '<button class="btn-secondary" onclick="window.adminEditTrackLyrics(\'' + trackId + '\', \'' + escapeHtml(track.name).replace(/'/g, "\\'") + '\', \'' + escapeHtml((track.artists || []).map(a => a.name).join(", ")).replace(/'/g, "\\'") + '\')">✏️ Редактировать</button>' +
+        '</div>';
+      container.appendChild(row);
+    });
+
+  } catch (e) {
+    container.innerHTML = '<div class="error">Ошибка загрузки треков: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+export function adminCloseLyricsRelease() {
+  document.getElementById("adminLyricsSearchResults").style.display = "flex";
+  document.getElementById("adminLyricsTrackList").style.display = "none";
+}
+
+let _currentEditLyricsId = null;
+
+export function adminEditTrackLyrics(trackId, trackName, artistName) {
+  _currentEditLyricsId = trackId;
+  
+  const existing = adminLyricsExistingMap[trackId];
+  
+  document.getElementById("editLyricsTitle").value = trackName;
+  document.getElementById("editLyricsArtist").value = artistName;
+  document.getElementById("editLyricsOriginal").value = existing?.original || "";
+  document.getElementById("editLyricsTranslation").value = existing?.manualTranslation || existing?.translation || "";
+  
+  document.getElementById("editLyricsBackdrop").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+export async function saveAdminLyrics() {
+  const trackName = document.getElementById("editLyricsTitle").value.trim();
+  const artistName = document.getElementById("editLyricsArtist").value.trim();
+  const original = document.getElementById("editLyricsOriginal").value.trim();
+  const translation = document.getElementById("editLyricsTranslation").value.trim();
+
+  if (!trackName || !artistName) {
+    showToast("Введите название трека и артиста");
+    return;
+  }
+
+  const docId = _currentEditLyricsId || `${trackName}_${artistName}`.replace(/\s+/g, '_').toLowerCase();
+
+  try {
+    const data = {
+      trackId: docId,
+      trackName,
+      artistName,
+      original: original || null,
+      manualTranslation: translation || null,
+      updatedAt: serverTimestamp()
+    };
+
+    await setDoc(doc(db, "lyrics", docId), data, { merge: true });
+    showToast("Текст сохранён", { success: true });
+    closeEditLyricsModal();
+    
+    // Обновляем локальную карту и перерисовываем список
+    if (adminLyricsExistingMap[docId]) {
+      adminLyricsExistingMap[docId] = { ...adminLyricsExistingMap[docId], ...data };
+    } else {
+      adminLyricsExistingMap[docId] = { _id: docId, ...data };
+    }
+    
+    // Перерисовываем текущий альбом (чтобы обновились галочки)
+    if (adminLyricsTrackList.length > 0 && document.getElementById("adminLyricsTrackList").style.display !== "none") {
+      const title = document.getElementById("adminLyricsReleaseTitle").innerText.replace('💿 ', '');
+      // Просто перерисуем список
+      const container = document.getElementById("adminLyricsTracksContainer");
+      container.innerHTML = "";
+      adminLyricsTrackList.forEach((track, index) => {
+        const tid = `${track.name}_${(track.artists || []).map(a => a.name).join(", ")}`.replace(/\s+/g, '_').toLowerCase();
+        const ex = adminLyricsExistingMap[tid];
+        const hasOrig = ex && ex.original;
+        const hasTrans = ex && (ex.manualTranslation || ex.translation);
+        
+        const row = document.createElement("div");
+        row.className = "review-item";
+        row.style.marginBottom = "10px";
+        row.innerHTML = 
+          '<div class="review-body" style="flex-direction:row; align-items:center; justify-content:space-between; gap:10px;">' +
+            '<div style="flex:1; min-width:0;">' +
+              '<div style="font-weight:700; font-size:.9rem; color:var(--text); margin-bottom:4px;">' + (index + 1) + '. ' + escapeHtml(track.name) + '</div>' +
+              '<div style="font-size:.75rem; color:var(--text-dim);">' +
+                (hasOrig ? '✅ Оригинал ' : '❌ Оригинал ') + 
+                (hasTrans ? '✅ Перевод' : '❌ Перевод') +
+              '</div>' +
+            '</div>' +
+            '<button class="btn-secondary" onclick="window.adminEditTrackLyrics(\'' + tid + '\', \'' + escapeHtml(track.name).replace(/'/g, "\\'") + '\', \'' + escapeHtml((track.artists || []).map(a => a.name).join(", ")).replace(/'/g, "\\'") + '\')">✏️ Редактировать</button>' +
+          '</div>';
+        container.appendChild(row);
+      });
+    }
+  } catch (e) {
+    showToast("Ошибка сохранения: " + e.message);
+  }
+}
+
+export function closeEditLyricsModal() {
+  document.getElementById("editLyricsBackdrop").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+// Экспорт в window для onclick
+if (typeof window !== "undefined") {
+  window.adminSearchLyricsSpotify = adminSearchLyricsSpotify;
+  window.adminSelectLyricsRelease = adminSelectLyricsRelease;
+  window.adminCloseLyricsRelease = adminCloseLyricsRelease;
+  window.adminEditTrackLyrics = adminEditTrackLyrics;
+  window.saveAdminLyrics = saveAdminLyrics;
+  window.closeEditLyricsModal = closeEditLyricsModal;
 }

@@ -110,7 +110,7 @@ import {
   adminDeleteSeasonFromHistory, renderAdminSeasons,
   adminRecountAwards, openClearBoardModal, closeClearBoardModal,
   checkClearBoardInput, confirmClearBoard,
-  adminPauseSeason, adminResumeSeason
+  adminPauseSeason, adminResumeSeason, closeEditLyricsModal
 } from './admin.js';
 
 import {
@@ -141,7 +141,7 @@ import {
 import { isParticlesOff, setParticlesOff } from './season-particles.js';
 
 import { computeSeasonAwards } from './season-awards.js';
-
+import { getLyrics, translateLyrics } from './lyrics.js';
 // ============================================================
 // Состояние main.js
 // ============================================================
@@ -954,14 +954,16 @@ window.clearSearchHistory = clearSearchHistory;
 window.toggleFavoritesCollapse = toggleFavoritesCollapse;
 window.addToFavorites = addToFavorites;
 
-window.toggleArtistFavorite = toggleArtistFavorite;
+window.getLyrics = getLyrics;
+window.translateLyrics = translateLyrics;
 
+window.toggleArtistFavorite = toggleArtistFavorite;
 window.openArtistRatingForm = openArtistRatingForm;
 window.closeArtistRatingForm = closeArtistRatingForm;
 window.applyArtistRating = applyArtistRating;
 window.toggleArtistHelp = toggleArtistHelp;
 window.toggleArtistResultDetails = toggleArtistResultDetails;
-
+window.closeEditLyricsModal = closeEditLyricsModal;
 window.openArtistFromBoard = (artistId) => {
   switchNav("main");
   setTimeout(() => openArtist(artistId), 250);

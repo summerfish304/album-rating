@@ -801,6 +801,7 @@
       <button class="admin-tab" data-admin="announcement" onclick="switchAdminTab('announcement')">📢 Объявление</button>
       <button class="admin-tab" data-admin="maintenance" onclick="switchAdminTab('maintenance')">🔧 Техработы</button>
       <button class="admin-tab" data-admin="seasons" onclick="switchAdminTab('seasons')">🍂 Сезоны</button>
+      <button class="admin-tab" data-admin="lyrics" onclick="switchAdminTab('lyrics')">📜 Тексты</button>
     </div>
 
     <div id="adminDashboard"></div>
@@ -812,6 +813,7 @@
     <div id="adminAnnouncement" class="hidden"></div>
     <div id="adminMaintenance" class="hidden"></div>
     <div id="adminSeasons" class="hidden"></div>
+    <div id="adminLyrics" class="hidden"></div>
   </div>
 </div>
 
@@ -860,6 +862,9 @@
         <div class="hint" id="modalHint">из 10</div>
       </div>
       <button onclick="applyModalRating()">✓ Применить</button>
+    </div>
+        <div class="modal-actions-row" style="margin-top:12px; display:flex;">
+      <button class="btn-lyrics" style="flex:1; padding:8px; background:transparent; border:1.5px solid var(--border); color:var(--text); border-radius:12px; cursor:pointer; font-weight:600;" onclick="openLyricsDrawer()">📜 Текст песни</button>
     </div>
 
     <div style="margin-top:12px; padding:12px; border-radius:12px; background:linear-gradient(135deg, rgba(126,224,212,.10), rgba(130,200,255,.08)); border:1.5px solid rgba(126,224,212,.4);">
@@ -1225,5 +1230,49 @@
   </div>
 </div>
 <script type="module" src="js/main.js"></script>
+<!-- ПАНЕЛЬ ТЕКСТА ПЕСНИ -->
+<div class="lyrics-drawer" id="lyricsDrawer">
+  <div class="lyrics-header">
+    <div class="lyrics-title">📜 Текст песни</div>
+    <div class="lyrics-controls" id="lyricsControls">
+      <button class="lyrics-tab active" onclick="switchLyricsTab('original', this)">Оригинал</button>
+      <button class="lyrics-tab" onclick="switchLyricsTab('translation', this)">Перевод</button>
+      <button class="lyrics-tab" onclick="switchLyricsTab('both', this)">Оба</button>
+    </div>
+    <button class="close-btn" style="position:static; background:transparent; border:none; font-size:1.2rem; cursor:pointer; color:var(--text);" onclick="closeLyricsDrawer()">✕</button>
+  </div>
+  <div class="lyrics-body" id="lyricsBody">
+    <!-- Сюда подгрузится текст -->
+  </div>
+</div>
+<!-- МОДАЛКА РЕДАКТИРОВАНИЯ ТЕКСТА (АДМИН) -->
+<div class="modal-backdrop" id="editLyricsBackdrop" onclick="if(event.target===this) closeEditLyricsModal()">
+  <div class="modal" id="editLyricsModal">
+    <button class="close-btn" onclick="closeEditLyricsModal()" title="Закрыть">✕</button>
+    <div class="track-header">
+      <div class="info">
+        <div class="track-title">✏️ Редактирование текста</div>
+        <div class="track-artist">Ручной перевод заменяет автоматический</div>
+      </div>
+    </div>
+
+    <label>Название трека</label>
+    <input type="text" id="editLyricsTitle" style="margin-bottom: 12px;" readonly>
+
+    <label>Артист</label>
+    <input type="text" id="editLyricsArtist" style="margin-bottom: 12px;" readonly>
+
+    <label>Оригинальный текст</label>
+    <textarea id="editLyricsOriginal" style="min-height: 120px; margin-bottom: 12px;"></textarea>
+
+    <label>Перевод (ручной)</label>
+    <textarea id="editLyricsTranslation" style="min-height: 120px;"></textarea>
+
+    <div style="margin-top: 14px; display: flex; gap: 10px;">
+      <button onclick="saveAdminLyrics()">💾 Сохранить</button>
+      <button class="btn-secondary" onclick="closeEditLyricsModal()">Отмена</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

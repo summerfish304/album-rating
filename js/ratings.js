@@ -15,7 +15,7 @@ import { showToast, showFloatingLoader } from './ui.js';
 import { showConfirm } from './confirm.js';
 import { spotifyGetAlbum } from './search.js';
 import { playPreview, stopPreview } from './preview.js';
-
+import { getLyrics, translateLyrics } from './lyrics.js';
 // ============================================================
 // Состояние
 // ============================================================
@@ -234,7 +234,7 @@ function renderSingleCriteria() {
   const wrap = document.getElementById("singleCriteriaList");
   wrap.innerHTML = "";
   
-  // --- ДОБАВЛЯЕМ ПЛЕЕР ДЛЯ СИНГЛА ---
+  // --- ДОБАВЛЯЕМ ПЛЕЕР И ТЕКСТ ДЛЯ СИНГЛА ---
   const track = currentTracks[0];
   if (track) {
     const singlePlayer = document.createElement("div");
@@ -247,11 +247,24 @@ function renderSingleCriteria() {
     playBtn.title = "Слушать отрывок";
     playBtn.onclick = () => playPreview({ name: track.name, artist: track.artist || currentAlbum.artist }, playBtn);
     
+    const lyricsBtn = document.createElement("button");
+    lyricsBtn.type = "button";
+    lyricsBtn.className = "preview-btn";
+    lyricsBtn.innerHTML = "📜";
+    lyricsBtn.title = "Читать текст";
+    lyricsBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      if (typeof window.openLyricsDrawerForTrack === "function") {
+        window.openLyricsDrawerForTrack(0);
+      }
+    };
+    
     const infoText = document.createElement("div");
     infoText.style.cssText = "font-size:.85rem; font-weight:600; color:var(--text);";
-    infoText.textContent = "Слушать отрывок трека";
+    infoText.textContent = "Трек";
     
     singlePlayer.appendChild(playBtn);
+    singlePlayer.appendChild(lyricsBtn);
     singlePlayer.appendChild(infoText);
     wrap.appendChild(singlePlayer);
   }
@@ -329,6 +342,21 @@ function renderTracks(values) {
       playPreview({ name: t.name, artist: t.artist }, playBtn);
     };
     row.appendChild(playBtn);
+
+    // --- НОВАЯ КНОПКА ТЕКСТА ---
+    const lyricsBtn = document.createElement("button");
+    lyricsBtn.type = "button";
+    lyricsBtn.className = "preview-btn";
+    lyricsBtn.innerHTML = "📜";
+    lyricsBtn.title = "Читать текст";
+    lyricsBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      if (typeof window.openLyricsDrawerForTrack === "function") {
+        window.openLyricsDrawerForTrack(i);
+      }
+    };
+    row.appendChild(lyricsBtn);
+    // ---------------------------
 
     const nameBtn = document.createElement("button");
     nameBtn.type = "button";
@@ -1395,4 +1423,132 @@ export function renderResultChips() {
   if (cover != null) html += chip("🎨", "Обложка", cover, "");
 
   el.innerHTML = html;
+}
+
+// ============================================================
+// ТЕКСТЫ ПЕСЕН (UI)
+// ============================================================
+let currentLyricsData = null;
+
+export async function openLyricsDrawer() {
+  const track = currentTracks[modalTrackIndex];
+  if (!track) return;
+  
+  const drawer = document.getElementById("lyricsDrawer");
+  const body = document.getElementById("lyricsBody");
+  if (!drawer || !body) return;
+  
+  drawer.classList.add("open");
+  body.innerHTML = '<div class="lyrics-loading"><span class="spinner"></span> Загрузка текста…</div>';
+  
+  // Сбрасываем табы на "Оригинал"
+  document.getElementById("lyricsControls").style.display = "flex";
+  document.querySelectorAll(".lyrics-tab").forEach((b, i) => {
+    b.classList.toggle("active", i === 0);
+  });
+  
+  try {
+    // Генерируем ID для Firestore
+    const trackId = `${track.name}_${track.artist}`.replace(/\s+/g, '_').toLowerCase();
+    
+    const data = await getLyrics(trackId, track.name, track.artist || currentAlbum.artist);
+    
+    if (!data || !data.original) {
+      body.innerHTML = '<div class="lyrics-error">😔 Текст для этого трека не найден.<br>Попробуйте позже.</div>';
+      document.getElementById("lyricsControls").style.display = "none";
+      return;
+    }
+    
+    currentLyricsData = data;
+
+    // Если есть ручной перевод — используем его
+    if (data.manualTranslation) {
+      currentLyricsData.translation = data.manualTranslation;
+    } else if (!data.translation) {
+      // Если автоперевода тоже нет — запускаем его в фоне
+      translateLyrics(trackId, data.original).then(translated => {
+        if (translated) {
+          currentLyricsData.translation = translated;
+          // Обновляем рендер, чтобы перевод появился
+          const activeTab = document.querySelector(".lyrics-tab.active");
+          if (activeTab && activeTab.textContent.includes("Перевод")) {
+            renderLyricsBody("translation");
+          } else if (activeTab && activeTab.textContent.includes("Оба")) {
+            renderLyricsBody("both");
+          }
+        }
+      });
+    }
+    
+    renderLyricsBody("original");
+    
+  } catch (e) {
+    console.error("Lyrics error:", e);
+    body.innerHTML = '<div class="lyrics-error">Ошибка загрузки текста.</div>';
+  }
+}
+
+export function closeLyricsDrawer() {
+  const drawer = document.getElementById("lyricsDrawer");
+  if (drawer) drawer.classList.remove("open");
+}
+
+export function switchLyricsTab(tab, btnEl) {
+  document.querySelectorAll(".lyrics-tab").forEach(b => b.classList.remove("active"));
+  btnEl.classList.add("active");
+  renderLyricsBody(tab);
+}
+
+function renderLyricsBody(mode) {
+  const body = document.getElementById("lyricsBody");
+  if (!currentLyricsData) return;
+  
+  const orig = currentLyricsData.original || "";
+  const trans = currentLyricsData.translation || "";
+  
+  if (mode === "original") {
+    body.classList.remove("cols");
+    body.innerHTML = `<div class="lyrics-original">${escapeHtml(orig)}</div>`;
+  } else if (mode === "translation") {
+    body.classList.remove("cols");
+    if (!trans) {
+      body.innerHTML = '<div class="lyrics-loading"><span class="spinner"></span> Перевод загружается…</div>';
+    } else {
+      body.innerHTML = `<div class="lyrics-translated">${escapeHtml(trans)}</div>`;
+    }
+  } else if (mode === "both") {
+    body.classList.add("cols");
+    body.innerHTML = `
+      <div>
+        <div class="lyrics-col-title">Оригинал</div>
+        <div class="lyrics-original">${escapeHtml(orig)}</div>
+      </div>
+      <div>
+        <div class="lyrics-col-title">Перевод</div>
+        <div class="lyrics-translated">${trans ? escapeHtml(trans) : '<span class="spinner"></span> Переводим…'}</div>
+      </div>
+    `;
+  }
+}
+
+// Обертка для открытия текста из списка треков (без модалки)
+export function openLyricsDrawerForTrack(index) {
+  modalTrackIndex = index;
+  const track = currentTracks[index];
+  if (!track) return;
+  
+  const drawer = document.getElementById("lyricsDrawer");
+  if (drawer) drawer.classList.remove("open");
+  
+  setTimeout(() => {
+    openLyricsDrawer();
+  }, 50);
+}
+
+// Проброс в window для onclick
+if (typeof window !== "undefined") {
+  window.openLyricsDrawer = openLyricsDrawer;
+  window.closeLyricsDrawer = closeLyricsDrawer;
+  window.switchLyricsTab = switchLyricsTab;
+  window.openLyricsDrawerForTrack = openLyricsDrawerForTrack;
 }
