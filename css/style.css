@@ -6827,49 +6827,50 @@ body.theme-season-active .scheme-grid:hover {
   }
 }
 @media (max-width: 600px) {
-  /* Строка трека становится сеткой */
+  /* Строка трека — сетка из 3 строк */
   .track-row {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto auto; /* Название, оценка, скит */
     grid-template-areas: 
-      "name skit"
-      "controls controls";
-    gap: 8px;
+      "name val skit"
+      "slider slider slider"
+      "btns btns btns";
+    gap: 8px 6px; /* Отступы: 8px по вертикали, 6px по горизонтали */
     padding: 10px;
     align-items: center;
+    border-bottom: 1px solid var(--border-soft);
   }
 
-  /* Название трека */
+  /* 1. Название трека */
   .track-name {
     grid-area: name;
     font-size: 0.9rem;
     padding: 0;
     text-align: left;
     width: 100%;
+    white-space: normal; /* Разрешаем перенос длинных названий */
   }
 
-  /* Кнопка скита */
-  .skit-btn {
-    grid-area: skit;
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
+  /* 2. Цифра оценки (справа от названия) */
+  .range-val {
+    grid-area: val;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--accent);
+    text-align: right;
     margin: 0;
-    background: var(--panel-2);
-  }
-  .skit-btn.active {
-    background: var(--accent);
-    color: #fff;
   }
 
-  /* Нижняя панель (кнопки + ползунок + цифра) */
-  .track-row .control {
-    grid-area: controls;
-    display: flex;
-    align-items: center;
+  /* 3. Ползунок (на всю ширину) */
+  .track-row .control input[type="range"] {
+    grid-area: slider;
     width: 100%;
-    gap: 6px;
-    margin: 0; /* Убираем возможные отступы */
+    margin: 0;
+  }
+
+  /* 4. Нижняя панель с кнопками (▶, 📜, и скит) */
+  .track-row .control {
+    display: contents; /* Растворяем контейнер, чтобы управлять его детьми напрямую */
   }
 
   /* Кнопки плеера и текста */
@@ -6878,23 +6879,35 @@ body.theme-season-active .scheme-grid:hover {
     height: 32px;
     font-size: 14px;
     margin: 0;
-    flex-shrink: 0; /* Запрещаем сжиматься */
-  }
-
-  /* Ползунок сжимается под оставшееся место */
-  .track-row input[type="range"] {
-    flex: 1;
-    min-width: 0; /* Важно! Позволяет сжиматься */
-    margin: 0;
-  }
-
-  /* Цифра оценки */
-  .range-val {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--accent);
-    min-width: 24px; /* Фиксированная ширина, чтобы не прыгала */
-    text-align: right;
     flex-shrink: 0;
+  }
+  
+  /* Контейнер для кнопок (создадим его в JS) */
+  .mobile-btns-row {
+    grid-area: btns;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 4px;
+  }
+  
+  .mobile-btns-left {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Кнопка скита */
+  .skit-btn {
+    grid-area: skit;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    margin: 0;
+    background: var(--panel-2);
+  }
+  .skit-btn.active {
+    background: var(--accent);
+    color: #fff;
   }
 }
